@@ -74,3 +74,7 @@ Non-negotiables when touching it:
 - Frames: CDP screencast emits only on paint; the SSE capture poll (~500 ms while viewers attached) is what makes static pages look live. Both paths broadcast the same `{type:'frame'}` shape.
 - Agent tool contract: `browser_snapshot` returns refs + viewport coords (stored host-side); `browser_click {ref}` resolves coords from that map — refs die on navigation, always re-snapshot. Tool params: optional fields must OMIT `required` (SchemaJson rejects `required:false` — boot-fail trap).
 - Dev-only resolution: `node_modules/@deepseek-ai/dsh-tools` symlink → the npx cache (gitignored). Real installs (pnpm, non-link) auto-install peers; the symlink is only needed for the `link:` dev setup.
+
+## Browser leash — startup race trap
+
+The orphan sweep (`pkill` on our user-data-dir pattern) must WAIT for the killed chrome to actually die before spawning: a dying chrome holds the profile's `SingletonLock`, and a new instance against a locked profile exits instantly → "browser exited during startup". The sweep polls `pgrep` until clear (4 s cap) and we unlink `SingletonLock/Socket/Cookie` + `DevToolsActivePort` before spawn. If you touch startup order, test this exact sequence: hard-kill the server with the browser running, restart, navigate.
