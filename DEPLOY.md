@@ -30,6 +30,7 @@ drop-in) and restart it once:
 # ~/.config/systemd/user/dsh-web.service.d/30-operator-ui.conf
 [Service]
 Environment=DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:3090
+Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/rcos/prototype/capability-registry.json
 # Environment=DSH_OPERATOR_UI_CHROME=/usr/bin/chromium
 ```
 
