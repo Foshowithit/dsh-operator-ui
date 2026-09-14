@@ -13,6 +13,20 @@ It is a side-loaded DSH plugin (a Cordis bundle patch), not a fork:
 - **Runs grid** — one row per session: status dot (running / needs-attention / done / idle / blank), title + preset + cwd, last update, context-pressure meter (warns ≥80%, critical ≥95%), session token total, and badges for live background jobs and pending inbox input. Needs-attention and running sessions sort to the top.
 - **Detail pane** (click a row) — session facts, context and token usage, the session's live inbox (queued vs steering placements), running tool calls, background jobs, plus **Open** (jump to the conversation) and **Cancel turn**.
 
+## The RCOS control surface
+
+[RCOS](https://github.com/Foshowithit/rcos) — the Recursive Capability Operating System — wires Pi + DSH + Archon into one compounding loop. This plugin is its UI: every RCOS layer has a surface here, all reading authoritative state (never chat text, zero duplication):
+
+| RCOS layer | Tab |
+|---|---|
+| Cognitive control (DSH sessions, queue/steer) | **Runs**, **Summary**, ⌘K palette |
+| Durable orchestration (Archon runs, receipts) | **Workflows** — status, step, ship/fix/blocked |
+| Capability registry + promotion gate | **Capabilities** — promoted/candidate/retired, gate progress (x2 ships), reuse counts, eval history |
+| Workspaces | **Git**, **Files** |
+| Visible execution | **Browser** |
+
+Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (schema: [capability-registry.schema.json](https://github.com/Foshowithit/rcos/blob/main/prototype/capability-registry.schema.json)) — see DEPLOY.md.
+
 ## Install
 
 Requires DSH `0.1.0-rc.6` (the version this was built and verified against).
