@@ -30,6 +30,8 @@ No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-i
 - a **Runs** tab beside Conversation / Trajectory,
 - a **Git** tab (read-only workspace git status / diff / log),
 - a **⌘K / Ctrl+K command palette** (jump to any session, new session, toggle sidebar, switch views),
+- a **Summary** tab — the one-screen answer to "what is this run doing": state, last output, turns/steps/LLM time, context pressure, in-flight work, branch + changes,
+- a **Files** tab — browse the workspace tree with git M/A/D badges and inline text-file preview,
 - a **Browser** tab — a supervised on-screen browser the agent drives through `browser_navigate` / `browser_snapshot` / `browser_click` / `browser_type` tools while you watch every action live. One owned instance with a 10-minute idle auto-stop (never a headless sprawl). Requires Chrome/Chromium on the host (`DSH_OPERATOR_UI_CHROME` env to point at a specific binary).
 
 ## Uninstall / disable

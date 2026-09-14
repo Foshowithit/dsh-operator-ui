@@ -1,6 +1,6 @@
 {
   "name": "dsh-operator-ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Operator panel for DeepSeek Harness: a Runs tab over every session \u2014 live status, queue, jobs, and context pressure \u2014 inside the existing web UI.",
   "license": "MIT",
   "type": "module",
