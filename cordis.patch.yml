@@ -1,0 +1,6 @@
+# dsh-operator-ui bundle patch: self-inserts the plugin row into any profile
+# whose bundles include this package. Insert form is required: top-level
+# `- id:` rows can only override existing ids, never create them.
+- insert:
+    - id: operator-ui
+      name: 'dsh-operator-ui'
