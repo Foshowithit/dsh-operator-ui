@@ -1,6 +1,6 @@
 # dsh-operator-ui
 
-An operator panel for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH): a **Runs** tab in the existing web UI that shows every session at once — live status, background jobs, queue, and context pressure — with a detail pane for the selected run.
+An operator panel for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH): seven tabs in the existing web UI — **Runs** (every session at a glance), **Summary** (per-run state, output, context, work), **Git** (read-only status/diff/log with staged-unstaged-untracked chips), **Browser** (a supervised on-screen browser the agent drives while you watch live), **Files** (workspace tree with git badges and text preview), plus a **⌘K command palette**.
 
 It is a side-loaded DSH plugin (a Cordis bundle patch), not a fork:
 
