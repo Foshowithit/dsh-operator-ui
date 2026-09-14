@@ -1,6 +1,6 @@
 {
   "name": "dsh-operator-ui",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Operator panel for DeepSeek Harness: Runs grid across all sessions, per-run Summary, read-only Git, workspace Files, a supervised on-screen browser the agent drives live, and a Cmd+K palette — inside the existing web UI.",
   "license": "MIT",
   "type": "module",
