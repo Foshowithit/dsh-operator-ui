@@ -62,3 +62,15 @@ scripts/check.js  contract test — run before every push.
 docs/             screenshots (must show only fixture content, never a real workspace).
 dev-home/         isolated DSH home for dev. GITIGNORED. Never commit.
 ```
+
+## The supervised browser (v0.2.0) — "browser with a leash"
+
+`lib/browser.js` + the `browser_*` tools + the Browser tab give agents **visible** browser use: ONE owned headless Chromium that agent tools drive and the human watches live (CDP screencast + capture poll → SSE → `<img>`).
+
+Non-negotiables when touching it:
+- ONE browser process, ONE page target, lazily started. The 09-12 dev-host OOM incident was agent-spawned headless-Chrome trees (17 abandoned, 19.6 GB) — never add tab spawning, never remove the idle reaper (10 min), never drop the effect-tracked teardown.
+- http/https only (`assertHttpUrl`); dedicated `--user-data-dir` under `$DSH_HOME/operator-ui-browser`, never the user's profile.
+- Chrome binary discovery: `DSH_OPERATOR_UI_CHROME` env override, then common Mac/Linux paths. Node's native WebSocket (≥22) carries CDP — zero deps, keep it that way.
+- Frames: CDP screencast emits only on paint; the SSE capture poll (~500 ms while viewers attached) is what makes static pages look live. Both paths broadcast the same `{type:'frame'}` shape.
+- Agent tool contract: `browser_snapshot` returns refs + viewport coords (stored host-side); `browser_click {ref}` resolves coords from that map — refs die on navigation, always re-snapshot. Tool params: optional fields must OMIT `required` (SchemaJson rejects `required:false` — boot-fail trap).
+- Dev-only resolution: `node_modules/@deepseek-ai/dsh-tools` symlink → the npx cache (gitignored). Real installs (pnpm, non-link) auto-install peers; the symlink is only needed for the `link:` dev setup.

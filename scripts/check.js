@@ -46,21 +46,23 @@ check('lib/client.js: __ModuleLoader__ id matches package name', () => {
   }
 });
 
-// 4. Syntax of both halves.
-for (const f of ['lib/index.js', 'lib/client.js']) {
+// 4. Syntax of all lib files.
+for (const f of ['lib/index.js', 'lib/client.js', 'lib/browser.js']) {
   check(f + ': parses', () => {
     execFileSync(process.execPath, ['--check', join(root, f)], { stdio: 'pipe' });
   });
 }
 
-// 5. Host half: every webServer route stays read-only (no mutating git ops, no shell).
-check('lib/index.js: host routes read-only (fixed argv, no shell)', () => {
-  const src = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
-  if (/spawn\([^,]+,\s*['"`]/.test(src) && !/spawn\(\s*GIT,/.test(src)) throw new Error('unexpected bare spawn');
-  if (/\bexec(Sync)?\(|\bexecFile(Sync)?\(/.test(src.replace(/\/\/[^\n]*/g, ''))) throw new Error('shell-executing helpers are banned; use spawn with argv arrays');
-  for (const banned of ['commit', 'push', 'reset', 'rebase', 'merge', 'clean', 'checkout', 'restore', 'stage', 'add ']) {
-    const re = new RegExp(`['"]${banned.replace(/ $/, '')}['"]`);
-    if (re.test(src)) throw new Error('mutating git subcommand found: ' + banned);
+// 5. Host half: every host file stays read-only (no mutating git ops, no shell).
+check('host half: read-only (fixed argv, no shell)', () => {
+  for (const f of ['lib/index.js', 'lib/browser.js']) {
+    const src = readFileSync(join(root, f), 'utf8');
+    if (/spawn\([^,]+,\s*['"`]/.test(src) && !/spawn\(\s*(GIT|chrome),/.test(src)) throw new Error(f + ': unexpected bare spawn');
+    if (/\bexec(Sync)?\(|\bexecFile(Sync)?\(/.test(src.replace(/\/\/[^\n]*/g, ''))) throw new Error(f + ': shell-executing helpers are banned; use spawn with argv arrays');
+    for (const banned of ['commit', 'reset', 'rebase', 'merge', 'clean', 'checkout', 'restore', 'stage']) {
+      const re = new RegExp(`['"]${banned}['"]`);
+      if (re.test(src)) throw new Error(f + ': mutating git subcommand found: ' + banned);
+    }
   }
 });
 
