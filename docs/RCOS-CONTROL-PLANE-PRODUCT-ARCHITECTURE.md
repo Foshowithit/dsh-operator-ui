@@ -358,7 +358,7 @@ evaluated state, never "the model stopped talking."**
 
 1. **GoalRunner (P0)** — objective → Archon workflow execution → independent
    evidence verification (deterministic validators + eval workflows +
-   verifier quorum, NOT just another model pass) → SHIP / CONTINUE / BLOCK.
+   multiple independent verifiers — a true quorum, NOT just another model pass; the v0 gate is two validation checks, quorum comes later) → SHIP / CONTINUE / BLOCK.
    State durable in Archon; the WORK surface renders objective, rounds,
    verification checklist, and next action. This is ZCode's best idea made
    stronger by our verification engine.

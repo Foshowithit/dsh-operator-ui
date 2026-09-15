@@ -124,7 +124,7 @@
     "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed — provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt",
     "goalMode": {
       "route": "POST /plugins/operator-ui/goal {objective} | GET /goal?id= | GET /goal (recent, session-scoped)",
-      "pipeline": "objective → ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) → EXECUTE (the selected capability's own workflow binding on the configured Archon) → EVIDENCE (terminal poll + node outputs) → VERIFY (v0 quorum: terminal status + the registry-declared expectation marker) → SHIP | BLOCK | FAILED",
+      "pipeline": "objective → ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) → EXECUTE (the selected capability's own workflow binding on the configured Archon) → EVIDENCE (terminal poll + node outputs) → VERIFY (v0: a 2-check verification gate — terminal status + the registry-declared expectation marker; 'verifier quorum' stays reserved for independent verification authorities) → SHIP | BLOCK | FAILED",
       "taskIdentity": "task_id ('goal-xxxxxxxx') is born at goal admission, ABOVE DSH/Archon; attempts are recorded per task; durable execution truth stays in Archon",
       "honesty": "a capability that declares no expectation can reach COMPLETED but never SHIP; a goal that matches nothing is refused with reasons, never guessed",
       "persistence": "goals are session-scoped in memory; durable state is Archon's run record + the sealed receipts — the plugin adds no other storage"
