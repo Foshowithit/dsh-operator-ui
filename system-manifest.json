@@ -1,0 +1,104 @@
+{
+  "$comment": "system-manifest.json — the tracked installation/observation contract (GENERIC-INSTALL-DESIGN.md §3.4). Setup is data-driven from THIS file so the UI, README, and DEPLOY.md can never drift apart: DEPLOY.md's env table is CHECKED against envOverrides below (scripts/check.js), and the /status route reports the same components/ports/health named here. RCOS owns the tested compatibility pin (see COMPAT.md); this file owns install/topology facts.",
+  "manifestVersion": 1,
+  "supportedPlatforms": {
+    "os": ["macOS", "Linux"],
+    "unsupported": ["Windows"],
+    "runtimes": { "node": ">=22", "git": ">=2.30", "bash": true, "python3": ">=3.10 (Slice 2 seeds)" }
+  },
+  "components": {
+    "dsh": {
+      "role": "cognitive/agent runtime (harness)",
+      "install": "npx --yes @deepseek-ai/dsh@${pin} web",
+      "pin": "0.1.0-rc.6",
+      "pinPolicy": "verified-pin (see COMPAT.md) — RCOS owns the known-good pin; upgrades move through verification before it changes",
+      "configPaths": ["$DSH_HOME/settings.yaml", "$DSH_HOME/.env (DSH-owned credential store)"],
+      "port": 3080,
+      "bind": "127.0.0.1 only",
+      "health": "http GET 127.0.0.1:3080",
+      "verify": ["dsh --version"]
+    },
+    "archon": {
+      "role": "workflow execution/orchestration (execution adapter)",
+      "install": "curl -fsSL https://archon.diy/install | bash",
+      "configPaths": ["~/.archon/config.yaml"],
+      "port": 3090,
+      "health": "http GET <archon.baseUrl>/api/workflows (2xx + array body)",
+      "verify": ["archon version"],
+      "note": "The default URL is only the DEFAULT — the configured endpoint comes from archon.baseUrl (env>file>default). The /status archon probe uses the same path the Workflows tab proxies. Mock for sandbox checks lives at scripts/mock-archon.mjs on :13090 (deliberately NOT 3090)."
+    },
+    "rcos": {
+      "role": "capability + routing + verification architecture (this UI exposes it, never duplicates it)",
+      "install": "none — the registry is a FILE the operator points at (registry.path), not a service to install",
+      "configPaths": ["<registry.path> (default unconfigured; example: <this-repo>/fixtures/capability-registry.example.json)"],
+      "port": null,
+      "health": "live read via /status rcos probe: exists + JSON + capabilities[] + declared schema",
+      "verify": ["GET /plugins/operator-ui/status → components.rcos.state == AVAILABLE"],
+      "schemaPolicy": "the public RCOS schema wins (§6 ruling 3) — production divergence is migration debt, not a second truth"
+    },
+    "operator-ui": {
+      "role": "installation, configuration, observation, intervention surface (this repo)",
+      "install": "dsh plugin --profile web add <this-repo>",
+      "configPaths": ["$DSH_HOME/operator-ui.config.json (see configFile + fixtures/operator-ui.config.example.json)"],
+      "port": null,
+      "health": "GET /plugins/operator-ui/status → { ok:true }",
+      "verify": ["node scripts/check.js"]
+    },
+    "chrome": {
+      "role": "OPTIONAL local browser binary for the supervised Browser tab only (integration, not core)",
+      "install": "install Chrome/Chromium for your OS, or set browser.chromePath",
+      "configPaths": [],
+      "port": null,
+      "health": "/status chrome probe: binary exists + --version runs",
+      "verify": ["GET /plugins/operator-ui/status → components.chrome.state"],
+      "optional": true
+    }
+  },
+  "configFile": {
+    "path": "$DSH_HOME/operator-ui.config.json",
+    "configVersion": 1,
+    "example": "fixtures/operator-ui.config.example.json",
+    "precedence": ["explicit env var (back-compat, wins)", "config file", "default"],
+    "restartSemantics": {
+      "requestTime": ["archon.baseUrl", "archon.tokenVar", "archon.timeoutMs", "registry.path", "registry.schema", "registry.maxBytes", "git.*", "files.*"],
+      "bootTime": ["browser.chromePath", "browser.userDataDir", "browser.idleMs", "browser.viewport"],
+      "note": "request-time knobs re-resolve per request (restart-free); boot-time knobs are read once in apply() — file changes need a DSH restart. /status exposes both live + configured viewports so drift is visible."
+    },
+    "godConfigRule": "operator-ui.config.json contains operator-UI integration/configuration and REFERENCES to authorities (endpoint URLs, file paths, caps, slot names) — never copied DSH/Archon/RCOS state, never secret values (see credentials below)"
+  },
+  "envOverrides": {
+    "$comment": "Every DSH_OPERATOR_UI_* name the code reads, each naming the config key it wins over. check.js asserts code ⊇ manifest ⊇ DEPLOY.md.",
+    "DSH_OPERATOR_UI_ARCHON": { "winsOver": "archon.baseUrl", "example": "http://127.0.0.1:3090" },
+    "DSH_OPERATOR_UI_REGISTRY": { "winsOver": "registry.path", "example": "/path/to/capability-registry.json" },
+    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" }
+  },
+  "statusRoute": {
+    "path": "GET /plugins/operator-ui/status",
+    "answers": "what RCOS pieces are configured, available, missing, invalid, or not yet verified",
+    "vocabulary": {
+      "AVAILABLE": "live probe/read succeeded",
+      "UNAVAILABLE": "configured (or defaulted) but the live probe failed",
+      "NOT_CONFIGURED": "no value provided where one is required",
+      "INVALID": "value present but malformed — reported, never a boot failure",
+      "NOT_INSTALLED": "optional package does not resolve",
+      "UNKNOWN": "cannot be known from here — a valid state, never collapsed into one red light"
+    },
+    "ladders": ["CONFIGURED → AVAILABLE → VERIFIED (integrations/bindings)", "INSTALLED → AVAILABLE → VERIFIED (components)"],
+    "rules": [
+      "every reported field names its authority (DSH truth from DSH, Archon truth from Archon, registry truth from the registry file; the UI owns only its own integration state)",
+      "configuration is separated from observation (a configured URL is not AVAILABLE; an existing path is not valid schema; a populated slot is not VERIFIED)",
+      "live authoritative reads/probes per request — nothing cached; each probe carries checkedAt",
+      "no secret value can appear (slot names + presence booleans only)",
+      "Slice 1 never reports verified:true — Slice 2 owns live verification"
+    ]
+  },
+  "credentials": {
+    "policy": "No secrets, ever — not in code, not in screenshots, not in the dev-home. Config carries slot NAMES only (archon.tokenVar names an env var; provider slots name envSlots). Presence checks only, values never read, never reported, never echoed.",
+    "owningStores": ["$DSH_HOME/.env (DSH-owned)", "~/.archon/config.yaml (Archon-owned)"],
+    "template": "fixtures/providers.example.yaml (slot names + REQUIRED/OPTIONAL markers; zeroCredentialProbe names the seed that must verify with NO credentials)"
+  },
+  "receipt": {
+    "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
+    "contract": "docs/GENERIC-INSTALL-DESIGN.md §3.6"
+  }
+}

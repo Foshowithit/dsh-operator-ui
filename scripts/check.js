@@ -128,5 +128,118 @@ check('repo hygiene: required files present', () => {
   }
 });
 
+// 7. Slice 1 (configurable): the portable contract is machine-checked.
+// 7a. system-manifest.json parses, carries the required sections, and every
+// envOverrides name is a real DSH_OPERATOR_UI_* override the code reads.
+check('manifest: parses + owns env table + matches code', () => {
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (m.manifestVersion !== 1) throw new Error('manifestVersion must be 1');
+  for (const section of ['components', 'configFile', 'envOverrides', 'statusRoute', 'credentials']) {
+    if (!m[section]) throw new Error('manifest missing section: ' + section);
+  }
+  for (const comp of ['dsh', 'archon', 'rcos', 'operator-ui']) {
+    if (!m.components[comp]) throw new Error('manifest missing component: ' + comp);
+  }
+  const code = ['lib/index.js', 'lib/browser.js', 'lib/config.js', 'lib/status.js']
+    .map((f) => readFileSync(join(root, f), 'utf8')).join('\n');
+  // `$`-prefixed keys are manifest comments, not env names.
+  const owned = Object.keys(m.envOverrides).filter((k) => !k.startsWith('$'));
+  for (const name of owned) {
+    if (!code.includes(name)) throw new Error('manifest envOverrides.' + name + ' is not read anywhere in lib/');
+  }
+  // No override exists in code without manifest ownership (grep whole lib/).
+  const inCode = new Set(code.match(/DSH_OPERATOR_UI_[A-Z_]+/g) || []);
+  for (const name of inCode) {
+    if (!m.envOverrides[name]) throw new Error('code reads ' + name + ' but the manifest does not own it');
+  }
+});
+
+// 7b. DEPLOY.md's env table is generated-from/checked-against the manifest —
+// every manifest override is documented, every documented one is owned.
+check('manifest: DEPLOY.md documents exactly the owned env table', () => {
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  const deploy = readFileSync(join(root, 'DEPLOY.md'), 'utf8');
+  const owned2 = Object.keys(m.envOverrides).filter((k) => !k.startsWith('$'));
+  for (const name of owned2) {
+    if (!deploy.includes(name)) throw new Error('DEPLOY.md never documents ' + name);
+  }
+  const inDeploy = new Set(deploy.match(/DSH_OPERATOR_UI_[A-Z_]+/g) || []);
+  for (const name of inDeploy) {
+    if (!m.envOverrides[name]) throw new Error('DEPLOY.md documents ' + name + ' but the manifest does not own it');
+  }
+});
+
+// 7c. The example config fixture parses and matches the code DEFAULTS shape
+// (a stranger's first config must be a valid config).
+check('config: example fixture parses + matches DEFAULTS', () => {
+  const ex = JSON.parse(readFileSync(join(root, 'fixtures', 'operator-ui.config.example.json'), 'utf8'));
+  if (ex.configVersion !== 1) throw new Error('example configVersion must be 1');
+  const cfgSrc = readFileSync(join(root, 'lib', 'config.js'), 'utf8');
+  for (const section of ['archon', 'registry', 'browser', 'git', 'files']) {
+    if (typeof ex[section] !== 'object' || ex[section] === null)
+      throw new Error('example missing section: ' + section);
+    for (const key of Object.keys(ex[section])) {
+      if (key === '$comment') continue;
+      if (!cfgSrc.includes(key)) throw new Error('example key ' + section + '.' + key + ' unknown to lib/config.js');
+    }
+  }
+  for (const f of ['lib/config.js', 'lib/status.js']) {
+    execFileSync(process.execPath, ['--check', join(root, f)], { stdio: 'pipe' });
+  }
+});
+
+// 7d. Status vocabulary: the six states stay distinct, verified:true is never
+// reported by Slice 1 probes, and no unreachable panel hardcodes the default.
+check('status: vocabulary distinct + VERIFIED deferred + no hardcoded defaults', () => {
+  const st = readFileSync(join(root, 'lib', 'status.js'), 'utf8');
+  for (const s of ['AVAILABLE', 'UNAVAILABLE', 'NOT_CONFIGURED', 'INVALID', 'NOT_INSTALLED', 'UNKNOWN']) {
+    if (!st.includes("'" + s + "'")) throw new Error('lib/status.js lost state ' + s);
+  }
+  if (/verified:\s*true/.test(st)) throw new Error('Slice 1 must never report verified:true (Slice 2 owns live verification)');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes('/status')) throw new Error('lib/index.js lost the /status route');
+  if (!host.includes('resolveConfig')) throw new Error('lib/index.js lost per-request config resolution');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  if (client.includes('127.0.0.1:3090')) throw new Error('lib/client.js hardcodes the Archon default — read /status instead');
+  for (const api of ['visualViewport', 'innerWidth', 'devicePixelRatio', 'matchMedia']) {
+    if (client.includes(api)) throw new Error('lib/client.js sniffs browser geometry via ' + api + ' — viewport is single-source from /browser/status');
+  }
+});
+
+// 7e. No-secret-literals lint (§3.5): no secret-looking values in tracked
+// files. Slot NAMES (e.g. DSH_PROVIDER_API_KEY) are allowed; assignments of
+// opaque token-ish strings are not.
+check('secrets: no secret-looking literals in tracked files', () => {
+  let tracked;
+  try {
+    tracked = execFileSync('git', ['ls-files'], { cwd: root, stdio: 'pipe' }).toString().split('\n').filter(Boolean);
+  } catch {
+    tracked = [];
+  }
+  const allow = new Set(['system-manifest.json', 'scripts/check.js']);
+  const suspects = [];
+  for (const f of tracked) {
+    if (!/\.(js|mjs|json|yaml|yml|md)$/.test(f)) continue;
+    if (f.startsWith('dev-home/') || f.startsWith('node_modules/')) continue;
+    let src;
+    try { src = readFileSync(join(root, f), 'utf8'); } catch { continue; }
+    const lines = src.split('\n');
+    lines.forEach((line, i) => {
+      const body = line.replace(/\/\/[^\n]*/g, '');
+      // Bearer assignments, sk-/ghp-/xox-style tokens, long base64-ish values.
+      if (/authorization['"]?\s*:\s*['"]Bearer\s+[A-Za-z0-9\-_.~+/=]{8}|['"](sk-[A-Za-z0-9]{8}|ghp_[A-Za-z0-9]{8}|xox[bpas]-[A-Za-z0-9-]{6}|AIza[A-Za-z0-9\-_]{10}|eyJ[A-Za-z0-9\-_]{12})/.test(body)) {
+        if (!allow.has(f)) suspects.push(f + ':' + (i + 1));
+      }
+      // Generic KEY = "opaque value" assignments, excluding slot names,
+      // URLs, paths, version pins, and documented placeholders.
+      const m = body.match(/^\s*['"]?([A-Za-z_][A-Za-z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD))['"]?\s*[:=]\s*['"]([^'"]+)['"]/);
+      if (m && !/^(DSH_|<|https?:|~\/|\/|\$|v?\d+\.|null$)/.test(m[2]) && m[2].length >= 8 && !allow.has(f)) {
+        suspects.push(f + ':' + (i + 1) + ' (' + m[1] + ')');
+      }
+    });
+  }
+  if (suspects.length) throw new Error('possible secret literals: ' + suspects.join(', '));
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
