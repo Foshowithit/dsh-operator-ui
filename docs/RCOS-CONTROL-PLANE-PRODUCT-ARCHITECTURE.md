@@ -392,6 +392,72 @@ these contracts, never as new monolith logic.
 
 ---
 
+### Interaction systems to mine next (design round 09-15, GPT adjudicated)
+
+Stop mining ZCode/GooeyPi for visible features; mine them for interaction
+systems that make an agent product feel coherent. Ten identified:
+
+1. **Universal task/activity center** — a compact global indicator ("1
+   running · 2 waiting · 1 needs you") answering "is anything actually
+   happening?" without navigating.
+2. **Human-attention / approval inbox** — one concept of "needs me":
+   Approval required · Verification disagreement · Missing capability ·
+   Permission required · Goal blocked · Evidence insufficient. The human
+   side of SHIP/CONTINUE/BLOCK.
+3. **Task handoff / resume card** — "Continue where you left off" with
+   last objective, state, current attempt, why it stopped, next action.
+4. **Diff-first change review** — "What did this task change?" as a task
+   section (files created/modified/deleted, +/-, artifacts, causing
+   execution), not the operator inspecting Git independently.
+5. **Before/after task snapshot** — capture enough state at admission and
+   completion that verification can reference the task's delta.
+6. **Capability preview before execution** — expandable ROUTE stage:
+   "intends to use X; requires Y; can access Z; expected output Q" — the
+   natural future permission/trust layer.
+7. **Artifact viewer as a first-class primitive** — tasks produce text/
+   images/PDFs/CAD/G-code/JSON/reports; WORK should know "these are this
+   task's outputs", preview, hash, and connect them to evidence.
+8. **Command/action language** — ⌘K operating on RCOS concepts (Give work,
+   Open task, Add intelligence, Verify system, Inspect capability, Stop
+   execution, Open artifact).
+9. **Trust/provenance inspector** — invented for RCOS, not copied: any
+   consequential claim answers "why should I believe this?"
+10. **Empty states that teach** — "RCOS has no intelligence for user work
+    yet. Add a capability to teach it something it can execute and verify."
+
+### The two named primitives (design-locked, implement after the walkthrough)
+
+**1. Global RCOS Activity/Attention strip** — the single highest-leverage
+first-time-polish addition. Restrained, in persistent navigation:
+
+    ● 1 running · 1 needs attention        (or: ✓ RCOS ready)
+
+Clicking opens a tiny activity drawer: Running ("Analyze README · Attempt 1
+· Executing example-text-stats · 3s") / Needs you ("CNC quote ·
+Verification disagreement · Review evidence →") / Recently finished
+("Count README words · SHIP · 42s ago"). It is an observer/index over
+authoritative execution state — never a new authority. Work, GoalRunner,
+Archon background processes, automations, subagents, verification
+disagreements, and Fleet all feed it.
+
+**2. The Evidence Drawer** — the RCOS-specific killer primitive. Anywhere
+RCOS makes a consequential claim (SHIP, ELIGIBLE, VERIFIED, COMPLETED,
+artifact produced), a consistent Evidence affordance opens the chain:
+
+    Claim:        Goal satisfied
+    Supported by: Objective evaluator ✓ · Capability validation ✓ ·
+                  Execution completed ✓
+    Execution:    Archon run ee0588…
+    Observed:     README.txt — Words: 7
+    Delta:        No files changed
+    Provenance:   example-text-stats@1.0.0 · registry hash · archon@0.10.1
+
+The grammar: **RCOS makes claims. Every important claim can be opened to
+see why RCOS believes it.** Recursive from SYSTEM's RCOS VERIFIED down to a
+workflow result. This is where RCOS surpasses ZCode/GooeyPi.
+
+---
+
 ## 10. Why this passes the stranger test
 
 A stranger gets RCOS running and verified in minutes — the SYSTEM gate is
