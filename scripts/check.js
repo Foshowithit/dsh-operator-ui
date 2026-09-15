@@ -291,9 +291,15 @@ check('manifest: verification section consistent with code + client has no new t
   if (!m.verification.receiptFile.includes('receipt.json')) throw new Error('manifest verification.receiptFile wrong');
   const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
   if (!client.includes('SystemVerification')) throw new Error('client lost the system-verification section');
-  const tabs = [...client.matchAll(/id:\s*'(runs|git|browser|summary|files|workflows|capabilities)'/g)].map((x) => x[1]);
-  const allowed = new Set(['runs', 'git', 'browser', 'summary', 'files', 'workflows', 'capabilities']);
+  const tabs = [...client.matchAll(/id:\s*'(runs|git|browser|summary|files|workflows|capabilities|system|work|intelligence)'/g)].map((x) => x[1]);
+  const allowed = new Set(['runs', 'git', 'browser', 'summary', 'files', 'workflows', 'capabilities', 'system', 'work', 'intelligence']);
   for (const t of tabs) if (!allowed.has(t)) throw new Error('client registered an unknown tab: ' + t);
+  // M0 separation-of-concerns gates: eligibility is derived, never copied;
+  // the gate reads receipt freshness live instead of duplicating state.
+  if (!/deriveEligibility/.test(client)) throw new Error('client lost derived routingEligibility');
+  if (/routingEligibility\s*=\s*[^;]*lifecycle/i.test(client)) throw new Error('eligibility must be derived, not assigned from lifecycle state');
+  if (!client.includes('GateOverlay') || !client.includes('opui-gate')) throw new Error('client lost the first-run gate');
+  if (!/verify\?op=receipt/.test(client)) throw new Error('client must read receipt freshness from /verify, not re-derive it');
 });
 
 // 8d. Public-release hygiene (RC0): no private ecosystem names or developer
