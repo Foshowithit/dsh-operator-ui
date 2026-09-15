@@ -31,6 +31,29 @@ dsh plugin --profile web add "$PWD"
 
 The plugin self-inserts its bundle row; no manual `cordis.patch.yml` edit.
 
+## Configure (optional — defaults work)
+
+Everything is configurable in ONE portable file: `operator-ui.config.json` in
+`$DSH_HOME` (see `fixtures/operator-ui.config.example.json` — it is valid
+as-is). Precedence per key: explicit env var > config file > default; every
+value's origin is reported on the status surface. `~` in paths means the
+operator's home; relative paths are rejected. The file holds endpoint URLs,
+paths, and caps — never secrets: `archon.tokenVar` names the ENV VAR holding a
+bearer token (name only; the value stays in your environment). The full
+contract (components, ports, status vocabulary) lives in
+`system-manifest.json`; the env vars below are the same knobs in back-compat
+form.
+
+Query one authoritative surface to see what is configured, available, missing,
+invalid, or not yet verified:
+
+```sh
+curl -s http://127.0.0.1:3080/plugins/operator-ui/status | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>console.log(JSON.stringify(JSON.parse(d).components,null,1)))'
+```
+
+Browser settings (`browser.*`) apply at plugin start; everything else
+re-resolves per request.
+
 If your `dsh` runs under systemd, add the env vars to the unit (or its
 drop-in) and restart it once:
 
