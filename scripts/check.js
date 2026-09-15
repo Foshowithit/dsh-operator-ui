@@ -296,5 +296,28 @@ check('manifest: verification section consistent with code + client has no new t
   for (const t of tabs) if (!allowed.has(t)) throw new Error('client registered an unknown tab: ' + t);
 });
 
+// 8d. Public-release hygiene (RC0): no private ecosystem names or developer
+// machine paths leak into tracked files. Seeded/example content must read as
+// generic — never as accumulated production intelligence.
+check('hygiene: no private names or machine paths in tracked files', () => {
+  let tracked;
+  try {
+    tracked = execFileSync('git', ['ls-files'], { cwd: root, stdio: 'pipe' }).toString().split('\n').filter(Boolean);
+  } catch {
+    tracked = [];
+  }
+  const hits = [];
+  for (const f of tracked) {
+    if (!/\.(js|mjs|json|yaml|yml|md)$/.test(f)) continue;
+    let src;
+    try { src = readFileSync(join(root, f), 'utf8'); } catch { continue; }
+    const body = src.replace(/\/\/[^\n]*/g, '');
+    for (const banned of [/chow-[a-z]/i, /\/Users\/[a-z0-9]+\//i, /\bDell\b/i]) {
+      if (banned.test(body)) hits.push(f);
+    }
+  }
+  if (hits.length) throw new Error('private references in tracked files: ' + [...new Set(hits)].join(', '));
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
