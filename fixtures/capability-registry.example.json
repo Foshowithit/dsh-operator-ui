@@ -226,8 +226,7 @@
         "words",
         "lines",
         "stats",
-        "readme",
-        "file"
+        "readme"
       ]
     }
   ],
