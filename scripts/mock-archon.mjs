@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // Mock Archon server for sandbox verification of the Workflows tab.
 // Mirrors the real :3090 routes the plugin proxies. Run:
-//   node scripts/mock-archon.mjs [port]     (default 3090)
+//   node scripts/mock-archon.mjs [port]     (default 13090)
+//
+// Slice 0: the default is DELIBERATELY not 3090 — the mock must never collide
+// with a real Archon on the default port. Point the plugin at the mock with
+// DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:13090.
 
 import { createServer } from 'node:http';
 
-const port = Number(process.argv[2] || 3090);
+const port = Number(process.argv[2] || 13090);
 const now = Date.now();
 const min = 60 * 1000;
 const hr = 60 * min;

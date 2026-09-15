@@ -1,0 +1,49 @@
+# providers.example.yaml — portable provider/model-binding template (EXAMPLE ONLY)
+#
+# This file proves the ARCHITECTURE (slots exist, presence checks work, values
+# never live here). It carries NO secrets — slot NAMES only, values live in the
+# owning system's store ($DSH_HOME/.env, never in this repo).
+#
+# Fresh-install states per slot: REQUIRED (install cannot verify without it),
+# OPTIONAL (feature degrades honestly without it), CONFIGURED (name is wired to
+# a store), VERIFIED (presence + a live call both passed). A fresh install must
+# show all four honestly — never assume credentials exist.
+
+configVersion: 1
+
+# DSH provider rows: each row names the env slot that feeds it. Setup writes
+# these rows into $DSH_HOME/settings.yaml (with backup), exactly as documented
+# hand-editing does today. The UI never stores values.
+providers:
+  - row: default-chat
+    description: Primary chat/completion provider for sessions
+    state: REQUIRED
+    envSlot: DSH_PROVIDER_API_KEY
+    # provider/model chosen by the operator at configure time; recorded here
+    # as names only after the operator binds them.
+    provider: null
+    model: null
+  - row: embeddings
+    description: Embeddings provider for retrieval features
+    state: OPTIONAL
+    envSlot: DSH_EMBEDDINGS_API_KEY
+    provider: null
+    model: null
+
+# Archon model bindings: role -> provider/model names (no values).
+archon:
+  configPath: ~/.archon/config.yaml
+  bindings:
+    - role: planner
+      state: OPTIONAL
+      provider: null
+      model: null
+    - role: worker
+      state: OPTIONAL
+      provider: null
+      model: null
+
+# Zero-credential proof: the seeded verify-echo workflow (fixtures/verify-echo-v1.yaml
+# in Slice 2) must reach SHIP with NONE of the above configured. If it cannot,
+# the architecture is broken — not the operator's credentials.
+zeroCredentialProbe: fixtures/verify-echo-v1.yaml

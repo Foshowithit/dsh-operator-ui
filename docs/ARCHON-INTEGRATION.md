@@ -29,9 +29,11 @@ host half proxies the API directly (no CORS, no tunnel from the browser).
   message, model bindings, receipt decision when present).
 - 10 s poll while the tab is mounted; manual refresh; zero persistence.
 - Sandbox verification runs against `scripts/mock-archon.mjs` — a tiny fake
-  Archon with the same routes. Real-dev-host verification is a checklist, not a
-  code change: point `DSH_OPERATOR_UI_ARCHON` at `:3090` and compare against
-  `archon workflow runs`.
+  Archon with the same routes (default port `13090`, deliberately NOT the real
+  `:3090`, so the mock can never collide with production). Real-dev-host
+  verification is a checklist, not a code change: point
+  `DSH_OPERATOR_UI_ARCHON` at the mock port for sandbox, at `:3090` for the
+  real host, and compare against `archon workflow runs`.
 
 ### W2 — agent verbs (gated)
 

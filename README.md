@@ -29,13 +29,31 @@ Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` 
 
 ## Install
 
-Requires DSH `0.1.0-rc.6` (the version this was built and verified against).
+Requires DSH `0.1.0-rc.6` (the version this was built and verified against —
+see COMPAT.md for the full tested pin: DSH + peers + Archon API shape).
+
+### Requirements
+
+- **Platform:** macOS or Linux. Windows is explicitly unsupported (the plugin
+  uses POSIX path rules and `pkill`/`pgrep` for the supervised browser).
+- **Node:** ≥ 22 (`engines` enforced; the Browser tab uses Node's native WebSocket).
+- **git** on PATH (read-only usage, Git/Files tabs).
+- **DSH** `0.1.0-rc.6` with the `web` profile in use.
+- **Optional:** Chrome/Chromium on the host (Browser tab human-driving works
+  without it only if a binary is found; override with `DSH_OPERATOR_UI_CHROME`).
+- **Optional:** Python 3 (only for RCOS registry schema checks, later slices).
+- **Optional:** `@deepseek-ai/dsh-tools` peer — enables the four `browser_*`
+  agent tools. Without it the plugin still boots and serves every tab; the
+  Browser tab says honestly that agent driving is disabled (human driving
+  still works). Real installs resolve peers automatically; the `link:` dev
+  setup needs the peer installed beside DSH (see AGENTS.md).
 
 From a clone of this repository:
 
 ```sh
 git clone https://github.com/Foshowithit/dsh-operator-ui.git
 cd dsh-operator-ui
+node scripts/check.js                 # must PASS before proceeding
 dsh plugin --profile web add "$PWD"
 ```
 
@@ -59,6 +77,7 @@ Slot entries, the style tag, and the host-half service are all fiber-owned effec
 ## Compatibility notes
 
 - Verified against DSH `0.1.0-rc.6` (Cordis 4.x, web profile). The client half targets the `conversation.view` slot contract as served by that version.
+- **COMPAT.md is the tested pin** — RCOS owns the exact known-good DSH + plugin + Archon combination; upgrades move through verification before the pin changes. The `peerDependencies` range in `package.json` stays truthful but is not the support claim.
 - Styling is scoped under `.opui-*` classes and keyed off DSH design tokens (`--dsw-*`) with fallbacks — it does not depend on build-specific CSS-module hashes.
 - Unknown projection fields degrade to blanks, never crashes: the grid guards every field it reads.
 

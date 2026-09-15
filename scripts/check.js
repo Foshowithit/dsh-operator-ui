@@ -3,10 +3,11 @@
 // Validates the four-way name alignment the DSH plugin loader requires plus
 // basic file integrity. Exit 1 on any failure.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createRequire } from 'node:module';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 let failures = 0;
@@ -66,9 +67,58 @@ check('host half: read-only (fixed argv, no shell)', () => {
   }
 });
 
-// 6. Repo hygiene.
+// 6. Slice 0 (generic install): node version, peer resolution, zip tolerance.
+// 6a. Node >= 22 (native WebSocket in lib/browser.js; AbortSignal.timeout).
+check('runtime: node >= 22', () => {
+  const major = Number(process.versions.node.split('.')[0]);
+  if (major < 22) throw new Error('node ' + process.versions.node + ' < 22 — the Browser tab needs native WebSocket');
+});
+
+// 6b. Peer resolution: cordis is host-provided (the plugin never imports it —
+// the loader injects ctx), so assert no lib file imports it directly; dsh-tools
+// is OPTIONAL (graceful-degrade path in lib/index.js) but its absence must be
+// VISIBLE, not silent — so check that the degrade path exists.
+check('peers: cordis host-provided; dsh-tools absence degrades honestly', () => {
+  for (const f of ['lib/index.js', 'lib/client.js', 'lib/browser.js']) {
+    const src = readFileSync(join(root, f), 'utf8');
+    if (src.includes("from '@deepseek-ai/cordis'") || src.includes('from "@deepseek-ai/cordis"'))
+      throw new Error(f + ' imports cordis directly — the host provides the seam via ctx');
+  }
+  if (!pkg.peerDependencies?.['@deepseek-ai/cordis'] || !pkg.peerDependencies?.['@deepseek-ai/dsh-tools'])
+    throw new Error('package.json peerDependencies must declare both cordis and dsh-tools ranges');
+  const require = createRequire(join(root, 'package.json'));
+  let toolsResolve = true;
+  try { require.resolve('@deepseek-ai/dsh-tools'); } catch { toolsResolve = false; }
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes('TOOLS_UNAVAILABLE')) throw new Error('lib/index.js lost the TOOLS_UNAVAILABLE degrade path');
+  if (!host.includes('toolsAvailable')) throw new Error('lib/index.js lost the toolsAvailable status field');
+  if (!toolsResolve) console.log('  note dsh-tools peer absent — degrade path present (browser agent tools honestly disabled)');
+});
+
+// 6c. Repo hygiene.
 check('repo hygiene: no dev-home, node_modules, or logs tracked', () => {
-  const tracked = execFileSync('git', ['ls-files'], { cwd: root, stdio: 'pipe' }).toString().split('\n');
+  let tracked;
+  try {
+    tracked = execFileSync('git', ['ls-files'], { cwd: root, stdio: 'pipe' }).toString().split('\n');
+  } catch {
+    // Zip download, not a clone: fall back to a working-tree scan (gitignore
+    // semantics approximated — dev-home/ and node_modules/ must be absent).
+    console.log('  note not a git clone — scanning working tree instead');
+    tracked = [];
+    const walk = (dir, prefix) => {
+      for (const e of readdirSync(dir)) {
+        const full = join(dir, e);
+        const rel = prefix + e;
+        let st;
+        try { st = statSync(full); } catch { continue; }
+        if (st.isDirectory()) {
+          if (e === 'node_modules' || e === 'dev-home' || e === '.git') { tracked.push(rel + '/(dir present)'); continue; }
+          walk(full, rel + '/');
+        } else if (/\.log$/.test(e)) tracked.push(rel);
+      }
+    };
+    walk(root, '');
+  }
   const bad = tracked.filter((f) => /^(dev-home|node_modules)\//.test(f) || /\.log$/.test(f));
   if (bad.length) throw new Error('tracked: ' + bad.join(', '));
 });
