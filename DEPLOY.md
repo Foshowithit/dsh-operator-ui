@@ -5,12 +5,20 @@ reversible — the last section is the uninstall.
 
 ## Requirements
 
-- DSH `0.1.0-rc.6` (the verified pin) with the `web` profile in use.
+- DSH `0.1.0-rc.6` (the verified pin — see COMPAT.md for the full tested matrix)
+  with the `web` profile in use.
+- Node ≥ 22; macOS or Linux (Windows unsupported).
 - For the Git/Files tabs: `git` on PATH (read-only usage only).
 - For the Browser tab: Chrome/Chromium on the host. Override the binary with
   `DSH_OPERATOR_UI_CHROME=/path/to/chrome` if it's not in a default location.
+  Without the `@deepseek-ai/dsh-tools` peer installed, the tab still serves
+  human driving but agent driving is honestly disabled (see COMPAT.md).
 - For the Workflows tab: an Archon API. Default `http://127.0.0.1:3090`;
-  override with `DSH_OPERATOR_UI_ARCHON`.
+  override with `DSH_OPERATOR_UI_ARCHON`. For sandbox checks, the mock runs on
+  `:13090` (deliberately NOT the real default) — see below.
+- For the Capabilities tab: a `capability-registry.json`. Point
+  `DSH_OPERATOR_UI_REGISTRY` at `fixtures/capability-registry.example.json`
+  for a first-run proof, or at your own registry path.
 
 ## Install
 
@@ -30,7 +38,9 @@ drop-in) and restart it once:
 # ~/.config/systemd/user/dsh-web.service.d/30-operator-ui.conf
 [Service]
 Environment=DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:3090
-Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/rcos/prototype/capability-registry.json
+Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
+# First-run proof instead of a real registry:
+# Environment=DSH_OPERATOR_UI_REGISTRY=<this-repo>/fixtures/capability-registry.example.json
 # Environment=DSH_OPERATOR_UI_CHROME=/usr/bin/chromium
 ```
 
@@ -50,6 +60,8 @@ systemctl --user restart dsh-web
    it with the button; it also self-stops after 10 idle minutes.
 5. **Workflows**: with Archon reachable you see catalog + runs + decisions;
    with it down you see the honest "not reachable" panel (that's correct).
+   Sandbox check without a real Archon: `node scripts/mock-archon.mjs`
+   (listens on `:13090`) + `DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:13090`.
 6. `⌘K` / `Ctrl+K` opens the palette.
 
 ## Uninstall

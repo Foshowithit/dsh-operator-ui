@@ -301,9 +301,11 @@ in this document is explicitly deferred.
    disabled with honest panel) AND/OR a documented one-line install step; `check.js` gains a
    peer-resolution check so this class can't regress silently.
 2. `package.json`: `engines: { node: ">=22" }`; peer range aligned to the verified matrix;
-   `COMPAT.md` with the pin↔peers↔contract-facts table.
-3. Track `fixtures/capability-registry.example.json` (promote the dev-home mock) +
-   `fixtures/providers.example.yaml`; DEPLOY.md placeholder path replaced by the fixture.
+   `COMPAT.md` with the pin↔peers↔contract-facts table (RCOS-owned known-good pin).
+3. Track `fixtures/capability-registry.example.json` (promote the dev-home mock, clearly
+   marked seeded/example — never mistaken for production intelligence) +
+   `fixtures/providers.example.yaml` (slots only, no secrets; REQUIRED/OPTIONAL/
+   CONFIGURED/VERIFIED states); DEPLOY.md placeholder path replaced by the fixture.
 4. Mock Archon default port → 13090 (no collision with real Archon).
 5. README requirements section (supported platforms, Node ≥22, git, optional Chrome/python3).
    - *Acceptance:* fresh clone on a clean macOS/Linux box with Node ≥22 + DSH rc.6 → plugin
@@ -329,8 +331,12 @@ in this document is explicitly deferred.
 2. "Run system verification" → host route composes checks (read-only: versions, health,
    registry schema) + dispatches the seeded echo workflow → renders pass/fail per check →
    writes `receipt.json` (§3.6). Verdict banner: SYSTEM-VERIFIED / what failed / stale reason.
+   The receipt proves components actually communicated and executed the verification
+   path — never merely that the UI loaded (receipt gate, §6).
 3. Seeded probe: `fixtures/verify-echo-v1.yaml` (pure-shell echo workflow, no credentials,
-   deterministic receipt → verdict `ship`) + mock-archon support for sandbox verification.
+   deterministic receipt → verdict `ship`) + a second seed exercising the actual RCOS
+   execution path (two-workflow minimum, §6 ruling 4) + mock-archon support for
+   sandbox verification.
    - *Acceptance:* on the dev sandbox (mock archon), a wiped `$DSH_HOME` reaches
      SYSTEM-VERIFIED through the UI alone; receipt validates against a tracked schema; stale
      detection (bump a version → Setup re-lands) works.
@@ -348,20 +354,43 @@ in this document is explicitly deferred.
 
 ## 6. Ecosystem decisions needed (not solvable in this repo)
 
-These need an owner decision before/alongside Slice 2; the plugin can only adapt:
+Owner rulings recorded 2026-09-15 (Slice 0–2 authorization). The plugin adapts:
 
-1. **DSH pin policy** — who owns "supported version"? Proposal: `COMPAT.md` in this repo is the
-   public answer ("verified pin"), bumped only with a re-verification pass (AGENTS.md contract
-   facts re-checked).
-2. **Provider wiring map** — the deepest private knowledge. Proposal: `fixtures/providers.example.yaml`
-   (tracked) becomes the canonical template mapping provider rows → env slot names; Setup
-   instantiates from it. Requires deciding the minimal default provider set for a fresh install.
-3. **Registry schema** — public draft-07 vs live v1 divergence. Proposal: public schema wins
-   (it is the documented contract with the promotion gate); the live registry migrates or a
-   declared adapter is added. The Capabilities tab must not carry two schemas indefinitely.
-4. **Workflow seed story** — fresh installs start with an empty catalog (valid), but
-   "capability discovery/import" eventually needs an exportable bundle format for the workflow
-   library (including scrubbing machine-absolute paths from YAMLs).
+1. **DSH version ownership — RCOS owns the tested pin at the distribution level.**
+   Do not pretend the plugin independently supports whatever DSH happens to be
+   installed. The plugin's peer range stays truthful, but the RCOS system
+   manifest defines the exact known-good DSH + plugin + Archon combination.
+   Upgrades move through verification before the known-good pin changes.
+   (`COMPAT.md` in this repo is the public answer: "verified pin", bumped only
+   with a re-verification pass — AGENTS.md contract facts re-checked.)
+2. **Portable provider/model-binding contract first — no private-machine wiring
+   as the default.** Ship the smallest useful template needed to prove the
+   architecture, with explicit slots and no secrets
+   (`fixtures/providers.example.yaml`); provider-specific adapters/templates
+   accumulate afterward. A fresh install distinguishes REQUIRED, OPTIONAL,
+   CONFIGURED, and VERIFIED rather than assuming credentials exist.
+3. **The public RCOS schema wins.** The production divergence is migration debt,
+   not a second supported truth. The delta is documented (§2.3 item 13), a
+   migration path is defined (live registry migrates or a declared adapter is
+   added), and the generic system targets the public canonical contract. Two
+   schemas are never silently supported forever.
+4. **Tiny deterministic seed bundle — not the 300+ private workflow library.**
+   Seed only enough to prove routing/execution/verification end-to-end: at
+   minimum a zero-credential deterministic/system workflow PLUS one workflow
+   that exercises the actual RCOS execution path. Seeded/example capabilities
+   are clearly identified so they cannot be mistaken for accumulated production
+   intelligence (see the `_fixture_note` in
+   `fixtures/capability-registry.example.json`).
+
+**Receipt gate:** SYSTEM-VERIFIED cannot merely mean the UI loaded. The receipt
+must prove the relevant components actually communicated and executed the
+verification path — versions, configuration authorities/paths (no secrets),
+health results, execution/result identity, timestamps, and hashes/provenance
+sufficient to reproduce what was tested (§3.6).
+
+**God-config rule:** `operator-ui.config.json` contains operator-UI
+integration/configuration and REFERENCES to authorities — not copied
+DSH/Archon/RCOS state. Each subsystem keeps owning its own truth (§3.2–3.3).
 
 ---
 
