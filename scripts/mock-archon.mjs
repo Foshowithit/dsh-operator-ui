@@ -48,7 +48,14 @@ createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify(body));
   };
-  if (url.pathname === '/api/workflows') return json({ workflows });
+  // RC0: the mock mirrors the REAL v0.10.1 API contract as closely as the
+  // real server revealed it — wrapped catalog entries, /api/health with a
+  // version string, conversationId-required dispatch answered with an
+  // ACCEPTANCE (not the run), flat run-list entries, {run, events} detail.
+  // The version string is deliberately suffix-marked so a mock-backed
+  // receipt can never pose as a versioned real-Archon receipt.
+  if (url.pathname === '/api/health') return json({ status: 'ok', version: '0.10.1-mock', adapter: 'web' });
+  if (url.pathname === '/api/workflows') return json({ workflows: workflows.map((w) => ({ workflow: w })) });
   if (url.pathname === '/api/workflows/runs') {
     const limit = Number(url.searchParams.get('limit') || 20);
     const all = [...dynamicRuns, ...runs];
@@ -57,10 +64,12 @@ createServer((req, res) => {
   const runMatch = url.pathname.match(/^\/api\/workflows\/runs\/(.+)$/);
   if (runMatch) {
     const run = [...dynamicRuns, ...runs].find((r) => r.id === runMatch[1]);
-    return run ? json(run) : json({ error: 'not found' });
+    if (!run) return json({ error: 'not found' });
+    return json({
+      run,
+      events: (run.output ? [{ id: 'ev-1', event_type: 'node_output', step_name: 'emit', data: { output: run.output } }] : []),
+    });
   }
-  // POST /api/workflows/{name}/run — mirrors the real dispatch contract so
-  // Slice 2 verification can execute the seeded workflow in the sandbox.
   const runDispatch = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)\/run$/);
   if (runDispatch && req.method === 'POST') {
     const wf = workflows.find((w) => w.name === runDispatch[1]);
@@ -71,12 +80,21 @@ createServer((req, res) => {
     let body = '';
     req.on('data', (d) => { body += d; if (body.length > 64000) req.destroy(); });
     req.on('end', () => {
+      let parsed = {};
+      try { parsed = JSON.parse(body || '{}'); } catch {}
+      if (typeof parsed.conversationId !== 'string' || parsed.conversationId.length === 0) {
+        res.writeHead(400, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ error: 'conversationId must be a non-empty string' }));
+      }
       const seeded = wf.name === 'verify-echo-v1';
-      const run = {
+      dynamicRuns.unshift({
         id: 'run-mock-verify-' + String(dynamicRuns.length + 1).padStart(3, '0'),
+        conversation_id: parsed.conversationId,
+        codebase_id: null,
         workflow_name: wf.name,
-        user_message: (() => { try { return JSON.parse(body || '{}').message || ''; } catch { return ''; } })(),
+        user_message: parsed.message || '',
         status: 'completed',
+        outcome: null,
         current_step_index: 2,
         started_at: Date.now(),
         metadata: { seeded: wf.category === 'seed' },
@@ -84,9 +102,9 @@ createServer((req, res) => {
         receipt: seeded
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
-      };
-      dynamicRuns.unshift(run);
-      json(run);
+      });
+      // Real dispatch answers an ACCEPTANCE, not the run.
+      json({ accepted: true, status: 'started' });
     });
     return;
   }

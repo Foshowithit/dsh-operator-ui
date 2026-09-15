@@ -96,10 +96,24 @@ never blesses a different installation.
 Seed install (once, before Probe B can pass):
 
 ```sh
+mkdir -p ~/.archon/workflows/                           # fresh installs lack the dir
 cp fixtures/verify-echo-v1.yaml ~/.archon/workflows/    # teach Archon the seed
 # your registry must contain the seeded capability `rcos-verify-echo`
 # (fixtures/capability-registry.example.json already ships it)
 ```
+
+Real-Archon prerequisite: a run needs a workspace to execute in. Register
+one folder workspace with Archon (any empty directory you own — runs execute
+there, in place, no git needed):
+
+```sh
+curl -X POST http://127.0.0.1:3090/api/codebases \
+  -H 'content-type: application/json' \
+  -d '{"path": "/absolute/path/to/empty/workspace", "name": "rcos-workspace"}'
+```
+
+(Repo checkouts with a git remote work too; a remote-less git repo is
+refused by Archon's worktree isolation — use a plain folder.)
 
 Run it:
 

@@ -118,6 +118,8 @@
     "seal": "sha256 over the canonical receipt body without the seal field — a modified body reads TAMPERED, not merely old",
     "staleness": "the receipt fingerprints what it tested (node version, manifest sha256, config hash, registry sha256, seed-bundle sha256s); readReceipt recomputes them fresh so a materially different installation reads STALE with reasons",
     "seedBundle": ["fixtures/verify-echo-v1.yaml", "fixtures/capability-registry.example.json (seeded entry rcos-verify-echo)"],
+    "realArchonContract": "verified against real Archon v0.10.1 (RC0): catalog entries may be {workflow:{…}}-wrapped (normalized at the proxy/status boundary); dispatch POST /api/workflows/{name}/run requires a conversationId and answers an ACCEPTANCE {accepted:true} — the verifier discovers the new run from the run list; runs need a registered workspace (folder codebase) to execute in",
+    "adapterProvenance": "the receipt's execution.executionAdapter records what the endpoint itself reported (/api/health version): real Archon reads archon@0.10.1, an unversioned compatible reads archon-compatible (unversioned) — a mock-backed receipt can never pose as a versioned real-Archon one",
     "seedPolicy": "seeded/example capabilities are clearly marked (status `seeded`, seed `true`) so they can never be mistaken for accumulated production intelligence; the private workflow library is never bundled",
     "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed — provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt"
   }
