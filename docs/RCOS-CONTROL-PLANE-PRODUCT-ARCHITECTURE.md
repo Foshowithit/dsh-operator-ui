@@ -331,7 +331,68 @@ entry — waits.
 
 ---
 
-## 9. Why this passes the stranger test
+## 9. ZCode parity map (2026-09-15 research folded in)
+
+GPT's ZCode Desktop feature research (v3.10.2) is adopted as the capability
+backlog for the control plane — mapped onto OUR four surfaces, not copied as
+a monolith. The governing lesson from that research matches what RC0/M0
+already proved: **UI is a replaceable control surface; sessions/runs are
+durable runtime entities owned by DSH/Archon, and verification is a separate
+evaluated state, never "the model stopped talking."**
+
+### Already true in RCOS (built in Slices 0–2 / RC0 / M0)
+
+| ZCode idea | RCOS form (exists today) |
+|---|---|
+| Goal Mode's separate verification step | sealed genesis receipt + Probe A/B + break/refuse matrix — completion is a separately evaluated, evidence-backed state |
+| Task state UI (running/blocked/failed/done) | WORK task list with status + SHIP/FIX/BLOCK verdict chips |
+| Turn execution summary | WORK spine: request → route → capability → execution (adapter+version) → evidence → verdict |
+| Hooks / "termination is hookable" | receipt staleness + fingerprint invalidation; Archon approval gates on the execution path |
+| Plugin = capability bundle | capability-package manifest proposal (§5): workflows + requirements + permissions + verification as one installable unit |
+| Automations / idle queue (desktop-bound) | designed to live in ARCHON as durable workflow executions — the control plane only views/controls (beats the desktop-bound limit by architecture) |
+| Repo Wiki as agent orientation | INTELLIGENCE + registry provenance: capabilities carry evidence, versions, and lifecycle truth agents can consume |
+| Composer grammar (@/#,/, $) | DSH composer + ⌘K palette (exists); RCOS adds `@workflow` / `@capability` chips as a WORK-surface composer goal (M1+) |
+| Read-only git surface | Git tab (read-only fixed-argv) — contextual pane in WORK |
+
+### M1+ backlog (proposed order, after the M0 walkthrough gate)
+
+1. **GoalRunner (P0)** — objective → Archon workflow execution → independent
+   evidence verification (deterministic validators + eval workflows +
+   verifier quorum, NOT just another model pass) → SHIP / CONTINUE / BLOCK.
+   State durable in Archon; the WORK surface renders objective, rounds,
+   verification checklist, and next action. This is ZCode's best idea made
+   stronger by our verification engine.
+2. **Contextual ROUTE explanation (P0)** — the WORK spine's ROUTE row
+   expandable: ✓ verified · ✓ deps available · ✓ compatible → selected from
+   N eligible candidates (already flagged as M0 debt; the eligibility
+   derivation exists, WORK just needs to inline it).
+3. **Subagent/seat visualization (P0)** — Pi specialists + Archon dispatch
+   rendered as parallel/background seats with returned evidence. Our
+   agent/workflow/seat/runtime separation is already richer than ZCode's
+   blended subagent config.
+4. **Side conversations (P0)** — ask questions beside an active task without
+   contaminating its timeline (DSH side-chat, attached to a WORK task).
+5. **Edit + safe reset (P0)** — re-instruct and rewind that turn's file
+   mutations, refusing unsafe restores (needs moving Git from read-only —
+   its own gated round).
+6. **Background processes detached from turns (P0)** — long builds/watchers
+   as Archon runs, observable from WORK.
+7. **P1**: repo wiki with verified/inferred/stale provenance states;
+   task groups + change-counts (`+142 −37`) on task rows; scheduled Archon
+   automations + idle-capability queue; remote/bot control of the same
+   surfaces (FLEET seam); browser element-picker in the supervised browser.
+
+### The boundary that stays (from the same research)
+
+DSH = human control surface (conversations, composer, approvals, review).
+Archon = durable goals, workflow state, schedules, verification, provenance.
+Pi/specialists = isolated agent execution. Control plane = expose and
+coordinate — never absorb. Every ZCode-derived feature lands as a client of
+these contracts, never as new monolith logic.
+
+---
+
+## 10. Why this passes the stranger test
 
 A stranger gets RCOS running and verified in minutes — the SYSTEM gate is
 the proven verification path rendered in plain language. When something
