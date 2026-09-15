@@ -211,6 +211,10 @@
       "version": "1.0.0",
       "status": "candidate",
       "workflow": "example-text-stats-v1",
+      "verification": {
+        "expectOutput": "example-text-stats:done",
+        "terminalStatus": "completed"
+      },
       "admitted_after": [],
       "evals": [],
       "reuse_count": 0,
