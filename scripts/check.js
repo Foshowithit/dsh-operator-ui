@@ -325,5 +325,23 @@ check('hygiene: no private names or machine paths in tracked files', () => {
   if (hits.length) throw new Error('private references in tracked files: ' + [...new Set(hits)].join(', '));
 });
 
+// 9. Goal Mode (M1-candidate v0): objective → registry routing → Archon
+// execution → evidence verification → verdict. Routing truth stays in the
+// registry; verification is independent of the act of execution.
+check('goal: registry-routed runner + independent verification + task identity', () => {
+  const g = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
+  for (const must of ['SHIP', 'BLOCK', 'FAILED', 'taskId', 'routeObjective', 'considered', 'declared-expectation', 'terminal-status']) {
+    if (!g.includes(must)) throw new Error('lib/goal.js lost ' + must);
+  }
+  if (/\/api\/workflows\/[a-z0-9-]+\/run/.test(g)) throw new Error('lib/goal.js hardcodes a workflow dispatch URL — route through the registry');
+  if (!g.includes('registry not configured')) throw new Error('goal.js lost the registry-required refusal');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/goal'")) throw new Error('lib/index.js lost the /goal route');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  if (!client.includes('GoalComposer')) throw new Error('client lost the goal composer');
+  if (!client.includes('What do you want RCOS to do?')) throw new Error('client lost the give-work affordance');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'goal.js')], { stdio: 'pipe' });
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
