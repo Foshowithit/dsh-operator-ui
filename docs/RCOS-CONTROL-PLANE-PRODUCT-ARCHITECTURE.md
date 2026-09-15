@@ -93,14 +93,24 @@ Available Intelligence
   version → lifecycle state.
 - Lifecycle (GPT's ladder, adopted):
   `DISCOVERED → INSTALLED → CONFIGURED → AVAILABLE → VERIFIED → PROMOTED →
-  RETIRED` — and **routing eligibility is gated on state**, not decorative:
-  the router may only select capabilities that are VERIFIED+ under current
-  policy. This is the strongest abstraction RCOS gains: not "I have a CNC
-  capability" but "I possess CNC capability X vY, its dependencies are
-  available, it passed these evals, and policy permits its use."
+  RETIRED`.
+- **Correction (M0 authorization): verification state is NOT routing
+  eligibility.** Verification is evidence/lifecycle state; eligibility is a
+  derived decision. Two distinct concepts:
+  - `lifecycleState` — where the capability is on the ladder above.
+  - `routingEligibility` — `ELIGIBLE | INELIGIBLE | CONDITIONAL | UNKNOWN`,
+    derived from evidence + CURRENT availability + compatibility + policy.
+    A VERIFIED capability whose model/runtime disappeared is INELIGIBLE
+    (reason: dependency unavailable); one forbidden for a task is
+    CONDITIONAL; a fresh install with thin evidence may be UNKNOWN.
+  - M0's derivation stays deliberately simple: verified + required
+    dependencies currently AVAILABLE + compatible ⇒ ELIGIBLE — anything else
+    is an explicit non-eligible/unknown state WITH REASONS, shown to the
+    operator. No policy engine yet; lifecycle state is never the routing API.
 - Seeded/example capabilities render with a distinct SEEDED badge — they can
   never be mistaken for accumulated production intelligence (existing seed
-  markers carry over).
+  markers carry over), and never visually compete with useful installed
+  capabilities.
 
 ### 1.4 FLEET — contract-only now
 
@@ -128,9 +138,15 @@ this: evidence names the machine class that executed.
    matrix).
 4. RCOS VERIFIED banner with the receipt hash. The shell opens — SYSTEM
    stays reachable as a first-class surface.
-5. First useful task: the WORK surface offers the seeded example as a
-   no-credential first run, then real work. INTELLIGENCE is where they add
-   more (today: point at a registry; eventually: install packages).
+5. **Correction (M0 authorization): genesis verification is NOT the user's
+   "first useful task."** The seeded echo is the first VERIFIED execution —
+   it proves RCOS works; it is not useful work, and it stays permanently
+   SEEDED and SYSTEM-oriented. After the banner, the product transitions to
+   WORK and asks: **"What do you want RCOS to do?"** If no useful
+   capabilities are installed yet, that is surfaced honestly and the
+   operator is directed to Add Intelligence — the natural progression is
+   `system works → system has capabilities → user gives it work`, never
+   teaching people that RCOS is a test harness.
 
 The difference from a setup wizard: **verification requires execution.**
 The green state is earned by a real run, sealed, and can go stale.
@@ -143,16 +159,18 @@ One task must be followable end-to-end across subsystems without private
 knowledge. Proposed identity spine (each layer references the one above):
 
 ```
-task_id            (new, RCOS-level: one user-visible unit of work)
+task_id            (RCOS-level identity, born ABOVE DSH/Archon at task
+│                   admission — one user-visible unit of work)
  ├─ request        {text, attachments, submitted_at, origin}
- ├─ route_decision {capability_id, capability_version, workflow, policy_ref,
+ ├─ route_decision*{capability_id, capability_version, workflow, policy_ref,
  │                  reason, decided_at}                    ← registry truth
- ├─ execution      {adapter: archon@0.10.1, run_id, conversation_id,
- │                  codebase_id, started_at}              ← Archon truth
+ ├─ execution*     {adapter: archon@0.10.1, run_id, conversation_id,
+ │                  codebase_id, attempt, started_at}      ← Archon truth
  │   └─ nodes      [{node_id, status, duration, output_ref}]  ← DAG events
  ├─ artifacts      [{name, sha256, produced_by_node}]      ← hash-addressed
  ├─ verification   {receipt_ref, probe results, decision}  ← sealed
- └─ verdict        SHIP | FIX | BLOCK
+ └─ verdict        SHIP | FIX | BLOCK                      (per attempt)
+                   (* = one task MAY have many)
 ```
 
 Rules:
@@ -160,10 +178,15 @@ Rules:
   references; Archon owns run/node truth; the registry owns capability
   truth; the verifier owns receipt truth. This is the existing
   authority-per-field rule lifted to tasks.
-- `task_id` is the only NEW concept. v0: one DSH session or one Archon run
-  maps 1:1 to a task; the spine is assembled from ids that already exist
-  (run id, conversation_id, codebase_id, receipt path, capability id+version
-  — all in the genesis receipt and run payloads today).
+- **Correction (M0 authorization): the task_id is born above DSH and
+  Archon.** A task is NOT a session and NOT a run. The schema permits
+  1-task → MANY route decisions / DSH sessions / Archon runs / attempts from
+  day one; retries are the SAME task with distinct attempts. The 1:1
+  mapping (one task = one existing DSH session or one Archon run) is an M0
+  compatibility bridge only — the spine is assembled from ids that already
+  exist today (run id, conversation_id, codebase_id, receipt path,
+  capability id+version), but the identity itself is RCOS-owned and
+  generated at task admission.
 - Every evidence artifact is hash-addressed (receipts already are; extend to
   run artifacts), so "what did RCOS actually test" stays answerable at any
   layer, forever.
@@ -255,20 +278,40 @@ The nine destinations collapse to four surfaces + contextual panes.
 
 ## 7. Smallest product milestone after this round
 
-**M0 — "verified machine, one honest task":**
+**M0 — "verified machine, one honest task"** (authorized; keep narrow):
 
-1. SYSTEM surface as first-run gate (receipt-gated shell; existing /status +
-   /verify rendered full-screen, no wizard).
-2. WORK surface v0: ONE task view stitching the §3 spine for a single
-   Archon-run task — request → route → run → nodes → artifacts → verdict —
-   using only ids that exist today.
-3. INTELLIGENCE v0: the merged catalog with lifecycle badges; routing
-   eligibility enforced as a read-time filter (VERIFIED+ only), no policy
-   engine yet.
-4. Git/Files/Browser stay as-is functionally but dock as contextual panes of
-   WORK (no top-level destinations).
+1. **SYSTEM v0**: the already-proven status/receipt/verification contract
+   promoted into the first-run experience — no valid current receipt ⇒
+   SYSTEM first-run; valid ⇒ normal shell. STALE / TAMPERED / NOT_VERIFIED
+   stay visually and semantically distinct; state is never duplicated in the
+   client (the contracts remain the only authority).
+2. **WORK v0** (the key UX experiment): ONE coherent task view on the §3
+   spine — request → route → capability → workflow/execution →
+   result/evidence → verdict — for a real Archon-backed task. Browser/Git/
+   Files attach contextually where evidence exists. No future node/subagent
+   visualization yet.
+3. **INTELLIGENCE v0**: merged catalog; capabilities primary, workflows
+   inspectable beneath them. Lifecycle shown SEPARATELY from a derived
+   `routingEligibility` (decision + reasons shown; the simple M0 derivation
+   above; no policy engine). Seeded verification intelligence stays clearly
+   SEEDED.
+4. **FLEET**: contract only; at most a minimal read-only runtime identity if
+   it falls naturally out of SYSTEM.
+5. **Migration boundary (reversible)**: the nine-tab UI is NOT destroyed —
+   a compatibility/debug flag keeps it available so legacy vs M0 can be
+   compared on the same real task.
 
-Everything else — FLEET, packages, policy engine, credential entry — waits.
+**M0 acceptance test** — a real (not mocked) Archon-backed task; an operator
+unfamiliar with the internals must answer from the M0 UI alone: what did I
+ask / what capability was chosen / why was it eligible / what workflow ran /
+which execution corresponds / what did it produce / what evidence supports
+the result / did RCOS accept-fix-block / where did it fail / what can I
+inspect or intervene in. Every place the operator must leave WORK, read raw
+JSON, use a CLI, or infer hidden state is recorded as M0 failure/debt.
+Optimize for **legibility of execution**, not polish.
+
+Everything else — FLEET scheduling, packages, policy engine, credential
+entry — waits.
 
 ---
 
