@@ -203,7 +203,19 @@
       "evals": [],
       "reuse_count": 0,
       "last_eval": null
+    },
+    {
+      "id": "example-text-stats",
+      "name": "Text stats (EXAMPLE)",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "status": "candidate",
+      "workflow": "example-text-stats-v1",
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": null
     }
   ],
-  "_fixture_note": "EXAMPLE ONLY \u2014 a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. Production registries live machine-local, outside this repo."
+  "_fixture_note": "EXAMPLE ONLY \u2014 a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. `example-text-stats` is a real (non-seeded) candidate: useful work with thin evidence, so derived eligibility reads CONDITIONAL by design. Production registries live machine-local, outside this repo."
 }
