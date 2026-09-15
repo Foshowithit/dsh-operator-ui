@@ -71,7 +71,51 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 systemctl --user restart dsh-web
 ```
 
-## Post-install verification (2 minutes)
+## Verify (seeded, zero-credential)
+
+System verification turns "the pieces appear healthy" into a sealed receipt.
+Two probes run in order:
+
+- **Probe A — verify-machinery** (zero-credential, deterministic): exercises
+  the local machinery itself — manifest load, seed hashing, config resolution,
+  and an evaluator self-test.
+- **Probe B — rcos-execution-path**: the real RCOS path. The verifier routes
+  through YOUR configured capability registry (seeded capability
+  `rcos-verify-echo` → its `workflow` binding — the name is read from the
+  registry, never hardcoded), executes that workflow on YOUR configured Archon
+  via its normal run API, polls the run to a terminal state, and evaluates the
+  evidence against the seeded expectation.
+
+Levels: `NOT_VERIFIED` → `SYSTEM_VERIFIED` (Probe A only — never stretched) →
+`RCOS_VERIFIED` (A + B). The receipt is written to
+`$DSH_HOME/operator-ui/receipt.json` (the only file this plugin writes, and
+only when you POST) and sealed: a modified body reads **TAMPERED**, a changed
+manifest/registry/config/seed reads **STALE** with reasons — an old receipt
+never blesses a different installation.
+
+Seed install (once, before Probe B can pass):
+
+```sh
+cp fixtures/verify-echo-v1.yaml ~/.archon/workflows/    # teach Archon the seed
+# your registry must contain the seeded capability `rcos-verify-echo`
+# (fixtures/capability-registry.example.json already ships it)
+```
+
+Run it:
+
+```sh
+curl -X POST http://127.0.0.1:3080/plugins/operator-ui/verify
+curl -s "http://127.0.0.1:3080/plugins/operator-ui/verify?op=receipt" | head -40
+```
+
+Or click **Run verification** in the Summary tab's System verification cards —
+they show what RCOS actually tested (probes, routed capability, run id, seal)
+and the fresh VALID / STALE / TAMPERED verdict. Sandbox rehearsal without a
+real Archon: `node scripts/mock-archon.mjs` (`:13090`) +
+`DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:13090` — the mock serves the same
+run API, including dispatch of the seeded workflow.
+
+
 
 1. Open the web UI → tabs read: Chat · Trajectory · Runs · Summary · Git ·
    Browser · Files · Workflows.
@@ -94,14 +138,17 @@ dsh plugin --profile web remove dsh-operator-ui
 systemctl --user restart dsh-web   # if applicable
 ```
 
-Sessions, settings, and history are untouched (the plugin persists nothing).
+Sessions, settings, and history are untouched (the plugin persists nothing
+except the sealed verification receipt, which you can delete freely).
 The supervised browser, if running, is torn down with the plugin.
 
 ## Safety notes for shared hosts
 
 - The plugin's host half only ever: runs read-only `git` (fixed argv), reads
   workspace files under the session's root, drives its OWN single supervised
-  browser (dedicated profile, idle-reaped), and GETs the Archon API.
+  browser (dedicated profile, idle-reaped), GETs the Archon API, and POSTs the
+  seeded verification dispatch to it.
 - It never writes to git, never touches other processes' browsers, and never
-  persists data outside `$DSH_HOME/operator-ui-browser` (its throwaway
-  browser profile).
+  persists data outside `$DSH_HOME/operator-ui-browser` (its throwaway browser
+  profile) and `$DSH_HOME/operator-ui/receipt.json` (the sealed verification
+  receipt, written only on an explicit POST /verify).

@@ -10,11 +10,13 @@
 import { createServer } from 'node:http';
 
 const port = Number(process.argv[2] || 13090);
+const dynamicRuns = []; // runs created via POST …/run during this process
 const now = Date.now();
 const min = 60 * 1000;
 const hr = 60 * min;
 
 const workflows = [
+  { name: 'verify-echo-v1', description: 'SEEDED system-verification echo (zero-credential, deterministic)', category: 'seed', tags: ['seed', 'verify'] },
   { name: 'internal-research-search-v1', description: 'Web research with search + brief artifacts', category: 'research', tags: ['research', 'search'] },
   { name: 'internal-video-prod-v1', description: 'Deterministic canvas → MP4 explainer pipeline', category: 'media', tags: ['video', 'canvas'] },
   { name: 'internal-qa-verify-v1', description: 'Path/contract verification gate', category: 'qa', tags: ['verify', 'gate'] },
@@ -49,12 +51,44 @@ createServer((req, res) => {
   if (url.pathname === '/api/workflows') return json({ workflows });
   if (url.pathname === '/api/workflows/runs') {
     const limit = Number(url.searchParams.get('limit') || 20);
-    return json({ runs: runs.slice(0, limit) });
+    const all = [...dynamicRuns, ...runs];
+    return json({ runs: all.slice(0, limit) });
   }
   const runMatch = url.pathname.match(/^\/api\/workflows\/runs\/(.+)$/);
   if (runMatch) {
-    const run = runs.find((r) => r.id === runMatch[1]);
+    const run = [...dynamicRuns, ...runs].find((r) => r.id === runMatch[1]);
     return run ? json(run) : json({ error: 'not found' });
+  }
+  // POST /api/workflows/{name}/run — mirrors the real dispatch contract so
+  // Slice 2 verification can execute the seeded workflow in the sandbox.
+  const runDispatch = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)\/run$/);
+  if (runDispatch && req.method === 'POST') {
+    const wf = workflows.find((w) => w.name === runDispatch[1]);
+    if (!wf) {
+      res.writeHead(404, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'unknown workflow: ' + runDispatch[1] }));
+    }
+    let body = '';
+    req.on('data', (d) => { body += d; if (body.length > 64000) req.destroy(); });
+    req.on('end', () => {
+      const seeded = wf.name === 'verify-echo-v1';
+      const run = {
+        id: 'run-mock-verify-' + String(dynamicRuns.length + 1).padStart(3, '0'),
+        workflow_name: wf.name,
+        user_message: (() => { try { return JSON.parse(body || '{}').message || ''; } catch { return ''; } })(),
+        status: 'completed',
+        current_step_index: 2,
+        started_at: Date.now(),
+        metadata: { seeded: wf.category === 'seed' },
+        ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        receipt: seeded
+          ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
+          : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
+      };
+      dynamicRuns.unshift(run);
+      json(run);
+    });
+    return;
   }
   res.writeHead(404);
   res.end('not found');

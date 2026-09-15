@@ -100,5 +100,25 @@
   "receipt": {
     "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
     "contract": "docs/GENERIC-INSTALL-DESIGN.md §3.6"
+  },
+  "verification": {
+    "$comment": "Slice 2 (VERIFIABLE): turns 'pieces appear healthy' into sealed evidence. Probe B is the REAL RCOS path — routing goes through the configured registry (the seeded capability's workflow binding is read from the registry, never hardcoded) and execution goes through the configured Archon's normal run API. There is no parallel verification architecture to bypass it.",
+    "route": "POST /plugins/operator-ui/verify (runs probes + writes the receipt) | GET /plugins/operator-ui/verify?op=receipt (read-only freshness verdict)",
+    "probes": {
+      "probeA": "verify-machinery — deterministic, zero-credential: manifest load, seed-bundle hashing, config resolution, and an evaluator self-test (accepts the seeded expectation, rejects wrong output and wrong terminal status)",
+      "probeB": "rcos-execution-path — request → route via configured registry (seeded capability rcos-verify-echo → its `workflow` binding) → execute on configured Archon (POST /api/workflows/{name}/run, same base the Workflows tab proxies) → poll run to terminal → evaluate evidence against the seeded expectation"
+    },
+    "levels": {
+      "NOT_VERIFIED": "Probe A did not pass — nothing above it may be claimed",
+      "SYSTEM_VERIFIED": "Probe A passed; Probe B did not run or did not pass (blocker named, never stretched to RCOS_VERIFIED)",
+      "RCOS_VERIFIED": "Probe A + Probe B both passed — the installation executed the actual RCOS execution path"
+    },
+    "receiptFile": "$DSH_HOME/operator-ui/receipt.json",
+    "receiptWrites": "the ONLY file this plugin writes, and only on an explicit POST /verify; GET never writes",
+    "seal": "sha256 over the canonical receipt body without the seal field — a modified body reads TAMPERED, not merely old",
+    "staleness": "the receipt fingerprints what it tested (node version, manifest sha256, config hash, registry sha256, seed-bundle sha256s); readReceipt recomputes them fresh so a materially different installation reads STALE with reasons",
+    "seedBundle": ["fixtures/verify-echo-v1.yaml", "fixtures/capability-registry.example.json (seeded entry rcos-verify-echo)"],
+    "seedPolicy": "seeded/example capabilities are clearly marked (status `seeded`, seed `true`) so they can never be mistaken for accumulated production intelligence; the private workflow library is never bundled",
+    "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed — provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt"
   }
 }
