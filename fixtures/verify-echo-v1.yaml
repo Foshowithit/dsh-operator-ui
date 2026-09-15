@@ -1,0 +1,32 @@
+# verify-echo-v1.yaml — RCOS system-verification seed (SEEDED EXAMPLE).
+#
+# This workflow exists to verify an RCOS installation, not to do production
+# work. It is deterministic and ZERO-CREDENTIAL: both nodes are plain `bash:`
+# nodes (no AI, no provider bindings, no secrets). If this seed cannot reach
+# its expected output through a real Archon, the installation's execution
+# path is broken — that is the signal it exists to produce.
+#
+# Install (documented in DEPLOY.md): copy into ~/.archon/workflows/ so Archon
+# serves it, and make sure the configured capability registry contains the
+# matching seeded capability (fixtures/capability-registry.example.json ships
+# one, id `rcos-verify-echo`). Verification dispatches THROUGH the registry —
+# the workflow name is never hardcoded into the verifier.
+#
+# Expected evidence: the run completes and its recorded output contains the
+# exact marker line `rcos-verify-seed:rcos-verify-echo-v1`. The verifier
+# (lib/verify.js) evaluates that marker; the two-node DAG exercises real
+# scheduling (node 2 depends on node 1).
+
+name: verify-echo-v1
+description: >
+  SEEDED system-verification probe (not production intelligence): a
+  deterministic zero-credential echo used to prove the RCOS execution path
+  (request -> route -> execute -> evidence -> evaluate -> receipt).
+
+nodes:
+  - id: emit
+    bash: echo 'rcos-verify-seed:rcos-verify-echo-v1'
+
+  - id: confirm
+    depends_on: [emit]
+    bash: echo 'rcos-verify-seed:rcos-verify-echo-v1'

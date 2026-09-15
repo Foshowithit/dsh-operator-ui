@@ -186,7 +186,24 @@
       ],
       "reuse_count": 0,
       "last_eval": "2026-09-14"
+    },
+    {
+      "id": "rcos-verify-echo",
+      "name": "RCOS verification echo (SEEDED)",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "status": "seeded",
+      "seed": true,
+      "workflow": "verify-echo-v1",
+      "verification": {
+        "expectOutput": "rcos-verify-seed:rcos-verify-echo-v1",
+        "terminalStatus": "completed"
+      },
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": null
     }
   ],
-  "_fixture_note": "EXAMPLE ONLY \u2014 a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. Production registries live machine-local, outside this repo."
+  "_fixture_note": "EXAMPLE ONLY \u2014 a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. Production registries live machine-local, outside this repo."
 }

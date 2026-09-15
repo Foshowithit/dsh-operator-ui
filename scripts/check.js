@@ -241,5 +241,60 @@ check('secrets: no secret-looking literals in tracked files', () => {
   if (suspects.length) throw new Error('possible secret literals: ' + suspects.join(', '));
 });
 
+// 8. Slice 2 (verifiable): the verification contract is machine-checked.
+// 8a. lib/verify.js: level vocabulary, seal, staleness fingerprints, and the
+// no-bypass rule — dispatch must go through the registry-resolved workflow
+// binding (no hardcoded workflow name in a URL, no parallel verify path).
+check('verify: levels + seal + staleness + registry-routed dispatch', () => {
+  const v = readFileSync(join(root, 'lib', 'verify.js'), 'utf8');
+  for (const lvl of ['NOT_VERIFIED', 'SYSTEM_VERIFIED', 'RCOS_VERIFIED']) {
+    if (!v.includes("'" + lvl + "'")) throw new Error('lib/verify.js lost level ' + lvl);
+  }
+  for (const must of ['seal', 'sha256', 'manifestSha256', 'registrySha256', 'configHash', 'seedSha256', 'readReceipt', 'TAMPERED', 'STALE']) {
+    if (!v.includes(must)) throw new Error('lib/verify.js lost ' + must);
+  }
+  // No-bypass: the dispatch URL is built from the registry-resolved binding.
+  if (/\/api\/workflows\/[a-z0-9-]+\/run/.test(v)) throw new Error('lib/verify.js hardcodes a workflow name into the dispatch URL — route through the registry binding');
+  if (!v.includes("'/api/workflows/' + encodeURIComponent(workflowName) + '/run'")) {
+    throw new Error('lib/verify.js does not dispatch via the registry-resolved workflowName');
+  }
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/verify'")) throw new Error('lib/index.js lost the /verify route');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'verify.js')], { stdio: 'pipe' });
+});
+
+// 8b. Seed bundle: tracked, zero-credential (bash nodes only — no AI/provider
+// surface), and the registry fixture carries the seeded capability binding.
+check('seed bundle: zero-credential workflow + clearly-marked seeded capability', () => {
+  const seed = readFileSync(join(root, 'fixtures', 'verify-echo-v1.yaml'), 'utf8');
+  if (!/^name:\s*verify-echo-v1/m.test(seed)) throw new Error('seed workflow name wrong');
+  if (!/bash:\s*/.test(seed)) throw new Error('seed has no bash nodes — it must be zero-credential/deterministic');
+  for (const banned of ['prompt:', 'command:', 'tiers:', 'aliases:', 'approval:', 'model:']) {
+    if (seed.includes(banned)) throw new Error('seed must stay zero-credential but contains ' + banned);
+  }
+  const reg = JSON.parse(readFileSync(join(root, 'fixtures', 'capability-registry.example.json'), 'utf8'));
+  const cap = (reg.capabilities || []).find((c) => c.id === 'rcos-verify-echo');
+  if (!cap) throw new Error('registry fixture lost the seeded capability rcos-verify-echo');
+  if (cap.seed !== true || cap.status !== 'seeded') throw new Error('seeded capability must be marked seed:true + status:seeded (never mistakable for production intelligence)');
+  if (cap.workflow !== 'verify-echo-v1') throw new Error('seeded capability workflow binding wrong');
+  if (!cap.verification || !cap.verification.expectOutput) throw new Error('seeded capability lacks its verification expectation');
+});
+
+// 8c. Manifest owns the verification contract; the client surfaces it inside
+// an existing tab (no new tab).
+check('manifest: verification section consistent with code + client has no new tab', () => {
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.verification) throw new Error('manifest lost the verification section');
+  for (const lvl of ['NOT_VERIFIED', 'SYSTEM_VERIFIED', 'RCOS_VERIFIED']) {
+    if (!m.verification.levels[lvl]) throw new Error('manifest verification.levels lost ' + lvl);
+  }
+  if (!m.verification.receiptFile.includes('receipt.json')) throw new Error('manifest verification.receiptFile wrong');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  if (!client.includes('SystemVerification')) throw new Error('client lost the system-verification section');
+  const tabs = [...client.matchAll(/id:\s*'(runs|git|browser|summary|files|workflows|capabilities)'/g)].map((x) => x[1]);
+  const allowed = new Set(['runs', 'git', 'browser', 'summary', 'files', 'workflows', 'capabilities']);
+  for (const t of tabs) if (!allowed.has(t)) throw new Error('client registered an unknown tab: ' + t);
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
