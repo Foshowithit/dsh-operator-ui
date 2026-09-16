@@ -2,9 +2,10 @@
 #
 # A real, useful, zero-credential workflow: measures README.txt in the run
 # workspace and reports the result as OPERATOR-LEGIBLE evidence — labeled
-# lines, not raw tool output. Rule (M0 walkthrough adjudication): a
-# capability is responsible for producing evidence a person can read; the
-# generic UI renders the evidence contract, it never parses tool dialects.
+# lines including the absolute path, not raw tool output. Rule (M0
+# walkthrough adjudication): a capability is responsible for producing
+# evidence a person can read; the generic UI renders the evidence contract,
+# it never parses tool dialects.
 #
 # Lifecycle honesty: shipped as a registry CANDIDATE — it has not passed a
 # promotion gate, so derived routing eligibility reads CONDITIONAL with
@@ -12,13 +13,13 @@
 
 name: example-text-stats-v1
 description: >
-  EXAMPLE text-stats capability: reports Lines / Words / Bytes of
-  README.txt in the run workspace (deterministic, zero-credential).
+  EXAMPLE text-stats capability: reports the path, Lines, Words, and Bytes
+  of README.txt in the run workspace (deterministic, zero-credential).
 
 nodes:
   - id: measure
     bash: >
-      echo "README.txt";
+      echo "Path: $PWD/README.txt";
       echo "Lines: $(wc -l < README.txt)";
       echo "Words: $(wc -w < README.txt)";
       echo "Bytes: $(wc -c < README.txt)"
