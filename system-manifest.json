@@ -71,7 +71,9 @@
     "DSH_OPERATOR_UI_ARCHON": { "winsOver": "archon.baseUrl", "example": "http://127.0.0.1:3090" },
     "DSH_OPERATOR_UI_REGISTRY": { "winsOver": "registry.path", "example": "/path/to/capability-registry.json" },
     "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" },
-    "DSH_OPERATOR_UI_AUTHORITY_PRESET": { "winsOver": "authority.preset", "example": "ASK_BEFORE_ACTION" }
+    "DSH_OPERATOR_UI_AUTHORITY_PRESET": { "winsOver": "authority.preset", "example": "ASK_BEFORE_ACTION" },
+    "DSH_OPERATOR_UI_TEACH_WORKFLOWS": { "winsOver": "teaching.workflowsDir", "example": "/path/to/archon-home/workflows" },
+    "DSH_OPERATOR_UI_TEACH_WORKSPACE": { "winsOver": "teaching.workspaceDir", "example": "/path/to/archon-registered-workspace" }
   },
   "statusRoute": {
     "path": "GET /plugins/operator-ui/status",
@@ -117,6 +119,14 @@
     "authorityConfig": "authority.preset (env DSH_OPERATOR_UI_AUTHORITY_PRESET > file > default ASK_BEFORE_ACTION) — a preset NAME only, never secrets",
     "persistence": "the granted policy {preset, requires, granted, missing, mode, reason, approvedAt} rides the task envelope in operator-ui/tasks.json — no third store, no new persistence",
     "faultIsolation": "every registered surface is wrapped in an error boundary: a bug may kill its card/surface (rendered as a killed-card fallback), never shell.overlay — the boundary contains, it never rethrows"
+  },
+  "teachMode": {
+    "$comment": "M2: capability ACQUISITION. Lifecycle GAP → TEACH → BUILD → EVALUATE → CANDIDATE → PROMOTE → ROUTE. THREE identities stay separate and are never mutated into each other: source_task_id (the task whose objective exposed the gap), teaching_task_id (the learning process), capability_id+version (the reusable intelligence IF learning succeeds).",
+    "hardRule": "successful generation does NOT equal learned capability — the candidate is EXECUTED on the real Archon against a held-out deterministic fixture set, and promotion may only be OFFERED when every case passes; a candidate failing any case is refused honestly ('Not added to Intelligence')",
+    "promotion": "always an EXPLICIT human action (Promote to Intelligence); the promoted registry entry carries permanent provenance (builtBy RCOS, sourceTaskId, teachingTaskId, per-case eval run ids, promotedBy operator, promotedAt, version); duplicate-id promotion is refused",
+    "authority": "the candidate DECLARES its required scopes at BUILD time — a learned capability cannot quietly acquire power; unknown scopes fail closed at promotion exactly as at dispatch",
+    "writes": "the ONLY files teaching ever writes: the candidate workflow YAML under teaching.workflowsDir and per-eval fixture files under teaching.workspaceDir (both operator-configured path references); everything durable about the teaching itself lives in tasks.json — no third store",
+    "honesty": "teaching paths unconfigured → the teach action reports NOT_CONFIGURED instead of pretending; eval evidence (expected vs observed totals per case, run ids) is sealed in the teaching envelope"
   },
   "receipt": {
     "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",

@@ -67,6 +67,9 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 # Environment=DSH_OPERATOR_UI_CHROME=/usr/bin/chromium
 # Operator preset over the authority scope contract (PLAN_ONLY / ASK_BEFORE_ACTION / AUTO_WITHIN_POLICY / FULL_ACCESS):
 # Environment=DSH_OPERATOR_UI_AUTHORITY_PRESET=ASK_BEFORE_ACTION
+# Teach Mode (M2) — where RCOS may write LEARNED-workflow artifacts (empty = teaching reports NOT_CONFIGURED):
+# Environment=DSH_OPERATOR_UI_TEACH_WORKFLOWS=/path/to/archon-home/workflows
+# Environment=DSH_OPERATOR_UI_TEACH_WORKSPACE=/path/to/archon-registered-workspace
 ```
 
 ```sh
