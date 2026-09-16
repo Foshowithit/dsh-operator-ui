@@ -160,7 +160,7 @@ async function think(prompt) {
 const acquiredFamilies = new Set();
 const acquisition = { attempts: 0, successes: 0, model_usage: [] };
 
-async function teachForFamily(family, objective, sampleStage) {
+async function teachForFamily(family, objective, sampleStage, expected) {
   if (acquiredFamilies.has(family)) return { attempted: false };
   acquisition.attempts += 1;
   console.log(`  TEACH[${family}]: composing candidate (metered cognition)...`);
@@ -282,7 +282,7 @@ async function runRcosObjective(obj, staged) {
     }
     const routeMiss = codes.has('no-route') || codes.has('objective-not-satisfied');
     if (pass === 1 && routeMiss) {
-      teachOutcome = await teachForFamily(obj.family, staged.objective, staged.stage);
+      teachOutcome = await teachForFamily(obj.family, staged.objective, staged.stage, staged.expected);
       if (teachOutcome.attempted && teachOutcome.ok) continue; // retry same objective after acquisition
     }
     break;
