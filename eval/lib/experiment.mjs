@@ -48,11 +48,16 @@ export async function runContext({ lane, experimentId } = {}) {
 
 // ------------------------------------------------- 2. clean-lane snapshots
 
-// RCOS clean baseline: the declared seed registry, an EMPTY task store, and
-// nothing else under operator-ui/. Anything else = contaminated start.
+// RCOS clean baseline: the declared seed registry (which may contain
+// declared EXAMPLE capabilities — that is its baseline), an EMPTY task
+// store, and no capability that was ACQUIRED DURING DEVELOPMENT (any
+// provenance-tagged learned entry). Anything else = contaminated start.
 export async function snapshotRcosLane({ dshHome, seedRegistryPath }) {
   const reg = JSON.parse(await readFile(seedRegistryPath, 'utf8'));
-  const caps = (reg.capabilities || []).map((c) => ({ id: c.id, version: c.version || null, status: c.status, seed: c.seed === true }));
+  const caps = (reg.capabilities || []).map((c) => ({
+    id: c.id, version: c.version || null, status: c.status, seed: c.seed === true,
+    devAcquired: !!(c.provenance && c.provenance.builtBy),
+  }));
   const operatorUi = join(dshHome, 'operator-ui');
   let tasksCount = 0;
   let receiptLevel = null;
@@ -68,11 +73,11 @@ export async function snapshotRcosLane({ dshHome, seedRegistryPath }) {
     dshHome,
     registryHash: await sha256File(seedRegistryPath),
     capabilities: caps,
-    seedOnly: caps.every((c) => c.seed === true || c.status === 'candidate'),
+    devAcquiredCount: caps.filter((c) => c.devAcquired).length,
     durableTasks: tasksCount,
     receiptLevel,
   };
-  snapshot.clean = tasksCount === 0;
+  snapshot.clean = tasksCount === 0 && snapshot.devAcquiredCount === 0;
   return snapshot;
 }
 
@@ -92,11 +97,11 @@ export async function snapshotDshLane({ dshHome }) {
 }
 
 // The guardrail (GPT): refuse to run a scored lane on a dirty snapshot.
-export function assertCleanLane(snapshot, { allowNonSeedCandidates = false } = {}) {
+export function assertCleanLane(snapshot) {
   const problems = [];
   if (snapshot.durableTasks !== 0) problems.push('durable task history exists (' + snapshot.durableTasks + ')');
-  if (typeof snapshot.seedOnly === 'boolean' && !snapshot.seedOnly && !allowNonSeedCandidates) {
-    problems.push('registry contains non-seed capabilities (development-acquired intelligence)');
+  if (typeof snapshot.devAcquiredCount === 'number' && snapshot.devAcquiredCount > 0) {
+    problems.push('registry contains development-acquired capabilities (' + snapshot.devAcquiredCount + ')');
   }
   if (problems.length) throw new Error('lane snapshot is not clean: ' + problems.join('; '));
   return true;
