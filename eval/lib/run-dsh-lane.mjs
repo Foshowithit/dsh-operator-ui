@@ -72,6 +72,23 @@ for (const k of ['dsh_version', 'model', 'profile', 'hardware', 'profile_config_
 
 const ctx = await runContext({ lane: 'dsh', experimentId: argOf('--exp-id') });
 
+// Fresh clean lane home per run, prepared BEFORE observation (the parity
+// check reads the lane's resolved settings — it must see the home the run
+// will actually use).
+await rm(LANE_HOME, { recursive: true, force: true });
+await mkdir(LANE_HOME, { recursive: true });
+await writeFile(join(LANE_HOME, 'settings.yaml'),
+  await readFile(join(root, 'eval', 'lib', 'dsh-lane-settings.template.yaml'), 'utf8'), 'utf8');
+// Fresh clean lane home per run (snapshot BEFORE, per GPT requirement 2).
+// Fresh clean lane home per run (snapshot BEFORE, per GPT requirement 2).
+await rm(LANE_HOME, { recursive: true, force: true });
+await mkdir(LANE_HOME, { recursive: true });
+// The lane home needs its provider/model settings or DSH falls back to its
+// default route (first shakedown caught this: instant MISSING_CREDENTIAL).
+await writeFile(join(LANE_HOME, 'settings.yaml'),
+  await readFile(join(root, 'eval', 'lib', 'dsh-lane-settings.template.yaml'), 'utf8'), 'utf8');
+const snap = await snapshotDshLane({ dshHome: LANE_HOME });
+
 // Parity preflight (GPT), in the prescribed order: runContext →
 // assertBaselineFresh → INDEPENDENTLY OBSERVED live state → assertParity.
 // The live side is measured from the machine + the lane's resolved config
@@ -98,14 +115,6 @@ await mkdir(recordsDir, { recursive: true });
 const recordsPath = join(recordsDir, `shakedown-dsh.jsonl`);
 const defects = [];
 
-// Fresh clean lane home per run (snapshot BEFORE, per GPT requirement 2).
-await rm(LANE_HOME, { recursive: true, force: true });
-await mkdir(LANE_HOME, { recursive: true });
-// The lane home needs its provider/model settings or DSH falls back to its
-// default route (first shakedown caught this: instant MISSING_CREDENTIAL).
-await writeFile(join(LANE_HOME, 'settings.yaml'),
-  await readFile(join(root, 'eval', 'lib', 'dsh-lane-settings.template.yaml'), 'utf8'), 'utf8');
-const snap = await snapshotDshLane({ dshHome: LANE_HOME });
 
 async function workspaceHash(dir) {
   const parts = [];

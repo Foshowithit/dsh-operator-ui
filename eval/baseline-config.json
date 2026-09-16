@@ -1,7 +1,7 @@
 {
   "protocol": "eval-protocol-v1",
-  "frozen_at": "2026-09-16T19:01:12.781Z",
-  "frozen_at_commit": "02c422cc5b5861c8ea1a5ca377add899ab334387",
+  "frozen_at": "2026-09-16T19:28:51.433Z",
+  "frozen_at_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
   "model_lane": {
     "endpoint": "https://opencode.ai/zen/go/v1",
     "model_id": "muse-spark-1.3-contributor",
@@ -12,9 +12,9 @@
   },
   "dsh_version": "0.1.0-rc.6",
   "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
-  "rcos_commit": "02c422cc5b5861c8ea1a5ca377add899ab334387",
+  "rcos_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
   "model": {
-    "provider": "zai-eval",
+    "provider": "muse-eval",
     "id": "provider:",
     "params": "unrecorded"
   },
