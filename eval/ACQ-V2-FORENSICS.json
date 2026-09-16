@@ -1,0 +1,125 @@
+[
+  {
+    "family": "F04-line-transform",
+    "wfName": "clean-list-sort-v0-1-0",
+    "runStatus": "completed",
+    "class": "artifact-correct-was-misgraded",
+    "grader": "sorted.txt correct (in workspace)"
+  },
+  {
+    "family": "F04-line-transform",
+    "wfName": "cleanup-list-txt-v0-1-0",
+    "runStatus": "completed",
+    "class": "artifact-correct-was-misgraded",
+    "grader": "sorted.txt correct (in workspace)"
+  },
+  {
+    "family": "F01-text-stats-workspace",
+    "wfName": "count-txt-totals-v0-1-0",
+    "runStatus": "completed",
+    "class": "wrong-output",
+    "grader": "no TOTAL line"
+  },
+  {
+    "family": "F01-text-stats-workspace",
+    "wfName": "count-txt-lines-words-bytes-v0-1-0",
+    "runStatus": "completed",
+    "class": "wrong-output",
+    "grader": "no TOTAL line"
+  },
+  {
+    "family": "F08-format-conversion",
+    "wfName": "stock-csv-to-json-v0-1-0",
+    "runStatus": "completed",
+    "class": "artifact-correct-was-misgraded",
+    "grader": "stock.json correct (in workspace)"
+  },
+  {
+    "family": "F08-format-conversion",
+    "wfName": "convert-stock-csv-to-json-v0-1-0",
+    "runStatus": "completed",
+    "class": "artifact-correct-was-misgraded",
+    "grader": "stock.json correct (in workspace)"
+  },
+  {
+    "family": "F02-repository-inspection",
+    "yaml": "repository-inventory-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "repository-inventory-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT js=       1\nRESULT md=       4\nRESULT json=       1\nRESULT total=       6\nRESULT todo=       1\nRESULT js=       1\nRESULT md=       4\nRESULT jso"
+  },
+  {
+    "family": "F02-repository-inspection",
+    "yaml": "inventory-repository-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "inventory-repository-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT todo=1\nRESULT js=1\nRESULT md=4\nRESULT json=1\nRESULT total=7\nRESULT summary js=1 md=4 json=1 total=7 todo=1\nlearned-inventory-repository-v0-1-0:"
+  },
+  {
+    "family": "F05-validation-gate",
+    "yaml": "validate-release-manifest-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "validate-release-manifest-v0-1-0",
+    "runStatus": "failed",
+    "class": "needs-grader",
+    "evidence": ""
+  },
+  {
+    "family": "F06-release-prep",
+    "yaml": "prepare-release-evidence-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "prepare-release-evidence-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "--- version.txt ---\n1.9.5\nRESULT version=1.9.5\nRESULT version-file=version.txt\n--- CHANGELOG.md ---\n# Changelog\n\n## Unreleased\n- nova: removed relay\n-"
+  },
+  {
+    "family": "F06-release-prep",
+    "yaml": "release-evidence-collector-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "release-evidence-collector-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT version=1.9.5\nRESULT version_source=version.txt\nRESULT changelog_source=CHANGELOG.md\nRESULT unreleased_count=3\nRESULT unreleased_entry: - nova:"
+  },
+  {
+    "family": "F07-duplicate-report",
+    "yaml": "duplicate-emails-report-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "duplicate-emails-report-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT email=quartz@test.invalid count=3\nRESULT email=relay@test.invalid count=2\nlearned-duplicate-emails-report-v0-1-0:done"
+  },
+  {
+    "family": "F07-duplicate-report",
+    "yaml": "email-duplicate-reporter-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "email-duplicate-reporter-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT quartz@test.invalid count=3\nRESULT relay@test.invalid count=2\nlearned-email-duplicate-reporter-v0-1-0:done"
+  },
+  {
+    "family": "F10-dependency-audit",
+    "yaml": "compare-package-dependencies-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "compare-package-dependencies-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "RESULT package.json_present=true\nRESULT package-lock.json_present=true\nRESULT total_dependencies=3\nRESULT mismatch_count=0\nRESULT status=all_match\nRES"
+  },
+  {
+    "family": "F10-dependency-audit",
+    "yaml": "package-dependency-lock-compare-v0-1-0.yaml",
+    "enc": 1,
+    "wfName": "package-dependency-lock-compare-v0-1-0",
+    "runStatus": "completed",
+    "class": "needs-grader",
+    "evidence": "Inspecting workspace files\n-rw-r--r--@ 1 adam26  wheel   98 Sep 16 16:13 package-lock.json\n-rw-r--r--@ 1 adam26  wheel  104 Sep 16 16:13 package.json\n"
+  }
+]
