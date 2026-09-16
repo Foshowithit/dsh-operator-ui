@@ -1,0 +1,24 @@
+name: M1 reconcile verification
+
+on:
+  push:
+    branches: [m1-truth-reconcile]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check lib/task-truth.js
+          node --check lib/tasks.js
+          node --check lib/goal.js
+      - name: Focused M1 tests
+        run: node --test test/*.test.mjs
+      - name: Existing contract check
+        run: node scripts/check.js
