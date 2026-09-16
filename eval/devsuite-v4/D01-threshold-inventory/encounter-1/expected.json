@@ -1,0 +1,19 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "bearing",
+      "qty": 8
+    },
+    {
+      "item": "collar",
+      "qty": 5
+    },
+    {
+      "item": "keyway",
+      "qty": 7
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

@@ -31,7 +31,7 @@ const argOf = (name, dflt) => {
 };
 const OUT = join(root, argOf('--out', 'eval/devsuite'));
 const SEED = Number(argOf('--seed', 31415926));
-const GENERATOR_VERSION = '1.0.0';
+const GENERATOR_VERSION = '2.0.0'; // v2: four encounters per family (GPT chain: ADMIT -> DIAGNOSTIC -> REGRESSION -> SACRED TERMINAL)
 
 // Deterministic PRNG (mulberry32) — same construction as the corpus
 // generator, independent seed and independent content.
@@ -54,8 +54,8 @@ const D01_ITEMS = ['anvil', 'bearing', 'collar', 'damper', 'gasket', 'insert', '
 function d01ThresholdInventory(r, encounter) {
   const files = {};
   const expect = { family: 'D01', below: [] };
-  const threshold = encounter === 1 ? 10 : encounter === 2 ? 25 : 18;
-  const fname = encounter === 2 ? 'supply.csv' : 'inventory.csv';
+  const threshold = [0, 10, 25, 18, 30][encounter];
+  const fname = encounter === 2 ? 'supply.csv' : encounter === 4 ? 'stocktake.csv' : 'inventory.csv';
   const cols = encounter === 2 ? 'qty,item,bin' : 'item,qty';
   const rows = [];
   const n = int(r, 8, 12);
@@ -67,12 +67,12 @@ function d01ThresholdInventory(r, encounter) {
   }
   expect.below.sort((a, b) => a.item.localeCompare(b.item));
   const bin = () => 'B' + int(r, 1, 9) + int(r, 0, 9);
-  let body = encounter === 3
+  let body = (encounter === 3 || encounter === 4)
     ? '# weekly stock export\n\n' + cols + '\n'
     : cols + '\n';
   for (const [item, qty] of rows) {
     if (encounter === 2) body += `${qty},${item},${bin()}\n`;
-    else if (encounter === 3) {
+    else if (encounter === 3 || encounter === 4) {
       if (r() < 0.3) body += `# cycle ${int(r, 1, 52)} verified\n`;
       body += `"${item}",${qty}\n`;
     } else body += `${item},${qty}\n`;
@@ -81,12 +81,18 @@ function d01ThresholdInventory(r, encounter) {
     body += `\n# end of export\n`;
     files['readme-first.txt'] = 'This folder also contains stock notes that are NOT part of the inventory export.\n';
   }
+  if (encounter === 4) {
+    body += `\n# audited by ${pick(r, ['jreactor', 'mvolk', 'dshears'])}\n`;
+    files['recount.csv'] = 'item,qty\n' + rows.slice(0, 3).map(([i2, q2]) => `${i2},${q2 + 100}\n`).join('');
+  }
   files[fname] = body;
   const varyNote = encounter === 2
     ? ' The quantity column comes first in this export.'
     : encounter === 3
       ? ' Fields may be quoted; comment lines starting with # and blank lines must be ignored; ignore every other file in the workspace.'
-      : '';
+      : encounter === 4
+        ? ' Fields may be quoted; comment lines starting with # and blank lines must be ignored; ignore every other file in the workspace.'
+        : '';
   return {
     workspace: files,
     objective: `From ${fname}, list every item whose quantity is below ${threshold}, sorted alphabetically by item name, one per line, as RESULT item=<name> qty=<n>.${varyNote}`,
@@ -100,14 +106,14 @@ const D02_KEYS = ['batch_size', 'cache_ttl', 'endpoint', 'flush_ms', 'grpc_port'
 const D02_VALUES = ['128', '300', '60', '900', 'us-east-1', 'info', '4', '0.25', 'on', '512m', 'https://relay.internal', 'v2', 'jsonl', 'strict'];
 function d02ConfigDiff(r, encounter) {
   const files = {};
-  const keys = [...D02_KEYS].sort(() => r() - 0.5).slice(0, encounter === 1 ? 8 : 11);
+  const keys = [...D02_KEYS].sort(() => r() - 0.5).slice(0, encounter === 1 ? 8 : encounter === 4 ? 13 : 11);
   const a = {}, b = {};
   for (const k of keys) {
     a[k] = pick(r, D02_VALUES);
     b[k] = r() < 0.4 ? pick(r, D02_VALUES) : a[k];
   }
-  const fa = encounter === 2 ? 'stage-a.env' : 'release-a.env';
-  const fb = encounter === 2 ? 'stage-b.env' : 'release-b.env';
+  const fa = encounter === 2 ? 'stage-a.env' : encounter === 4 ? 'prod-a.env' : 'release-a.env';
+  const fb = encounter === 2 ? 'stage-b.env' : encounter === 4 ? 'prod-b.env' : 'release-b.env';
   const render = (m) => Object.entries(m).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
   files[fa] = render(a);
   files[fb] = render(b);
@@ -124,10 +130,29 @@ function d02ConfigDiff(r, encounter) {
     files[fb] = noiseB + render(b) + '\n' + Object.entries(soloB).map(([k, v]) => `${k} = ${v}`).join('\n') + '\n';
     files['deploy-notes.txt'] = 'Both env files are structurally valid; only shared keys with differing values matter for the release report.\n';
   }
+  if (encounter === 4) {
+    // fresh combination: comments, solo keys both sides, AND values
+    // containing '=' characters (env values may hold URLs with queries).
+    // Mutate `a` BEFORE the changed-keys computation below so expected
+    // matches the workspace (checker-caused fix, v2.0.0).
+    const aes = Object.entries(a);
+    aes[0][1] = aes[0][1] + '?env=' + encounter;
+    aes[1][1] = 'bearer://' + aes[1][1];
+    Object.assign(a, Object.fromEntries(aes));
+    const noiseA = '# production snapshot\n\n';
+    const noiseB = '# production candidate\n\n';
+    const soloA = { trace_sampling: 'on' };
+    const soloB = { shadow_route: 'off' };
+    files[fa] = noiseA + render(a) + Object.entries(soloA).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
+    files[fb] = noiseB + render(b) + '\n' + Object.entries(soloB).map(([k, v]) => `${k}=${v}`).join('\n') + '\n';
+    // expected must describe the WRITTEN files — recompute after mutation
+    expect.changed = [];
+    for (const k of keys) if (a[k] !== b[k]) expect.changed.push({ key: k, old: a[k], new: b[k] });
+  }
   return {
     workspace: files,
-    objective: encounter === 3
-      ? `Compare ${fa} and ${fb}. Report every key present in BOTH files whose value differs, in the order the key appears in ${fa}, one per line, as RESULT key=<key> old=<value-a> new=<value-b>. Comment lines, blank lines, and keys present in only one file must be ignored.`
+    objective: (encounter === 3 || encounter === 4)
+      ? `Compare ${fa} and ${fb}. Report every key present in BOTH files whose value differs, in the order the key appears in ${fa}, one per line, as RESULT key=<key> old=<value-a> new=<value-b>. Comment lines, blank lines, and keys present in only one file must be ignored.${encounter === 4 ? ' Values may contain = characters; report them verbatim.' : ''}`
       : `Compare ${fa} and ${fb}. Report every key whose value differs between the two files, in the order the key appears in ${fa}, one per line, as RESULT key=<key> old=<value-a> new=<value-b>.`,
     expected: expect,
   };
@@ -170,10 +195,22 @@ function d03DomainTally(r, encounter) {
     const host = d;
     counts.set(host, (counts.get(host) || 0) + 2);
   }
-  files['bookmarks.txt'] = lines.join('\n') + '\n';
+  if (encounter === 4) {
+    // fresh combination: uppercase hosts with punctuation AND subdomain
+    // folding, interleaved with comment noise, higher cardinality
+    for (let i2 = 0; i2 < 4; i2++) {
+      const d2 = pick(r, D03_DOMAINS) + '.' + pick(r, D03_TLDS);
+      const sub2 = pick(r, ['www.', 'cdn.', 'mail.']);
+      lines.splice(int(r, 0, lines.length), 0, `HTTPS://${sub2}${d2.toUpperCase()}/Ref,`);
+      const host2 = d2;
+      counts.set(host2, (counts.get(host2) || 0) + 1);
+    }
+    lines.splice(int(r, 0, lines.length), 0, '# imported from old browser');
+  }
+  files[encounter === 4 ? 'links.txt' : 'bookmarks.txt'] = lines.join('\n') + '\n';
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const expect = { family: 'D03', tally: sorted.map(([domain, count]) => ({ domain, count })) };
-  const caseNote = encounter === 3
+  const caseNote = (encounter === 3 || encounter === 4)
     ? ' Domains are case-insensitive and trailing punctuation is not part of a URL; "www." and "cdn." prefixes are part of nothing — always tally the top-level domain.'
     : '';
   return {
@@ -198,20 +235,22 @@ function d04ShiftHandoff(r, encounter) {
     const dur = int(r, 35, 400);
     const endTotal = startH * 60 + startM + dur;
     const endH = Math.floor(endTotal / 60), endM = endTotal % 60;
-    const secs = encounter === 3 && r() < 0.5 ? ':' + pad(int(r, 0, 59)) : '';
-    const line = encounter === 3 && r() < 0.4
+    const secs = (encounter === 3 || encounter === 4) && r() < 0.5 ? ':' + pad(int(r, 0, 59)) : '';
+    const line = (encounter === 3 || encounter === 4) && r() < 0.4
       ? `SHIFT ${name.toUpperCase()}  START ${pad(startH)}:${pad(startM)}  END ${pad(endH)}:${pad(endM)}${secs}`
       : `SHIFT ${name} START ${pad(startH)}:${pad(startM)} END ${pad(endH)}:${pad(endM)}${secs}`;
     entries.push({ line, name, minutes: dur });
     expect.shifts.push({ name: name.toLowerCase(), minutes: dur });
   }
-  files['handoff.txt'] = (encounter === 3 ? '# floor handoff — times may include seconds; ignore them\n\n' : '') + entries.map((e) => e.line).join('\n') + '\n';
-  if (encounter === 3) files['handoff.txt'] += '\nnote: swing coverage handled offline\n';
+  const hfile = encounter === 4 ? 'shifts.txt' : 'handoff.txt';
+  files[hfile] = (encounter === 3 || encounter === 4 ? '# floor handoff — times may include seconds; ignore them\n\n' : '') + entries.map((e) => e.line).join('\n') + '\n';
+  if (encounter === 3) files[hfile] += '\nnote: swing coverage handled offline\n';
+  if (encounter === 4) files[hfile] += '\nnote: holiday rota appended to the board\n';
   // file order for the report = the order entries were emitted
   return {
     workspace: files,
-    objective: encounter === 3
-      ? `From handoff.txt, report each shift's duration in minutes in file order, one per line, as RESULT shift=<name> minutes=<m>. Names are lowercase in the report; when a time includes seconds, ignore them.`
+    objective: (encounter === 3 || encounter === 4)
+      ? `From ${encounter === 4 ? 'shifts.txt' : 'handoff.txt'}, report each shift's duration in minutes in file order, one per line, as RESULT shift=<name> minutes=<m>. Names are lowercase in the report; when a time includes seconds, ignore them.`
       : `From handoff.txt, report each shift's duration in minutes in file order, one per line, as RESULT shift=<name> minutes=<m>.`,
     expected: expect,
   };
@@ -224,14 +263,14 @@ const FAMILIES = [
   { code: 'D03', name: 'D03-domain-tally', gen: d03DomainTally },
   { code: 'D04', name: 'D04-shift-handoff', gen: d04ShiftHandoff },
 ];
-const ROLES = { 1: 'acquisition', 2: 'reuse-variation', 3: 'perturbation' };
+const ROLES = { 1: 'admission', 2: 'diagnostic-revision', 3: 'regression', 4: 'terminal-promotion' };
 
 await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 const r = prng(SEED);
 const objectives = [];
 for (const fam of FAMILIES) {
-  for (let enc = 1; enc <= 3; enc++) {
+  for (let enc = 1; enc <= 4; enc++) {
     const { workspace, objective, expected } = fam.gen(r, enc);
     const dir = join(OUT, fam.name, 'encounter-' + enc);
     await mkdir(join(dir, 'workspace'), { recursive: true });
@@ -267,7 +306,7 @@ const stream = [
   ...objectives.filter((o) => o.encounter === 3).map((o) => o.id),
 ];
 const manifest = {
-  protocol: 'devsuite-m3-v1',
+  protocol: 'devsuite-m3-v2',
   seed: SEED,
   generatorVersion: GENERATOR_VERSION,
   generatedAt: new Date().toISOString(),

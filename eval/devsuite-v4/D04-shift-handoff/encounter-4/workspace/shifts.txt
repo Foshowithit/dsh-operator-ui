@@ -1,0 +1,10 @@
+# floor handoff — times may include seconds; ignore them
+
+SHIFT hana START 18:30 END 23:54:01
+SHIFT ANNE  START 13:15  END 16:48:44
+SHIFT boris START 13:45 END 16:56
+SHIFT FARID  START 09:00  END 15:31
+SHIFT cleo START 16:15 END 19:54:26
+SHIFT GUS  START 05:45  END 07:17:23
+
+note: holiday rota appended to the board

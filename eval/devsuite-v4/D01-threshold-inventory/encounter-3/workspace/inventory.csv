@@ -1,0 +1,18 @@
+# weekly stock export
+
+item,qty
+# cycle 41 verified
+"spacer",25
+"liner",14
+"nut",39
+"plate",16
+"washer",14
+"insert",35
+"mount",34
+"bearing",17
+# cycle 48 verified
+"anvil",27
+"gasket",25
+"retainer",23
+
+# end of export

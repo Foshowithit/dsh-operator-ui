@@ -1,0 +1,35 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "damper",
+      "qty": 9
+    },
+    {
+      "item": "insert",
+      "qty": 12
+    },
+    {
+      "item": "liner",
+      "qty": 14
+    },
+    {
+      "item": "mount",
+      "qty": 21
+    },
+    {
+      "item": "nut",
+      "qty": 5
+    },
+    {
+      "item": "o-ring",
+      "qty": 10
+    },
+    {
+      "item": "spacer",
+      "qty": 4
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}
