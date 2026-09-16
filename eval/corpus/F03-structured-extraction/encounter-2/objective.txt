@@ -1,0 +1,1 @@
+Extract every host and port pair from config.txt and report them as host=port, one per line, in the order they appear.

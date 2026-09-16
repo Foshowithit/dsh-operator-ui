@@ -1,0 +1,11 @@
+host: tango-6.example.test
+port: 8922
+
+host: xenon-4.example.test
+port: 5931
+
+host: relay-6.example.test
+port: 3244
+
+host: willow-9.example.test
+port: 8281

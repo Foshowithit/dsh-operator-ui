@@ -1,0 +1,1 @@
+From app.log, report the number of INFO, WARN, and ERROR lines (exactly those three counts).

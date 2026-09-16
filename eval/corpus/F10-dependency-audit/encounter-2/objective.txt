@@ -1,0 +1,1 @@
+Compare package.json dependencies against package-lock.json (the "locked" object) and report every dependency whose locked version does not match the declared version.

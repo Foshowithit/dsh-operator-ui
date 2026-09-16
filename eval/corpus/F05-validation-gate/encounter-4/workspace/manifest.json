@@ -1,0 +1,7 @@
+{
+  "name": "pkg-alpha",
+  "files": [
+    "a.txt",
+    "b.txt"
+  ]
+}

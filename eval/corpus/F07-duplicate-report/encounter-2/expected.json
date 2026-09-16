@@ -1,0 +1,17 @@
+{
+  "family": "F07",
+  "duplicates": [
+    {
+      "email": "unity@test.invalid",
+      "count": 4
+    },
+    {
+      "email": "orbit@test.invalid",
+      "count": 2
+    },
+    {
+      "email": "relay@test.invalid",
+      "count": 2
+    }
+  ]
+}
