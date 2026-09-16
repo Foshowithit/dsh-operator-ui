@@ -1,0 +1,19 @@
+# DSH lane settings for the eval lane home (NO SECRETS — apiKeyEnv names an
+# env var the runner injects at spawn time from the local credential store).
+# The shakedown/scored runner copies this to $DSH_HOME/settings.yaml after
+# recreating the clean lane home.
+llm-pi-ai:
+  providers:
+    zai-eval:
+      apiKeyEnv: ZAI_EVAL_KEY
+      api: anthropic-messages
+      baseURL: https://api.z.ai/api/anthropic
+      defaultInput:
+        - text
+      models:
+        - id: glm-5.3
+agent-default-model:
+  provider: zai-eval
+  model: glm-5.3
+agent-loop:
+  maxParallelToolCalls: 1

@@ -1,7 +1,7 @@
 {
   "protocol": "eval-protocol-v1",
-  "frozen_at": "2026-09-16T17:42:06.850Z",
-  "frozen_at_commit": "3076699fc0fcc36c54067f3e39098fa3bb006971",
+  "frozen_at": "2026-09-16T18:03:44.276Z",
+  "frozen_at_commit": "1e61d860d49f91308847de9cb89a2c58b021958c",
   "model_lane": {
     "endpoint": "https://api.z.ai/api/anthropic",
     "model_id": "glm-5.3",
@@ -11,9 +11,9 @@
   },
   "dsh_version": "0.1.0-rc.6",
   "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
-  "rcos_commit": "3076699fc0fcc36c54067f3e39098fa3bb006971",
+  "rcos_commit": "1e61d860d49f91308847de9cb89a2c58b021958c",
   "model": {
-    "provider": "opencode-go-2",
+    "provider": "zai-eval",
     "id": "provider:",
     "params": "unrecorded"
   },

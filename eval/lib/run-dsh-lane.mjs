@@ -94,6 +94,10 @@ const defects = [];
 // Fresh clean lane home per run (snapshot BEFORE, per GPT requirement 2).
 await rm(LANE_HOME, { recursive: true, force: true });
 await mkdir(LANE_HOME, { recursive: true });
+// The lane home needs its provider/model settings or DSH falls back to its
+// default route (first shakedown caught this: instant MISSING_CREDENTIAL).
+await writeFile(join(LANE_HOME, 'settings.yaml'),
+  await readFile(join(root, 'eval', 'lib', 'dsh-lane-settings.template.yaml'), 'utf8'), 'utf8');
 const snap = await snapshotDshLane({ dshHome: LANE_HOME });
 
 async function workspaceHash(dir) {

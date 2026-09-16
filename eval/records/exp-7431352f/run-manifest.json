@@ -1,0 +1,67 @@
+{
+  "experiment_id": "exp-7431352f",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:d1ed5a0f31d5551e3ca8352e05511b2a078372bfba6a443f9b6f9b445633c529",
+  "system_build_sha": "1e61d860d49f91308847de9cb89a2c58b021958c",
+  "lane": "dsh",
+  "started_at": "2026-09-16T18:05:12.849Z",
+  "kind": "shakedown",
+  "lane_snapshot": {
+    "dshHome": "/tmp/opui-shakedown-dsh",
+    "entries": [
+      "settings.yaml"
+    ],
+    "configHash": "sha256:1de14960175ec0946313bb21b16376508746afc8306f650a8cf736378496b8f9",
+    "clean": true
+  },
+  "baseline": {
+    "protocol": "eval-protocol-v1",
+    "frozen_at": "2026-09-16T18:03:44.276Z",
+    "frozen_at_commit": "1e61d860d49f91308847de9cb89a2c58b021958c",
+    "model_lane": {
+      "endpoint": "https://api.z.ai/api/anthropic",
+      "model_id": "glm-5.3",
+      "sampling": "provider defaults (DSH agent-loop defaults; no temperature overrides)",
+      "credential_source": "zcode-zai-coding-plan",
+      "authorization": "owner \"continue\" on the laid-out blocker = shakedown-scale authorization; scored run re-confirms with GPT + owner"
+    },
+    "dsh_version": "0.1.0-rc.6",
+    "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
+    "rcos_commit": "1e61d860d49f91308847de9cb89a2c58b021958c",
+    "model": {
+      "provider": "zai-eval",
+      "id": "provider:",
+      "params": "unrecorded"
+    },
+    "profile": "headless",
+    "profile_config_hash": "sha256:a0a0e9f380872097cb7f8b7356f36433a2afeb8de5044a9e63d4ed47b4bee9f5",
+    "hardware": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "cpus": 14,
+      "mem_gb": 48,
+      "hostname_hash": "sha256:8b3795aa2"
+    },
+    "toolInventory": {
+      "bash": true,
+      "fs": "dsh built-ins",
+      "notes": "recorded from the headless profile tool list; RCOS lane exposes the same base tools via its workflow runtime"
+    },
+    "budget": {
+      "wall_ms_per_objective": 300000,
+      "note": "identical max budget both lanes; costs beyond wall time recorded only where actually measurable"
+    },
+    "notes": "Both lanes: same fixture workspace, same objective text, same hardware. RCOS adds its architecture (routing/teach/memory); DSH runs its normal loop. Nothing removed from DSH."
+  },
+  "defects": [],
+  "families": [
+    "F09-log-analysis",
+    "F08-format-conversion"
+  ],
+  "encounters": [
+    1,
+    2
+  ],
+  "written_at": "2026-09-16T18:06:26.021Z"
+}
