@@ -130,4 +130,52 @@ export async function writeRunManifest(recordsDir, ctx, extras) {
   return manifest;
 }
 
+// ------------------------------------------------- parity preflight (GPT)
+//
+// The final parity assertion BEFORE any shakedown/scored lane starts:
+// shared resources must be SAME; architecture differences are recorded,
+// never normalized away. `live` carries what THIS lane actually has.
+// `requiresModel` — only a lane whose system invokes a cognitive model
+// (dsh) is blocked by an unresolved model lane; a lane with NO cognitive
+// model in its architecture (rcos v1 deterministic workflows) records that
+// as an ARCHITECTURAL difference, which GPT explicitly allows.
+export function assertParity(baseline, ctx, live, { requiresModel = false } = {}) {
+  const rows = [];
+  const ml = baseline.model_lane || {};
+  if (requiresModel && !ml.model_id) {
+    throw new Error('PARITY REFUSED: baseline model lane is unresolved — the owner must pick the funded model lane, then re-freeze eval/baseline-config.json once at the scored-build SHA');
+  }
+  const modelVerdict = live.no_cognitive_model
+    ? 'ARCHITECTURAL (recorded): this lane runs no cognitive model in v1'
+    : ml.model_id ? 'SAME' : 'MISMATCH';
+  rows.push({ name: 'model endpoint/provider', baseline: ml.endpoint || null, lane: live.model_endpoint || null, verdict: modelVerdict });
+  rows.push({ name: 'model ID', baseline: ml.model_id || null, lane: live.model_id || null, verdict: modelVerdict });
+  rows.push({ name: 'sampling/reasoning params', baseline: ml.sampling || null, lane: live.model_sampling || null, verdict: modelVerdict });
+  const check = (name, a, b) => {
+    const same = JSON.stringify(a) === JSON.stringify(b);
+    rows.push({ name, baseline: a, lane: b, verdict: same ? 'SAME' : 'MISMATCH' });
+    return same;
+  };
+  check('hardware', baseline.hardware, live.hardware);
+  check('fixture/corpus hash', ctx.corpus_hash, live.corpus_hash);
+  check('wall budget', baseline.budget, live.budget);
+  const tools = live.tool_availability || {};
+  rows.push({ name: 'base tool availability', baseline: 'equivalent', lane: tools.verdict || 'unrecorded', verdict: tools.verdict === 'EQUIVALENT' || tools.explained ? 'EQUIVALENT/EXPLAINED' : 'MISMATCH' });
+  const failed = rows.filter((r) => r.verdict === 'MISMATCH');
+  if (failed.length) {
+    throw new Error('PARITY MISMATCH:\n' + failed.map((f) => `  ${f.name}: baseline=${JSON.stringify(f.baseline)} lane=${JSON.stringify(f.lane)}`).join('\n'));
+  }
+  return rows;
+}
+
+// Baseline freshness (GPT): the final baseline is frozen ONCE at the scored
+// build SHA; HEAD must not move underneath a running experiment.
+export function assertBaselineFresh(baseline, headSha) {
+  if (!baseline.frozen_at_commit) throw new Error('baseline lacks frozen_at_commit — re-freeze with write-baseline.mjs');
+  if (baseline.frozen_at_commit !== headSha) {
+    throw new Error('baseline was frozen at ' + baseline.frozen_at_commit.slice(0, 10) + ' but HEAD is ' + String(headSha).slice(0, 10) + ' — re-freeze the baseline once at the scored build, then do not move HEAD underneath the experiment');
+  }
+  return true;
+}
+
 export const _internals = { sha256Obj };

@@ -47,6 +47,15 @@ const toolInventory = { bash: true, fs: 'dsh built-ins', notes: 'recorded from t
 const baseline = {
   protocol: 'eval-protocol-v1',
   frozen_at: new Date().toISOString(),
+  frozen_at_commit: rcosCommit,
+  // Model lane (GPT parity row 1-3): UNRESOLVED until the owner picks the
+  // funded lane. The runners REFUSE to start while this is null.
+  model_lane: {
+    endpoint: null,
+    model_id: null,
+    sampling: null,
+    resolution: 'owner decision pending — fund a zen key | authorize zai coding-plan key | repair local qwen MLX',
+  },
   dsh_version: dshVersion,
   dsh_bin: DSH_BIN,
   rcos_commit: rcosCommit,
