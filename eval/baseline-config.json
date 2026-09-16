@@ -5,9 +5,10 @@
   "model_lane": {
     "endpoint": "https://api.z.ai/api/anthropic",
     "model_id": "glm-5.3",
-    "sampling": "provider defaults (DSH agent-loop defaults; no temperature overrides)",
+    "sampling": "provider defaults",
     "credential_source": "zcode-zai-coding-plan",
-    "authorization": "owner \"continue\" on the laid-out blocker = shakedown-scale authorization; scored run re-confirms with GPT + owner"
+    "authorization": "owner \"continue\" on the laid-out blocker = shakedown-scale authorization; scored run re-confirms with GPT + owner",
+    "notes": "DSH agent-loop defaults; no temperature overrides"
   },
   "dsh_version": "0.1.0-rc.6",
   "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
