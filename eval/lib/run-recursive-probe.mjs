@@ -34,7 +34,9 @@ const LANE_HOME = argOf('--lane-home', '/tmp/opui-shakedown-rcos');
 const ARCHON_WORKFLOWS = argOf('--workflows-dir', '/tmp/opui-rc0-archon/workflows');
 const ARCHON_WORKSPACE = argOf('--workspace-dir', '/private/tmp/opui-rc0-folder');
 const FAMILY = argOf('--family', 'F03-structured-extraction');
-const MODEL = { endpoint: 'https://api.z.ai/api/anthropic', model: 'glm-5.3' };
+// Acquisition cognition uses the SAME frozen lane as the DSH baseline:
+// muse-spark contributor on the go endpoint (responses API), owner-supplied.
+const MODEL = { endpoint: 'https://opencode.ai/zen/go/v1', model: 'muse-spark-1.3-contributor', session: 'rcos-eval-lane' };
 
 const manifest = JSON.parse(await readFile(join(root, 'eval', 'corpus-manifest.json'), 'utf8'));
 const baseline = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8'));
@@ -44,10 +46,9 @@ await mkdir(recordsDir, { recursive: true });
 const recordsPath = join(recordsDir, 'recursive-probe.jsonl');
 
 // Credential via env injection (never printed/committed).
-function zaiKey() {
+function museKey() {
   try {
-    const cfg = JSON.parse(readFileSync_(join(process.env.HOME, '.zcode', 'v2', 'config.json'), 'utf8'));
-    return cfg.provider['builtin:zai-coding-plan'].options.apiKey;
+    return readFileSync_(join(process.env.HOME, '.chow-secrets', 'opencode-muse-eval.key'), 'utf8').trim();
   } catch { return null; }
 }
 import { readFileSync } from 'node:fs';
@@ -55,21 +56,25 @@ function readFileSync_(p, enc) { return readFileSync(p, enc); }
 
 // Metered cognitive-model call (teaching cost): prompt → text.
 async function think(prompt, maxTokens = 8192) {
-  const key = zaiKey();
+  const key = museKey();
   if (!key) throw new Error('no model credential available for acquisition');
   const started = Date.now();
-  const res = await fetch(MODEL.endpoint + '/v1/messages', {
+  const res = await fetch(MODEL.endpoint + '/responses', {
     method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL.model, max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] }),
+    headers: { 'Authorization': 'Bearer ' + key, 'x-opencode-session': MODEL.session, 'content-type': 'application/json' },
+    body: JSON.stringify({ model: MODEL.model, input: prompt, max_output_tokens: maxTokens }),
   });
   const d = await res.json();
-  const text = (d.content || []).map((c) => c.text || '').join('');
+  // responses API: text lives in output[] message content parts
+  const text = (d.output || [])
+    .filter((o) => o.type === 'message')
+    .flatMap((o) => (o.content || []).map((c) => c.text || ''))
+    .join('');
   return {
     text,
     usage: d.usage || {},
     wall_ms: Date.now() - started,
-    cost_note: 'zai coding-plan quota (no per-token price recorded)',
+    cost_note: 'contributor lane (no per-token price recorded)',
   };
 }
 
@@ -92,7 +97,7 @@ Compose ONE candidate workflow in Archon YAML. STRICT SCHEMA (this exact dialect
 - The workflow must print OPERATOR-LEGIBLE result lines (labeled, not raw dumps) so evidence can be graded: include the word RESULT in each result line, e.g. 'RESULT key=value'
 - Deterministic shell (sh-compatible), no network, no credentials.
 
-Also provide ROUTING VOCABULARY: 5-10 single lowercase words a future objective would likely use when it needs this capability.
+Also provide ROUTING VOCABULARY: copy the distinctive CONTENT WORDS from the objective VERBATIM (exact singular/plural forms as used, including file-format and file-name words like txt/csv/json), plus 2-3 closely related lowercase words.
 
 Reply with EXACTLY two fenced blocks:
 1. a yaml code block containing the workflow
