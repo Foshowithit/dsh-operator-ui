@@ -325,21 +325,30 @@ check('hygiene: no private names or machine paths in tracked files', () => {
   if (hits.length) throw new Error('private references in tracked files: ' + [...new Set(hits)].join(', '));
 });
 
-// 9. Goal Mode (M1-candidate v0): objective → registry routing → Archon
+// 9. Goal Mode (M1): objective → registry routing → Archon
 // execution → evidence verification → verdict. Routing truth stays in the
-// registry; verification is independent of the act of execution.
+// registry; verification is independent of the act of execution. M1 adds the
+// third check (objective-satisfaction), the trust ladder, and Next Action —
+// surfaced by the Result Card inside the existing Work surfaces (no new tab).
 check('goal: registry-routed runner + independent verification + task identity', () => {
   const g = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
-  for (const must of ['SHIP', 'BLOCK', 'FAILED', 'taskId', 'routeObjective', 'considered', 'declared-expectation', 'terminal-status']) {
+  for (const must of ['SHIP', 'BLOCK', 'FAILED', 'taskId', 'routeObjective', 'considered', 'declared-expectation', 'terminal-status', 'objective-satisfaction', 'evaluateObjective', 'trustLadder', 'nextAction', 'objectiveEvaluation']) {
     if (!g.includes(must)) throw new Error('lib/goal.js lost ' + must);
   }
   if (/\/api\/workflows\/[a-z0-9-]+\/run/.test(g)) throw new Error('lib/goal.js hardcodes a workflow dispatch URL — route through the registry');
   if (!g.includes('registry not configured')) throw new Error('goal.js lost the registry-required refusal');
   const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
   if (!host.includes("GIT_ROUTE + '/goal'")) throw new Error('lib/index.js lost the /goal route');
+  const tasks = readFileSync(join(root, 'lib', 'tasks.js'), 'utf8');
+  for (const must of ['objective-evaluation', 'capability-validation', 'sealedBy', 'trust', 'nextAction']) {
+    if (!tasks.includes(must)) throw new Error('lib/tasks.js lost ' + must);
+  }
   const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
   if (!client.includes('GoalComposer')) throw new Error('client lost the goal composer');
   if (!client.includes('What do you want RCOS to do?')) throw new Error('client lost the give-work affordance');
+  for (const must of ['ResultCard', 'deriveLadder', 'deriveNextKind', 'opui-result', 'opui-ladder']) {
+    if (!client.includes(must)) throw new Error('client lost M1 surface ' + must);
+  }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'goal.js')], { stdio: 'pipe' });
 });
 
