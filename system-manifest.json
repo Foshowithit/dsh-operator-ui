@@ -70,7 +70,8 @@
     "$comment": "Every DSH_OPERATOR_UI_* name the code reads, each naming the config key it wins over. check.js asserts code ⊇ manifest ⊇ DEPLOY.md.",
     "DSH_OPERATOR_UI_ARCHON": { "winsOver": "archon.baseUrl", "example": "http://127.0.0.1:3090" },
     "DSH_OPERATOR_UI_REGISTRY": { "winsOver": "registry.path", "example": "/path/to/capability-registry.json" },
-    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" }
+    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" },
+    "DSH_OPERATOR_UI_AUTHORITY_PRESET": { "winsOver": "authority.preset", "example": "ASK_BEFORE_ACTION" }
   },
   "statusRoute": {
     "path": "GET /plugins/operator-ui/status",
@@ -96,6 +97,26 @@
     "policy": "No secrets, ever — not in code, not in screenshots, not in the dev-home. Config carries slot NAMES only (archon.tokenVar names an env var; provider slots name envSlots). Presence checks only, values never read, never reported, never echoed.",
     "owningStores": ["$DSH_HOME/.env (DSH-owned)", "~/.archon/config.yaml (Archon-owned)"],
     "template": "fixtures/providers.example.yaml (slot names + REQUIRED/OPTIONAL markers; zeroCredentialProbe names the seed that must verify with NO credentials)"
+  },
+  "permissions": {
+    "$comment": "Permissions round: presets are operator PERSONALITIES over a lower-level authority contract of scopes (GPT refinement — never four global modes). A capability DECLARES what it requires; the preset pre-authorizes (grants) a subset; the task envelope carries the granted policy it ran (or waits) under. The SAME block renders Preview ('RCOS plans to …') before dispatch and Prove ('RCOS did …' + authority line) after — one vocabulary, two tenses.",
+    "scopes": [
+      "filesystem:read", "filesystem:write", "shell:execute", "network:outbound",
+      "browser:read", "browser:interact", "credentials:use",
+      "git:read", "git:modify", "git:push", "external:draft", "external:submit"
+    ],
+    "reservedScopes": ["physical:observe", "physical:control"],
+    "presets": {
+      "PLAN_ONLY": "pre-authorizes nothing — every execution needs explicit approval",
+      "ASK_BEFORE_ACTION": "pre-authorizes read-only-ish scopes (filesystem:read, git:read, browser:read, network:outbound, external:draft); writes/execution/credentials need approval",
+      "AUTO_WITHIN_POLICY": "pre-authorizes everything except the irreversible/external trio (credentials:use, git:push, external:submit)",
+      "FULL_ACCESS": "pre-authorizes every listed scope — still bound by capability/runtime safety (seeded + retired capabilities never route; registry still required)"
+    },
+    "failClosed": "a capability declaring an UNKNOWN scope can never auto-dispatch; PLAN_ONLY pre-authorizes nothing; a missing grant seals an awaiting-approval envelope BEFORE dispatch — nothing executes on a guess",
+    "approval": "approval resumes the SAME task (approveTaskId → retryOf + approved flag); the host re-checks the stored envelope is genuinely awaiting-approval first and refuses anything else (409); approval is per task, never a global mode flip",
+    "authorityConfig": "authority.preset (env DSH_OPERATOR_UI_AUTHORITY_PRESET > file > default ASK_BEFORE_ACTION) — a preset NAME only, never secrets",
+    "persistence": "the granted policy {preset, requires, granted, missing, mode, reason, approvedAt} rides the task envelope in operator-ui/tasks.json — no third store, no new persistence",
+    "faultIsolation": "every registered surface is wrapped in an error boundary: a bug may kill its card/surface (rendered as a killed-card fallback), never shell.overlay — the boundary contains, it never rethrows"
   },
   "receipt": {
     "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",

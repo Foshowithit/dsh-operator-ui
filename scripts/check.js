@@ -361,5 +361,62 @@ check('goal: registry-routed runner + independent verification + task identity',
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'goal.js')], { stdio: 'pipe' });
 });
 
+// 10. Permissions round: presets over scopes, fail-closed, approval gating
+// dispatch BEFORE any execution, granted policy riding the task envelope (no
+// third store), Preview→Act→Prove rendered on the existing surfaces, and
+// per-surface fault isolation (a card/surface may die; shell.overlay never).
+check('authority: scope contract + approval gate before dispatch + envelope policy + fault isolation', () => {
+  const au = readFileSync(join(root, 'lib', 'authority.js'), 'utf8');
+  for (const must of ['filesystem:read', 'filesystem:write', 'shell:execute', 'credentials:use', 'git:push', 'external:submit',
+    'PLAN_ONLY', 'ASK_BEFORE_ACTION', 'AUTO_WITHIN_POLICY', 'FULL_ACCESS',
+    'grantsFor', 'requiresOf', 'decisionFor', 'humanScope', 'humanPreset']) {
+    if (!au.includes(must)) throw new Error('lib/authority.js lost ' + must);
+  }
+  const cfg = readFileSync(join(root, 'lib', 'config.js'), 'utf8');
+  for (const must of ["authority: { preset: 'ASK_BEFORE_ACTION' }", 'DSH_OPERATOR_UI_AUTHORITY_PRESET']) {
+    if (!cfg.includes(must)) throw new Error('lib/config.js lost authority config: ' + must);
+  }
+  const g = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
+  for (const must of ['requiresOf', 'decisionFor', 'awaiting-approval', 'approvedAt', "act('approve'"]) {
+    if (!g.includes(must)) throw new Error('lib/goal.js lost authority wiring: ' + must);
+  }
+  // The gate must sit BEFORE the dispatch: an approval-required task can
+  // never reach dispatchWorkflow in the same pass.
+  const gateAt = g.indexOf("decision.mode === 'approval'");
+  const dispatchAt = g.indexOf('await dispatchWorkflow(');
+  if (gateAt < 0 || dispatchAt < 0 || gateAt > dispatchAt) throw new Error('authority gate must precede workflow dispatch');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes('approveTaskId')) throw new Error('host lost the approval route');
+  if (!host.includes('not awaiting approval')) throw new Error('approval must refuse tasks that are not awaiting approval');
+  const tasks = readFileSync(join(root, 'lib', 'tasks.js'), 'utf8');
+  for (const must of ['awaiting-approval', 'authority: goal.authority']) {
+    if (!tasks.includes(must)) throw new Error('lib/tasks.js lost envelope policy: ' + must);
+  }
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['Approve plan', 'RCOS plans to', 'approveTaskId', 'HUMAN_SCOPE', 'PRESET_LABEL']) {
+    if (!client.includes(must)) throw new Error('client lost permissions surface: ' + must);
+  }
+  // Client human labels must cover exactly the host scope vocabulary — one
+  // vocabulary, two tenses; a missing label would leak raw scope strings.
+  const hostScopes = [...au.matchAll(/'([a-z]+:(?:read|write|execute|use|outbound|interact|draft|submit))'/g)].map((m) => m[1]);
+  for (const s of new Set(hostScopes)) {
+    if (!client.includes("'" + s + "'")) throw new Error('client HUMAN_SCOPE missing ' + s);
+  }
+  // Fault isolation: every registered surface is wrapped in CardBoundary and
+  // the boundary never rethrows (no window.onerror rethrow / no bare throw).
+  for (const surf of ['GitTab', 'BrowserTab', 'SummaryTab', 'FilesTab', 'WorkflowsTab', 'CapabilitiesTab', 'SystemSurface', 'WorkSurface', 'IntelligenceSurface', 'SurfaceOverlay']) {
+    const re = new RegExp('h\\(CardBoundary,[^)]*h\\(' + surf + '\\b');
+    if (!re.test(client)) throw new Error('surface not fault-isolated: ' + surf);
+  }
+  if (!client.includes('opui-card-dead')) throw new Error('client lost the killed-card fallback');
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.permissions || !Array.isArray(m.permissions.scopes) || !m.permissions.scopes.length) throw new Error('manifest lost the permissions section');
+  for (const s of new Set(hostScopes)) {
+    if (!m.permissions.scopes.includes(s)) throw new Error('manifest permissions.scopes missing ' + s);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'authority.js')], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'client.js')], { stdio: 'pipe' });
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

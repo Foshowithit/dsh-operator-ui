@@ -65,6 +65,8 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 # First-run proof instead of a real registry:
 # Environment=DSH_OPERATOR_UI_REGISTRY=<this-repo>/fixtures/capability-registry.example.json
 # Environment=DSH_OPERATOR_UI_CHROME=/usr/bin/chromium
+# Operator preset over the authority scope contract (PLAN_ONLY / ASK_BEFORE_ACTION / AUTO_WITHIN_POLICY / FULL_ACCESS):
+# Environment=DSH_OPERATOR_UI_AUTHORITY_PRESET=ASK_BEFORE_ACTION
 ```
 
 ```sh
