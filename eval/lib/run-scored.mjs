@@ -168,7 +168,7 @@ async function teachForFamily(family, objective, sampleStage, expected) {
   async function walk(d) {
     for (const e of await readdir(d, { withFileTypes: true })) {
       const p = join(d, e.name);
-      if (e.isDirectory()) await walk(p, base);
+      if (e.isDirectory()) await walk(p);
       else files[e.name] = await readFile(p, 'utf8');
     }
   }
