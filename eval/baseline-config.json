@@ -11,7 +11,7 @@
     "authorization": "owner provided the key directly for the experiment"
   },
   "dsh_version": "0.1.0-rc.6",
-  "dsh_bin": "/Users/adam26/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
+  "dsh_bin": "dsh (env DSH_BIN or PATH at run time; the scored run recorded its resolved path in its run manifest)",
   "rcos_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
   "model": {
     "provider": "muse-eval",

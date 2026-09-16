@@ -26,7 +26,8 @@ const sha256s = (s) => 'sha256:' + createHash('sha256').update(s).digest('hex');
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
-const DSH_BIN = argOf('--dsh-bin', '/Users/adam26/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh');
+const { dshBin, museEvalKey } = await import('./secrets.mjs');
+const DSH_BIN = argOf('--dsh-bin', dshBin());
 const LANE_HOME = argOf('--lane-home', '/tmp/opui-shakedown-dsh');
 const PROFILE = argOf('--profile', 'headless');
 const BUDGET_MS = Number(argOf('--budget-ms', 300000));
@@ -47,7 +48,8 @@ function laneEnv() {
   const src = baseline.model_lane && baseline.model_lane.credential_source;
   if (src === 'vault-opencode-muse-contributor') {
     try {
-      env.MUSE_EVAL_KEY = readFileSync(join(process.env.HOME, '.chow-secrets', 'opencode-muse-eval.key'), 'utf8').trim();
+      const k = museEvalKey();
+      if (k) env.MUSE_EVAL_KEY = k;
     } catch { /* leave unset — the run will fail auth honestly */ }
   } else if (src === 'zcode-zai-coding-plan') {
     try {
