@@ -1,0 +1,58 @@
+{
+  "experiment_id": "exp-14cf8fdd",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:d1ed5a0f31d5551e3ca8352e05511b2a078372bfba6a443f9b6f9b445633c529",
+  "system_build_sha": "a9fad3f22376c517ac43e3db49d20761525a0c45",
+  "lane": "rcos",
+  "started_at": "2026-09-16T18:25:33.216Z",
+  "kind": "recursive-probe",
+  "probe": {
+    "lane_snapshot": {
+      "clean": true,
+      "registryHash": "sha256:f530653566ff274a9dcc06e64547763b9ec3251eea5f543a259558ba2e45e9b4"
+    },
+    "teaching": {
+      "workflow": "extract-host-port-pairs-v0-1-0",
+      "candidate_eval": {
+        "satisfied": false,
+        "detail": "extraction mismatch (want 5 pairs, got 0)"
+      },
+      "yaml_sha256": "sha256:2badc49e12ab670c36e61c997d97511b3e46ad2c76ea2de08670a2f8bd51816d"
+    },
+    "encounters": {
+      "encounter1": {
+        "objective": "Extract every host and port pair from config.txt and report them as host=port, one per line, in the order they appear.",
+        "routed": false,
+        "refusal": [
+          "no-route"
+        ]
+      },
+      "encounter2": {
+        "routed": false,
+        "capability": null,
+        "verdict": "FAILED",
+        "grader": {
+          "satisfied": false,
+          "detail": "extraction mismatch (want 2 pairs, got 0)"
+        }
+      }
+    },
+    "cumulative_cost": {
+      "objective_executions": 1,
+      "acquisitions": 1,
+      "candidate_evaluations": 1,
+      "retries": 0,
+      "model_usage": [
+        {
+          "phase": "acquisition",
+          "model": "glm-5.3",
+          "input_tokens": 324,
+          "output_tokens": 1873,
+          "wall_ms": 21833
+        }
+      ]
+    }
+  },
+  "written_at": "2026-09-16T18:26:03.618Z"
+}
