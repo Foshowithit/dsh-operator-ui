@@ -349,6 +349,15 @@ check('goal: registry-routed runner + independent verification + task identity',
   for (const must of ['ResultCard', 'deriveLadder', 'deriveNextKind', 'opui-result', 'opui-ladder']) {
     if (!client.includes(must)) throw new Error('client lost M1 surface ' + must);
   }
+  // SpineCard references shared helpers — every referenced helper must be
+  // DEFINED in the same module scope (a dropped helper crashes the overlay
+  // tree: React #185 abdication, tab still shows, no visible error).
+  for (const fn of ['extractNodeOutputs', 'deriveEligibility', 'resubmitGoal']) {
+    if (client.includes(fn + '(') || client.includes(fn + ' (')) {
+      const def = new RegExp('(const|function)\\s+' + fn + '\\b');
+      if (!def.test(client)) throw new Error('client calls ' + fn + ' but never defines it');
+    }
+  }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'goal.js')], { stdio: 'pipe' });
 });
 
