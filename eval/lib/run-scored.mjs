@@ -346,7 +346,7 @@ const picked = manifest.stream.slice(0, MAX_OBJECTIVES).map((id) => ({ id, ...ma
 let done = 0;
 for (const obj of picked) {
   if (obj.hidden) throw new Error('scored stream tried a HELD-OUT objective: ' + obj.id);
-  const staged = await stageFixture(obj);
+  const staged = await stageFixture(obj.id);
   const preHash = sha256s(JSON.stringify(obj));
   let out, grader;
   if (LANE === 'rcos') {
