@@ -34,7 +34,8 @@ const LANE = argOf('--lane', 'rcos'); // rcos | dsh
 const RCOS_URL = argOf('--rcos', 'http://127.0.0.1:8413');
 const LANE_HOME = argOf('--lane-home', '/tmp/opui-scored-rcos');
 const DSH_HOME = argOf('--dsh-home', '/tmp/opui-scored-dsh');
-const DSH_BIN = argOf('--dsh-bin', '/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh');
+const { dshBin } = await import('./secrets.mjs');
+const DSH_BIN = argOf('--dsh-bin', dshBin());
 const ARCHON_WORKFLOWS = argOf('--workflows-dir', '/tmp/opui-rc0-archon/workflows');
 const ARCHON_WORKSPACE = argOf('--workspace-dir', '/private/tmp/opui-rc0-folder');
 const ARCHON = argOf('--archon', 'http://127.0.0.1:13091');
@@ -141,9 +142,8 @@ async function grade(expected, stage, evidenceText) {
 }
 
 // ---- acquisition (RCOS lane, metered teaching cost) ----
-const museKey = () => {
-  try { return readFile(join(process.env.HOME, '.internal-secrets', 'opencode-muse-eval.key'), 'utf8').then((s) => s.trim()); } catch { return null; }
-};
+const { museEvalKey } = await import('./secrets.mjs');
+const museKey = () => museEvalKey();
 async function think(prompt) {
   const key = await museKey();
   const started = Date.now();
@@ -300,7 +300,9 @@ async function runDshObjective(staged) {
   let env = { ...process.env, DSH_HOME: DSH_HOME };
   const src = baseline.model_lane && baseline.model_lane.credential_source;
   if (src === 'vault-opencode-muse-contributor') {
-    try { env.MUSE_EVAL_KEY = (await readFile(join(process.env.HOME, '.internal-secrets', 'opencode-muse-eval.key'), 'utf8')).trim(); } catch {}
+    const { museEvalKey } = await import('./secrets.mjs');
+    const k = museEvalKey();
+    if (k) env.MUSE_EVAL_KEY = k;
   }
   let stdout = '', timedOut = false, code = 0;
   try {

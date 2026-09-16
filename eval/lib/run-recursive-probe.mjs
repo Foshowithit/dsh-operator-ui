@@ -46,13 +46,8 @@ await mkdir(recordsDir, { recursive: true });
 const recordsPath = join(recordsDir, 'recursive-probe.jsonl');
 
 // Credential via env injection (never printed/committed).
-function museKey() {
-  try {
-    return readFileSync_(join(process.env.HOME, '.internal-secrets', 'opencode-muse-eval.key'), 'utf8').trim();
-  } catch { return null; }
-}
-import { readFileSync } from 'node:fs';
-function readFileSync_(p, enc) { return readFileSync(p, enc); }
+const { museEvalKey } = await import('./secrets.mjs');
+function museKey() { return museEvalKey(); }
 
 // Metered cognitive-model call (teaching cost): prompt → text.
 async function think(prompt, maxTokens = 8192) {

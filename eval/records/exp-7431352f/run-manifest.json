@@ -27,7 +27,7 @@
       "authorization": "owner \"continue\" on the laid-out blocker = shakedown-scale authorization; scored run re-confirms with GPT + owner"
     },
     "dsh_version": "0.1.0-rc.6",
-    "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
+    "dsh_bin": "dsh (dev-machine npx-cache path redacted for RC0 hygiene)",
     "rcos_commit": "1e61d860d49f91308847de9cb89a2c58b021958c",
     "model": {
       "provider": "zai-eval",

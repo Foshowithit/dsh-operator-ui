@@ -15,7 +15,8 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DSH_BIN = process.argv[2] || '/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh';
+const { dshBin } = await import('./secrets.mjs');
+const DSH_BIN = process.argv[2] || dshBin();
 const sha256s = (s) => 'sha256:' + createHash('sha256').update(s).digest('hex');
 
 const dshVersion = execFileSync(DSH_BIN, ['--version'], { encoding: 'utf8' }).trim();
