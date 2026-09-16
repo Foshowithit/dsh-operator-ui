@@ -1,18 +1,18 @@
 {
   "protocol": "eval-protocol-v1",
-  "frozen_at": "2026-09-16T18:16:46.664Z",
-  "frozen_at_commit": "a9fad3f22376c517ac43e3db49d20761525a0c45",
+  "frozen_at": "2026-09-16T19:01:12.781Z",
+  "frozen_at_commit": "02c422cc5b5861c8ea1a5ca377add899ab334387",
   "model_lane": {
     "endpoint": "https://opencode.ai/zen/go/v1",
     "model_id": "muse-spark-1.3-contributor",
     "sampling": "provider defaults",
-    "notes": "owner-supplied key; responses API; x-opencode-session header set by lane template",
+    "notes": "responses API; x-opencode-session header set by lane template",
     "credential_source": "vault-opencode-muse-contributor",
     "authorization": "owner provided the key directly for the experiment"
   },
   "dsh_version": "0.1.0-rc.6",
   "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",
-  "rcos_commit": "a9fad3f22376c517ac43e3db49d20761525a0c45",
+  "rcos_commit": "02c422cc5b5861c8ea1a5ca377add899ab334387",
   "model": {
     "provider": "zai-eval",
     "id": "provider:",

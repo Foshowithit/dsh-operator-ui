@@ -1,0 +1,68 @@
+{
+  "experiment_id": "exp-096b86f8",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:d1ed5a0f31d5551e3ca8352e05511b2a078372bfba6a443f9b6f9b445633c529",
+  "system_build_sha": "02c422cc5b5861c8ea1a5ca377add899ab334387",
+  "lane": "rcos",
+  "started_at": "2026-09-16T19:06:43.210Z",
+  "kind": "recursive-probe",
+  "probe": {
+    "lane_snapshot": {
+      "clean": true,
+      "registryHash": "sha256:d83d0986d38bc1d18e593b7f26b439b8a6e3ea32f062e46a560dc36acc635340"
+    },
+    "teaching": {
+      "workflow": "extract-host-port-pairs-v0-1-0",
+      "candidate_eval": {
+        "satisfied": true,
+        "detail": "extraction matches"
+      },
+      "yaml_sha256": "sha256:0350d7d35ea7156bcf8511f3d0c06bb24fa586718380ffd9829133992e6283bf",
+      "promoted": true
+    },
+    "encounters": {
+      "encounter1": {
+        "objective": "Extract every host and port pair from config.txt and report them as host=port, one per line, in the order they appear.",
+        "routed": false,
+        "refusal": [
+          "no-route"
+        ]
+      },
+      "retry": {
+        "routed": true,
+        "capability": "extract-host-port-pairs",
+        "verdict": "BLOCK",
+        "grader": {
+          "satisfied": true,
+          "detail": "extraction matches"
+        }
+      },
+      "encounter2": {
+        "routed": true,
+        "capability": "extract-host-port-pairs",
+        "verdict": "BLOCK",
+        "grader": {
+          "satisfied": true,
+          "detail": "extraction matches"
+        }
+      }
+    },
+    "cumulative_cost": {
+      "objective_executions": 2,
+      "acquisitions": 1,
+      "candidate_evaluations": 1,
+      "retries": 1,
+      "model_usage": [
+        {
+          "phase": "acquisition",
+          "model": "muse-spark-1.3-contributor",
+          "input_tokens": 396,
+          "output_tokens": 4699,
+          "wall_ms": 50256
+        }
+      ]
+    }
+  },
+  "written_at": "2026-09-16T19:07:43.128Z"
+}
