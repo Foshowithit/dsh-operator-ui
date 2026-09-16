@@ -1,0 +1,238 @@
+{
+  "experiment_id": "scored-40d21bd3",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:c8d250edf1b12c1fa27b6d39f3355598b12227d179cf40af5dba70ba6e9f824e",
+  "system_build_sha": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
+  "scored": true,
+  "lane": "rcos",
+  "kind": "scored-50",
+  "objectives": 50,
+  "acquisition": {
+    "attempts": 18,
+    "successes": 2,
+    "model_usage": [
+      {
+        "family": "F04",
+        "input_tokens": 324,
+        "output_tokens": 3725,
+        "wall_ms": 27294
+      },
+      {
+        "family": "F02",
+        "input_tokens": 394,
+        "output_tokens": 5625,
+        "wall_ms": 48459
+      },
+      {
+        "family": "F06",
+        "input_tokens": 344,
+        "output_tokens": 4550,
+        "wall_ms": 38109
+      },
+      {
+        "family": "F02",
+        "input_tokens": 409,
+        "output_tokens": 3930,
+        "wall_ms": 29938
+      },
+      {
+        "family": "F10",
+        "input_tokens": 410,
+        "output_tokens": 3361,
+        "wall_ms": 26462
+      },
+      {
+        "family": "F07",
+        "input_tokens": 340,
+        "output_tokens": 6661,
+        "wall_ms": 63860
+      },
+      {
+        "family": "F01",
+        "input_tokens": 408,
+        "output_tokens": 4164,
+        "wall_ms": 43655
+      },
+      {
+        "family": "F06",
+        "input_tokens": 352,
+        "output_tokens": 7656,
+        "wall_ms": 79238
+      },
+      {
+        "family": "F01",
+        "input_tokens": 449,
+        "output_tokens": 5505,
+        "wall_ms": 62253
+      },
+      {
+        "family": "F08",
+        "input_tokens": 325,
+        "output_tokens": 3228,
+        "wall_ms": 28339
+      },
+      {
+        "family": "F10",
+        "input_tokens": 412,
+        "output_tokens": 4506,
+        "wall_ms": 40975
+      },
+      {
+        "family": "F08",
+        "input_tokens": 326,
+        "output_tokens": 4190,
+        "wall_ms": 32982
+      },
+      {
+        "family": "F04",
+        "input_tokens": 336,
+        "output_tokens": 4655,
+        "wall_ms": 46399
+      },
+      {
+        "family": "F03",
+        "input_tokens": 385,
+        "output_tokens": 5135,
+        "wall_ms": 45252
+      },
+      {
+        "family": "F07",
+        "input_tokens": 353,
+        "output_tokens": 2273,
+        "wall_ms": 22243
+      },
+      {
+        "family": "F09",
+        "input_tokens": 479,
+        "output_tokens": 3696,
+        "wall_ms": 33774
+      },
+      {
+        "family": "F05",
+        "input_tokens": 366,
+        "output_tokens": 3395,
+        "wall_ms": 26931
+      },
+      {
+        "family": "F05",
+        "input_tokens": 367,
+        "output_tokens": 5346,
+        "wall_ms": 43990
+      }
+    ],
+    "candidate_evaluations": 18
+  },
+  "run_log": [
+    {
+      "at": "2026-09-16T19:29:39.676Z",
+      "event": "acquisition-refused",
+      "family": "F04",
+      "reason": "candidate failed external evaluation: sorted.txt missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:30:36.671Z",
+      "event": "acquisition-refused",
+      "family": "F02",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F02"
+    },
+    {
+      "at": "2026-09-16T19:31:23.307Z",
+      "event": "acquisition-refused",
+      "family": "F06",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F06"
+    },
+    {
+      "at": "2026-09-16T19:32:01.787Z",
+      "event": "acquisition-refused",
+      "family": "F02",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F02"
+    },
+    {
+      "at": "2026-09-16T19:32:36.772Z",
+      "event": "acquisition-refused",
+      "family": "F10",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F10"
+    },
+    {
+      "at": "2026-09-16T19:33:49.161Z",
+      "event": "acquisition-refused",
+      "family": "F07",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F07"
+    },
+    {
+      "at": "2026-09-16T19:34:41.345Z",
+      "event": "acquisition-refused",
+      "family": "F01",
+      "reason": "candidate failed external evaluation: totals missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:36:09.114Z",
+      "event": "acquisition-refused",
+      "family": "F06",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F06"
+    },
+    {
+      "at": "2026-09-16T19:37:19.892Z",
+      "event": "acquisition-refused",
+      "family": "F01",
+      "reason": "candidate failed external evaluation: totals missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:37:56.763Z",
+      "event": "acquisition-refused",
+      "family": "F08",
+      "reason": "candidate failed external evaluation: stock.json missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:38:46.277Z",
+      "event": "acquisition-refused",
+      "family": "F10",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F10"
+    },
+    {
+      "at": "2026-09-16T19:39:27.782Z",
+      "event": "acquisition-refused",
+      "family": "F08",
+      "reason": "candidate failed external evaluation: stock.json missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:40:22.731Z",
+      "event": "acquisition-refused",
+      "family": "F04",
+      "reason": "candidate failed external evaluation: sorted.txt missing/wrong"
+    },
+    {
+      "at": "2026-09-16T19:41:16.522Z",
+      "event": "promoted",
+      "family": "F03",
+      "workflow": "extract-host-port-pairs-v0-1-0"
+    },
+    {
+      "at": "2026-09-16T19:41:47.832Z",
+      "event": "acquisition-refused",
+      "family": "F07",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F07"
+    },
+    {
+      "at": "2026-09-16T19:42:30.126Z",
+      "event": "promoted",
+      "family": "F09",
+      "workflow": "app-log-level-count-v0-1-0"
+    },
+    {
+      "at": "2026-09-16T19:43:06.666Z",
+      "event": "acquisition-refused",
+      "family": "F05",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F05"
+    },
+    {
+      "at": "2026-09-16T19:43:59.191Z",
+      "event": "acquisition-refused",
+      "family": "F05",
+      "reason": "candidate failed external evaluation: GRADER-LIMITED: no deterministic grader for F05"
+    }
+  ],
+  "baseline_frozen_at_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
+  "written_at": "2026-09-16T19:44:03.083Z"
+}
