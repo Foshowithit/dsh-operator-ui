@@ -11,7 +11,8 @@
 // config hashes, corpus + grader hashes). The runner REFUSES to start if it
 // is absent — parity is a precondition, not a snapshot afterwards.
 
-import { readFile, writeFile, mkdir, rm, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm, readdir } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
@@ -36,6 +37,22 @@ const MARK = { scored: false, notes: 'shakedown — instrumentation proof only, 
 const manifest = JSON.parse(await readFile(join(root, 'eval', 'corpus-manifest.json'), 'utf8'));
 const baselinePath = join(root, 'eval', 'baseline-config.json');
 
+// The model lane credential is injected as an ENV VAR NAME at spawn time —
+// never committed, never printed (protocol: no secrets, ever). The zai
+// coding-plan lane is read from the local ZCode config by agreement with
+// the owner ("continue" = shakedown-scale authorization; the scored run
+// re-confirms the lane before launch).
+function laneEnv() {
+  const env = { ...process.env, DSH_HOME: LANE_HOME };
+  if (baseline.model_lane && baseline.model_lane.credential_source === 'zcode-zai-coding-plan') {
+    try {
+      const cfg = JSON.parse(readFileSync(join(process.env.HOME, '.zcode', 'v2', 'config.json'), 'utf8'));
+      env.ZAI_EVAL_KEY = cfg.provider['builtin:zai-coding-plan'].options.apiKey;
+    } catch { /* leave unset — the run will fail auth honestly */ }
+  }
+  return env;
+}
+
 // Parity precondition: the frozen baseline must exist and be complete.
 let baseline;
 try {
@@ -47,6 +64,9 @@ try {
 for (const k of ['dsh_version', 'model', 'profile', 'hardware', 'profile_config_hash']) {
   if (!baseline[k]) { console.error('REFUSING to run: baseline-config.json missing ' + k); process.exit(1); }
 }
+
+const ctx = await runContext({ lane: 'dsh', experimentId: argOf('--exp-id') });
+
 // Parity preflight (GPT): the DSH lane REQUIRES a resolved model lane, and
 // the baseline must be frozen at exactly the current build (frozen once at
 // the scored-build SHA; HEAD does not move underneath the experiment).
@@ -66,7 +86,6 @@ try {
   process.exit(1);
 }
 
-const ctx = await runContext({ lane: 'dsh', experimentId: argOf('--exp-id') });
 const recordsDir = join(root, 'eval', 'records', ctx.experiment_id);
 await mkdir(recordsDir, { recursive: true });
 const recordsPath = join(recordsDir, `shakedown-dsh.jsonl`);
@@ -113,7 +132,7 @@ for (const obj of picked) {
   try {
     stdout = execFileSync(DSH_BIN, ['--profile', PROFILE, objective], {
       cwd: stage, encoding: 'utf8', timeout: BUDGET_MS,
-      env: { ...process.env, DSH_HOME: LANE_HOME },
+      env: laneEnv(),
       maxBuffer: 8 * 1024 * 1024,
     });
   } catch (e) {
