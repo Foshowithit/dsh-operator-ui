@@ -20,12 +20,12 @@ import { record } from './record.mjs';
 import { runContext, writeRunManifest } from './experiment.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DEV = join(root, 'eval', 'devsuite');
-const WS = '/private/tmp/opui-rc0-folder';          // Archon's real execution workspace
-const WF_DIR = '/tmp/opui-rc0-archon/workflows';    // Archon hot-reload dir
-
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
+const SUITE = argOf('--suite', 'devsuite');
+const DEV = join(root, 'eval', SUITE);
+const WS = '/private/tmp/opui-rc0-folder';          // Archon's real execution workspace
+const WF_DIR = '/tmp/opui-rc0-archon/workflows';    // Archon hot-reload dir
 const FAMILIES = (argOf('--families', 'D01-threshold-inventory,D02-config-diff,D03-domain-tally,D04-shift-handoff')).split(',').map((s) => s.trim()).filter(Boolean);
 
 // Frozen model lane (baseline-config.json) — responses API + session header.
@@ -70,11 +70,14 @@ const stageWorkspace = async (fromDir) => {
 
 const GRADERS = { D01, D02, D03, D04 };
 
+const SINGLE_SHOT = args.includes('--single-shot');
 const acquirer = createAcquirer({
   think, workflowsDir: WF_DIR, executionWorkspace: WS, stageWorkspace,
   evidenceDir: recordsDir,
+  budget: SINGLE_SHOT ? { maxAttempts: 1, maxOutputTokens: 50000, maxWallMs: 600000, maxRevisions: 0 } : undefined,
   log: (l) => console.log('  ', l),
 });
+if (SINGLE_SHOT) console.log('SINGLE-SHOT mode: one candidate per family, no revision — GPT baseline order');
 
 const summary = { families: [], totals: { acquired: 0, refused: 0, model_calls: 0, input_tokens: 0, output_tokens: 0, wall_ms: 0 } };
 

@@ -1,0 +1,14 @@
+# weekly stock export
+
+item,qty
+"bearing",11
+"keyway",24
+"retainer",40
+# cycle 31 verified
+"liner",21
+"anvil",31
+"damper",8
+"washer",24
+"collar",29
+
+# end of export

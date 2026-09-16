@@ -1,0 +1,55 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "acmetools.net",
+      "count": 2
+    },
+    {
+      "domain": "cedarsupply.com",
+      "count": 2
+    },
+    {
+      "domain": "eastfield.net",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.com",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.org",
+      "count": 1
+    },
+    {
+      "domain": "cedarsupply.io",
+      "count": 1
+    },
+    {
+      "domain": "dockside.org",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.org",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.io",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.io",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.org",
+      "count": 1
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}
