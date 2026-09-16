@@ -1,0 +1,27 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "damper",
+      "qty": 13
+    },
+    {
+      "item": "insert",
+      "qty": 5
+    },
+    {
+      "item": "nut",
+      "qty": 12
+    },
+    {
+      "item": "o-ring",
+      "qty": 9
+    },
+    {
+      "item": "retainer",
+      "qty": 5
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

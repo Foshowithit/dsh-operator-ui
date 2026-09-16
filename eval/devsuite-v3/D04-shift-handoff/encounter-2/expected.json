@@ -1,0 +1,23 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "ellie",
+      "minutes": 63
+    },
+    {
+      "name": "hana",
+      "minutes": 66
+    },
+    {
+      "name": "farid",
+      "minutes": 296
+    },
+    {
+      "name": "dev",
+      "minutes": 205
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

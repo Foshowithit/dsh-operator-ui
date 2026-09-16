@@ -1,0 +1,15 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "collar",
+      "qty": 1
+    },
+    {
+      "item": "spacer",
+      "qty": 1
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

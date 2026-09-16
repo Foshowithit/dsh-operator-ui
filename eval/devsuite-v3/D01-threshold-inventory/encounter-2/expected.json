@@ -1,0 +1,19 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "anvil",
+      "qty": 2
+    },
+    {
+      "item": "collar",
+      "qty": 20
+    },
+    {
+      "item": "keyway",
+      "qty": 19
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}
