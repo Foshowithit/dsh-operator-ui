@@ -103,6 +103,36 @@ Three more live runs (each all four families, fresh muse calls):
 defects in the loop's own tooling (credential regex, token truncation)
 were caught by exactly the evidence-first mechanism the loop prescribes.
 
+## The reuse leg (M3.2 final letter): router refuses at the threshold — recorded, not tuned around
+
+The acquired D03 capability was installed into the dev lane's registry
+(recorded operator promotion; repo fixture untouched; `run-acq-v2-reuse.mjs`)
+and the encounter-2/encounter-3 objectives were posted through the REAL goal
+pipeline. Result: the router **ranks the acquired capability first**
+(score 0.48 — matched 13/27 objective terms — "implements workflow
+tally-bookmark-domains-v0-1-0") and then **refuses to route it**:
+
+```
+best candidate tally-bookmark-domains matches too weakly (13 of 27
+objective terms, score 0.48) — refusing to guess; refine the objective
+or add intelligence
+```
+
+The router's frozen refuse-to-guess threshold is 0.5; 0.48 misses it. This
+is the system's designed safeguard behaving correctly on metadata the
+acquisition produced — **the quality of the acquisition's routing
+vocabulary is the reuse bottleneck**, exactly the routing/metadata failure
+class from the v1 decomposition, now measured on the v2 loop.
+
+Not tuned around: raising the score by prompt-tweaks mid-report would be
+the anti-tuning smell the protocol forbids. Candidate remedies for GPT to
+rule on: (a) acquirer revision objective includes routing-vocabulary
+coverage (static check: tags must cover ≥N% of the objective's content
+words, checked pre-execution like the other static checks); (b) the reuse
+encounter objective is legitimately in-family and the router threshold
+stays — the honest terminal is a recorded no-route refusal. Both preserve
+the freeze.
+
 ## Design decision disclosed for ruling
 
 **Held-out failure does NOT trigger revision.** The revise loop consumes
