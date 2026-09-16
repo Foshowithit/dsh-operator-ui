@@ -1,0 +1,10 @@
+{
+  "family": "F06",
+  "version": "1.5.4",
+  "entries": [
+    "- bravo: fixed echo",
+    "- sigma: removed tango",
+    "- nova: added vector",
+    "- relay: added xenon"
+  ]
+}

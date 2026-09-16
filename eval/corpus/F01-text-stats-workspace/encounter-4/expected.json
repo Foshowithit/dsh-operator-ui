@@ -1,0 +1,15 @@
+{
+  "family": "F01",
+  "files": {
+    "README.txt": {
+      "lines": 2,
+      "words": 13,
+      "bytes": 78
+    }
+  },
+  "total": {
+    "lines": 2,
+    "words": 13,
+    "bytes": 78
+  }
+}

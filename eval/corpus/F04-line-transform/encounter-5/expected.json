@@ -1,0 +1,14 @@
+{
+  "family": "F04",
+  "sorted": [
+    "echo",
+    "orbit",
+    "orbit",
+    "pixel",
+    "pixel",
+    "sigma",
+    "tango",
+    "tango"
+  ],
+  "file": "sorted.txt"
+}

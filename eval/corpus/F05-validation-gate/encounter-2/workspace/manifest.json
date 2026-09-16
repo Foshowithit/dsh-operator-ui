@@ -1,0 +1,7 @@
+{
+  "name": "pkg-unity",
+  "files": [
+    "a.txt",
+    "b.txt"
+  ]
+}
