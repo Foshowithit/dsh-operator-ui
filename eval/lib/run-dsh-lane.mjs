@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import { record, grade } from './record.mjs';
-import { runContext, snapshotDshLane, writeRunManifest, assertParity, assertBaselineFresh } from './experiment.mjs';
+import { runContext, snapshotDshLane, writeRunManifest, assertParity, assertBaselineFresh, observeLive } from './experiment.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const sha256s = (s) => 'sha256:' + createHash('sha256').update(s).digest('hex');
@@ -67,20 +67,22 @@ for (const k of ['dsh_version', 'model', 'profile', 'hardware', 'profile_config_
 
 const ctx = await runContext({ lane: 'dsh', experimentId: argOf('--exp-id') });
 
-// Parity preflight (GPT): the DSH lane REQUIRES a resolved model lane, and
-// the baseline must be frozen at exactly the current build (frozen once at
-// the scored-build SHA; HEAD does not move underneath the experiment).
+// Parity preflight (GPT), in the prescribed order: runContext →
+// assertBaselineFresh → INDEPENDENTLY OBSERVED live state → assertParity.
+// The live side is measured from the machine + the lane's resolved config
+// files — never echoed from the baseline.
 try {
+  assertBaselineFresh(baseline, ctx.system_build_sha);
+  const live = await observeLive({ laneHome: LANE_HOME, budgetMs: BUDGET_MS, corpusPath: join(root, 'eval', 'corpus-manifest.json') });
   assertParity(baseline, ctx, {
-    model_endpoint: baseline.model_lane && baseline.model_lane.endpoint,
-    model_id: baseline.model_lane && baseline.model_lane.model_id,
-    model_sampling: baseline.model_lane && baseline.model_lane.sampling,
-    hardware: baseline.hardware,
-    corpus_hash: ctx.corpus_hash,
-    budget: baseline.budget,
+    model_endpoint: live.model_endpoint,
+    model_id: live.model_id,
+    model_sampling: live.model_sampling,
+    hardware: live.hardware,
+    corpus_hash: live.corpus_hash,
+    budget: live.budget,
     tool_availability: { verdict: 'EQUIVALENT', explained: 'DSH normal agent loop with its built-in tool set' },
   }, { requiresModel: true });
-  assertBaselineFresh(baseline, ctx.system_build_sha);
 } catch (e) {
   console.error('REFUSING to run: ' + String(e.message).split('\n')[0]);
   process.exit(1);

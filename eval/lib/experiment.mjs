@@ -130,6 +130,47 @@ export async function writeRunManifest(recordsDir, ctx, extras) {
   return manifest;
 }
 
+// ----------------------------------------------------- live observation
+//
+// The parity check is only meaningful if the "live" side is INDEPENDENTLY
+// OBSERVED — never echoed from the baseline. This measures the machine and
+// re-reads the lane's resolved config files NOW.
+export async function observeLive({ laneHome, budgetMs, corpusPath, dshBin } = {}) {
+  const os = await import('node:os');
+  const live = {
+    hardware: {
+      platform: os.platform(),
+      arch: os.arch(),
+      cpus: os.cpus().length,
+      mem_gb: Math.round(os.totalmem() / 1024 ** 3),
+      hostname_hash: ('sha256:' + createHash('sha256').update(os.hostname()).digest('hex')).slice(0, 16),
+    },
+    corpus_hash: await sha256File(corpusPath),
+    budget: { wall_ms_per_objective: budgetMs },
+  };
+  // Resolved DSH lane model config: parse the lane home's settings.yaml —
+  // the agent-default-model (provider+model) and that provider's baseURL.
+  if (laneHome) {
+    try {
+      const settings = await readFile(join(laneHome, 'settings.yaml'), 'utf8');
+      const adm = settings.match(/agent-default-model:\s*\n\s*provider:\s*(\S+)\s*\n\s*model:\s*(\S+)/);
+      if (adm) {
+        live.model_id = adm[2];
+        const provRe = new RegExp(`(\\S+):\\s*\\n[\\s\\S]*?api:[^\\n]*\\n[\\s\\S]*?baseURL:\\s*(\\S+)`);
+        // find the baseURL within the named provider's block
+        const provBlock = settings.match(new RegExp(`    ${adm[1]}:\\s*\\n([\\s\\S]*?)(?=\\n    \\S|\\n\\S)`));
+        if (provBlock) {
+          const bm = provBlock[1].match(/baseURL:\s*(\S+)/);
+          if (bm) live.model_endpoint = bm[1];
+        }
+      }
+      const sm = settings.match(/reasoningEffort:\s*(\S+)/);
+      live.model_sampling = sm ? 'reasoningEffort=' + sm[1] : 'provider defaults';
+    } catch { /* unreadable settings → model rows will MISMATCH, correctly */ }
+  }
+  return live;
+}
+
 // ------------------------------------------------- parity preflight (GPT)
 //
 // The final parity assertion BEFORE any shakedown/scored lane starts:
@@ -145,12 +186,13 @@ export function assertParity(baseline, ctx, live, { requiresModel = false } = {}
   if (requiresModel && !ml.model_id) {
     throw new Error('PARITY REFUSED: baseline model lane is unresolved — the owner must pick the funded model lane, then re-freeze eval/baseline-config.json once at the scored-build SHA');
   }
-  const modelVerdict = live.no_cognitive_model
-    ? 'ARCHITECTURAL (recorded): this lane runs no cognitive model in v1'
-    : ml.model_id ? 'SAME' : 'MISMATCH';
-  rows.push({ name: 'model endpoint/provider', baseline: ml.endpoint || null, lane: live.model_endpoint || null, verdict: modelVerdict });
-  rows.push({ name: 'model ID', baseline: ml.model_id || null, lane: live.model_id || null, verdict: modelVerdict });
-  rows.push({ name: 'sampling/reasoning params', baseline: ml.sampling || null, lane: live.model_sampling || null, verdict: modelVerdict });
+  const modelVerdict = (a, b) => {
+    if (live.no_cognitive_model) return 'ARCHITECTURAL (recorded): this lane runs no cognitive model in v1';
+    return a != null && b != null && a === b ? 'SAME' : 'MISMATCH';
+  };
+  rows.push({ name: 'model endpoint/provider', baseline: ml.endpoint || null, lane: live.model_endpoint || null, verdict: modelVerdict(ml.endpoint, live.model_endpoint) });
+  rows.push({ name: 'model ID', baseline: ml.model_id || null, lane: live.model_id || null, verdict: modelVerdict(ml.model_id, live.model_id) });
+  rows.push({ name: 'sampling/reasoning params', baseline: ml.sampling || null, lane: live.model_sampling || null, verdict: modelVerdict(ml.sampling, live.model_sampling) });
   const check = (name, a, b) => {
     const same = JSON.stringify(a) === JSON.stringify(b);
     rows.push({ name, baseline: a, lane: b, verdict: same ? 'SAME' : 'MISMATCH' });
@@ -158,7 +200,7 @@ export function assertParity(baseline, ctx, live, { requiresModel = false } = {}
   };
   check('hardware', baseline.hardware, live.hardware);
   check('fixture/corpus hash', ctx.corpus_hash, live.corpus_hash);
-  check('wall budget', baseline.budget, live.budget);
+  check('wall budget', baseline.budget.wall_ms_per_objective, live.budget.wall_ms_per_objective);
   const tools = live.tool_availability || {};
   rows.push({ name: 'base tool availability', baseline: 'equivalent', lane: tools.verdict || 'unrecorded', verdict: tools.verdict === 'EQUIVALENT' || tools.explained ? 'EQUIVALENT/EXPLAINED' : 'MISMATCH' });
   const failed = rows.filter((r) => r.verdict === 'MISMATCH');

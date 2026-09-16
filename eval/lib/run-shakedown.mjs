@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { record, grade } from './record.mjs';
-import { runContext, snapshotRcosLane, assertCleanLane, writeRunManifest, assertParity } from './experiment.mjs';
+import { runContext, snapshotRcosLane, assertCleanLane, writeRunManifest, assertParity, assertBaselineFresh, observeLive } from './experiment.mjs';
 
 const execFn = (cmd, args) => { execFileSync(cmd, args); };
 
@@ -135,17 +135,24 @@ async function prepareLane() {
 }
 
 async function main() {
-  // Parity preflight (GPT): shared resources SAME, architecture recorded.
+  // Parity preflight (GPT), prescribed order: runContext →
+  // assertBaselineFresh → independently observed live state → assertParity.
   const baseline = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8'));
-  const parity = assertParity(baseline, ctx, {
-    no_cognitive_model: true, // rcos v1: deterministic workflow pipeline, no LLM in the loop
-    model_endpoint: null, model_id: null, model_sampling: null,
-    hardware: baseline.hardware,
-    corpus_hash: ctx.corpus_hash,
-    budget: baseline.budget,
-    tool_availability: { verdict: 'EQUIVALENT', explained: 'RCOS goal lane: deterministic workflow runtime on the configured Archon; no cognitive model in the v1 zero-credential pipeline' },
-  }, { requiresModel: false });
-  console.log('parity: OK (' + parity.length + ' rows)');
+  try {
+    assertBaselineFresh(baseline, ctx.system_build_sha);
+    const live = await observeLive({ budgetMs: 300000, corpusPath: join(root, 'eval', 'corpus-manifest.json') });
+    assertParity(baseline, ctx, {
+      no_cognitive_model: true, // rcos v1: deterministic workflow pipeline, no LLM in the loop
+      hardware: live.hardware,
+      corpus_hash: live.corpus_hash,
+      budget: live.budget,
+      tool_availability: { verdict: 'EQUIVALENT', explained: 'RCOS goal lane: deterministic workflow runtime on the configured Archon; no cognitive model in the v1 zero-credential pipeline' },
+    }, { requiresModel: false });
+  } catch (e) {
+    console.error('REFUSING to run: ' + String(e.message).split('\n')[0]);
+    process.exit(1);
+  }
+  console.log('parity: OK');
 
   let laneRegistryPath = SEED_REGISTRY;
   let lanePrep = null;
