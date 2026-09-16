@@ -22,3 +22,6 @@ jobs:
         run: node --test test/*.test.mjs
       - name: Existing contract check
         run: node scripts/check.js
+      - name: Confirm no task-store persistence regression
+        run: |
+          ! grep -E "writeFile|rename\(|tasks\.json" lib/tasks.js
