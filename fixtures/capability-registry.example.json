@@ -7,11 +7,26 @@
       "kind": "script",
       "version": "1.2.0",
       "status": "promoted",
-      "admitted_after": ["famr-task-003", "famr-task-011"],
+      "admitted_after": [
+        "famr-task-003",
+        "famr-task-011"
+      ],
       "evals": [
-        {"task_id": "famr-task-003", "verdict": "ship", "run_id": "run-a1"},
-        {"task_id": "famr-task-007", "verdict": "fix", "run_id": "run-a2"},
-        {"task_id": "famr-task-011", "verdict": "ship", "run_id": "run-a3"}
+        {
+          "task_id": "famr-task-003",
+          "verdict": "ship",
+          "run_id": "run-a1"
+        },
+        {
+          "task_id": "famr-task-007",
+          "verdict": "fix",
+          "run_id": "run-a2"
+        },
+        {
+          "task_id": "famr-task-011",
+          "verdict": "ship",
+          "run_id": "run-a3"
+        }
       ],
       "reuse_count": 34,
       "last_eval": "2026-09-12"
@@ -22,10 +37,21 @@
       "kind": "prompt-template",
       "version": "0.9.1",
       "status": "promoted",
-      "admitted_after": ["famr-task-004", "famr-task-012"],
+      "admitted_after": [
+        "famr-task-004",
+        "famr-task-012"
+      ],
       "evals": [
-        {"task_id": "famr-task-004", "verdict": "ship", "run_id": "run-b1"},
-        {"task_id": "famr-task-012", "verdict": "ship", "run_id": "run-b2"}
+        {
+          "task_id": "famr-task-004",
+          "verdict": "ship",
+          "run_id": "run-b1"
+        },
+        {
+          "task_id": "famr-task-012",
+          "verdict": "ship",
+          "run_id": "run-b2"
+        }
       ],
       "reuse_count": 12,
       "last_eval": "2026-09-13"
@@ -36,11 +62,26 @@
       "kind": "agent-team",
       "version": "2.0.0",
       "status": "promoted",
-      "admitted_after": ["expl-017", "expl-023"],
+      "admitted_after": [
+        "expl-017",
+        "expl-023"
+      ],
       "evals": [
-        {"task_id": "expl-017", "verdict": "ship", "run_id": "run-c1"},
-        {"task_id": "expl-023", "verdict": "ship", "run_id": "run-c2"},
-        {"task_id": "expl-031", "verdict": "ship", "run_id": "run-c3"}
+        {
+          "task_id": "expl-017",
+          "verdict": "ship",
+          "run_id": "run-c1"
+        },
+        {
+          "task_id": "expl-023",
+          "verdict": "ship",
+          "run_id": "run-c2"
+        },
+        {
+          "task_id": "expl-031",
+          "verdict": "ship",
+          "run_id": "run-c3"
+        }
       ],
       "reuse_count": 57,
       "last_eval": "2026-09-14"
@@ -52,7 +93,13 @@
       "version": "0.4.0",
       "status": "candidate",
       "admitted_after": [],
-      "evals": [{"task_id": "vid-002", "verdict": "ship", "run_id": "run-d1"}],
+      "evals": [
+        {
+          "task_id": "vid-002",
+          "verdict": "ship",
+          "run_id": "run-d1"
+        }
+      ],
       "reuse_count": 0,
       "last_eval": "2026-09-13"
     },
@@ -73,11 +120,26 @@
       "kind": "script",
       "version": "3.1.0",
       "status": "retired",
-      "admitted_after": ["cad-002", "cad-009"],
+      "admitted_after": [
+        "cad-002",
+        "cad-009"
+      ],
       "evals": [
-        {"task_id": "cad-002", "verdict": "ship", "run_id": "run-e1"},
-        {"task_id": "cad-009", "verdict": "ship", "run_id": "run-e2"},
-        {"task_id": "cad-041", "verdict": "blocked", "run_id": "run-e3"}
+        {
+          "task_id": "cad-002",
+          "verdict": "ship",
+          "run_id": "run-e1"
+        },
+        {
+          "task_id": "cad-009",
+          "verdict": "ship",
+          "run_id": "run-e2"
+        },
+        {
+          "task_id": "cad-041",
+          "verdict": "blocked",
+          "run_id": "run-e3"
+        }
       ],
       "reuse_count": 8,
       "last_eval": "2026-08-28",
@@ -89,10 +151,21 @@
       "kind": "script",
       "version": "1.0.3",
       "status": "promoted",
-      "admitted_after": ["tts-005", "tts-006"],
+      "admitted_after": [
+        "tts-005",
+        "tts-006"
+      ],
       "evals": [
-        {"task_id": "tts-005", "verdict": "ship", "run_id": "run-f1"},
-        {"task_id": "tts-006", "verdict": "ship", "run_id": "run-f2"}
+        {
+          "task_id": "tts-005",
+          "verdict": "ship",
+          "run_id": "run-f1"
+        },
+        {
+          "task_id": "tts-006",
+          "verdict": "ship",
+          "run_id": "run-f2"
+        }
       ],
       "reuse_count": 21,
       "last_eval": "2026-09-09"
@@ -104,7 +177,13 @@
       "version": "0.6.0",
       "status": "candidate",
       "admitted_after": [],
-      "evals": [{"task_id": "evg-001", "verdict": "fix", "run_id": "run-g1"}],
+      "evals": [
+        {
+          "task_id": "evg-001",
+          "verdict": "fix",
+          "run_id": "run-g1"
+        }
+      ],
       "reuse_count": 0,
       "last_eval": "2026-09-14"
     },
@@ -138,14 +217,26 @@
       },
       "objectiveEvaluation": {
         "kind": "output-lines",
-        "required": ["Path:", "Lines:", "Words:", "Bytes:"]
+        "required": [
+          "Path:",
+          "Lines:",
+          "Words:",
+          "Bytes:"
+        ]
       },
       "admitted_after": [],
       "evals": [],
       "reuse_count": 8,
       "last_eval": null,
       "description": "Counts lines, words, and bytes of README.txt in the run workspace",
-      "tags": ["text", "count", "words", "lines", "stats", "readme"]
+      "tags": [
+        "text",
+        "count",
+        "words",
+        "lines",
+        "stats",
+        "readme"
+      ]
     }
   ],
   "_fixture_note": "EXAMPLE ONLY — a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. `example-text-stats` is a real (non-seeded) candidate: useful work with thin evidence, so derived eligibility reads CONDITIONAL by design. Production registries live machine-local, outside this repo."
