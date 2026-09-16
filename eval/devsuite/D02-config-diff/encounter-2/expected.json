@@ -1,0 +1,32 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "batch_size",
+      "old": "jsonl",
+      "new": "512m"
+    },
+    {
+      "key": "queue_depth",
+      "old": "128",
+      "new": "60"
+    },
+    {
+      "key": "log_level",
+      "old": "strict",
+      "new": "jsonl"
+    },
+    {
+      "key": "keepalive_s",
+      "old": "128",
+      "new": "v2"
+    },
+    {
+      "key": "grpc_port",
+      "old": "jsonl",
+      "new": "60"
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

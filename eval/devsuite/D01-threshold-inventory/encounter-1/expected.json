@@ -1,0 +1,19 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "liner",
+      "qty": 2
+    },
+    {
+      "item": "mount",
+      "qty": 8
+    },
+    {
+      "item": "retainer",
+      "qty": 8
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

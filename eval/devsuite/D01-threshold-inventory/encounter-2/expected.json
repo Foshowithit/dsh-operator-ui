@@ -1,0 +1,35 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "bearing",
+      "qty": 7
+    },
+    {
+      "item": "damper",
+      "qty": 9
+    },
+    {
+      "item": "insert",
+      "qty": 13
+    },
+    {
+      "item": "journal",
+      "qty": 7
+    },
+    {
+      "item": "mount",
+      "qty": 5
+    },
+    {
+      "item": "nut",
+      "qty": 7
+    },
+    {
+      "item": "o-ring",
+      "qty": 2
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

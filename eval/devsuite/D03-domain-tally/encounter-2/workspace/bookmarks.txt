@@ -1,0 +1,13 @@
+http://ironwood.org/index.html
+https://graniteco.org/docs
+# pinned
+http://juniperlabs.org/a/b/c
+https://ironwood.net/downloads/
+https://www.graniteco.io/a/b/c
+https://cdn.harborline.org/downloads/
+http://dockside.com/index.html
+http://www.kilnworks.io/a/b/c
+https://www.cedarsupply.org/a/b/c
+http://cdn.juniperlabs.net/index.html
+https://www.cedarsupply.com/pricing
+http://www.kilnworks.com/docs

@@ -1,0 +1,10 @@
+# floor handoff — times may include seconds; ignore them
+
+SHIFT anne START 05:45 END 06:38:42
+SHIFT FARID  START 14:30  END 20:37:58
+SHIFT boris START 08:30 END 11:15
+SHIFT ellie START 08:00 END 13:17:14
+SHIFT cleo START 19:15 END 22:36
+SHIFT dev START 11:00 END 15:00
+
+note: swing coverage handled offline

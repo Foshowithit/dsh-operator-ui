@@ -1,0 +1,1 @@
+Compare release-a.env and release-b.env. Report every key whose value differs between the two files, in the order the key appears in release-a.env, one per line, as RESULT key=<key> old=<value-a> new=<value-b>.
