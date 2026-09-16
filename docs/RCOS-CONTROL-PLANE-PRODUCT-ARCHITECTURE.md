@@ -458,6 +458,43 @@ workflow result. This is where RCOS surpasses ZCode/GooeyPi.
 
 ---
 
+### Second-page audit (09-15, operator-requested second pass — 8 missed contracts)
+
+First pass captured architectural headlines but underweighted operational
+ergonomics. GPT adjudication: **ZCode/GooeyPi's best ideas aren't buttons
+RCOS lacks — they're missing contracts.**
+
+| # | ZCode/GooeyPi feature | Verdict | Stage | RCOS contract |
+|---|---|---|---|---|
+| 1 | Permission/execution personalities (Ask/Edit-auto/Plan/Full + model & reasoning as separate controls) | CONTROL PLANE — HIGH | M1 | **Execution policy contract**: PLAN_ONLY → ASK_BEFORE_ACTION → AUTO_WITHIN_POLICY → FULL_ACCESS, born with the task, inherited by attempts; intelligence selection ⊥ authority to act; feeds Approval Inbox + Evidence Drawer ("permitted by task policy AUTO_WITHIN_POLICY") |
+| 2 | Conversation/task forking | CONTROL PLANE — HIGH | M1 data / M2 UX | **Lineage contract**: fork = NEW task_id (parent_task_id, forked_from_attempt_id, forked_from_event_id); inherits objective/context/settings/artifact refs; NEVER rewinds workspace state; attempt = same objective under same lineage, fork = new lineage |
+| 3 | Project instructions (AGENTS.md) | CONTROL PLANE — HIGH | M1 | **Workspace Instructions contract**: capability definition ≠ workspace instructions ≠ operator prefs ≠ learned memory ≠ task objective; supports AGENTS.md import; provenance ("applied AGENTS.md:14"); conflicts exposed, never silently resolved |
+| 4 | MCP server integration | CONTROL PLANE contract + RUNTIME execution | M1 schema / M2 UX | **Dependency contract**: `requires: {type: mcp, server, scope, transport, capabilities[]}` — RCOS describes/configures/verifies/routes; Archon/Pi/DSH execute; INTELLIGENCE shows "CONDITIONAL — Requires GitHub MCP — Not configured"; no secret side-effect installs; OAuth lives in the connection layer, isolated from manifests/receipts |
+| 5 | Thinking/reasoning visibility | PARTIAL — REFRAME | M1 telemetry / M2 timeline | **Decision-evidence contract**: structured decision trace (Route 180ms → Plan 1.8s → Execute 420ms → Validate 90ms → Objective evaluation), concise execution/reasoning summaries, decisions, tool calls, timing, outcomes — NOT raw token-by-token CoT; model-independent, auditable, searchable |
+| 6 | Bundled search tooling | RUNTIME | M1 infra | **Runtime primitive contracts**: fs.find / fs.search_text / fs.read_range / fs.list with stable schemas — deterministic machinery instead of model improvisation; control plane only shows "fs.search_text v1 — AVAILABLE/VERIFIED" |
+| 7 | Session/state migration | CONTROL PLANE / distribution | M1 schema — must be mature before people depend on RCOS | **State continuity contract**: Detect → Inspect → Plan → Migrate → Verify → Receipt; provenance preserved ("Imported 14 tasks, 2 require re-verification, 1 dependency unavailable"); migration invalidates/reverifies trust claims that don't survive the move |
+| 8 | Proxy/network configuration | SYSTEM + RUNTIME | M1 contract | **Network policy contract**: per traffic class (model/MCP/web/packages/workers) DIRECT/SYSTEM_PROXY/CUSTOM_PROXY/DENY; capabilities declare network requirements; runtime enforces, control plane owns config+policy+visibility; strengthens verification ("Network dependency: VERIFIED") |
+
+GooeyPi elevations: **execution identity isolation** — seats/workers/tasks
+receive only the credentials, MCP connections, filesystem and network access
+they require (generalized credential isolation; a major future security
+boundary that fits capability manifests); and **app-like capability
+surfaces** — packages may declare `interaction: {surface, inputs,
+artifacts, actions}` so FlowRouter packages become installable mini-apps
+(M2/M3; control plane remains the shell; capabilities supply views, not
+authority).
+
+**Revised second-page priorities.** M1 foundations: durable task authority
++ task lineage/fork semantics; execution policy/permissions; workspace
+instructions/provenance; objective evaluation/Claim→Evidence model. Then
+infrastructure: normalized deterministic primitives, MCP dependency
+contract, execution identity isolation, network policy, migration schema,
+structured decision telemetry. Only then the visible parity items (task
+trees, timeline UX, app-like surfaces, MCP management, dashboards,
+marketplace, remote control).
+
+---
+
 ## 10. Why this passes the stranger test
 
 A stranger gets RCOS running and verified in minutes — the SYSTEM gate is
