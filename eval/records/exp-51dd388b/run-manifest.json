@@ -1,0 +1,108 @@
+{
+  "experiment_id": "exp-51dd388b",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:d1ed5a0f31d5551e3ca8352e05511b2a078372bfba6a443f9b6f9b445633c529",
+  "system_build_sha": "e9ee13bafb1aedd33e7accd7470e4bee8c4ae19c",
+  "lane": "rcos",
+  "started_at": "2026-09-16T18:40:53.508Z",
+  "kind": "teach-path-probe",
+  "probe": {
+    "lane_snapshot": {
+      "clean": true,
+      "registryHash": "sha256:d83d0986d38bc1d18e593b7f26b439b8a6e3ea32f062e46a560dc36acc635340"
+    },
+    "teach_path": {
+      "teaching_task_id": "teach-a7e7a9a8",
+      "verdict": "REFUSED",
+      "candidate_capability": "workspace-word-count",
+      "candidate_version": "0.1.0",
+      "source_objective": "Extract every host and port pair from config.txt and report them as host=port, one per line, in the order they appear.",
+      "candidate_matches_source_objective": false,
+      "evaluations": [
+        {
+          "caseId": "eval-single-line",
+          "status": "completed",
+          "pass": false,
+          "expected": {
+            "lines": 1,
+            "words": 2,
+            "bytes": 12
+          },
+          "observed": {
+            "lines": 15,
+            "words": 22,
+            "bytes": 207
+          }
+        },
+        {
+          "caseId": "eval-multi-line",
+          "status": "completed",
+          "pass": false,
+          "expected": {
+            "lines": 3,
+            "words": 11,
+            "bytes": 54
+          },
+          "observed": {
+            "lines": 17,
+            "words": 31,
+            "bytes": 249
+          }
+        },
+        {
+          "caseId": "eval-unicode",
+          "status": "completed",
+          "pass": false,
+          "expected": {
+            "lines": 2,
+            "words": 7,
+            "bytes": 43
+          },
+          "observed": {
+            "lines": 16,
+            "words": 27,
+            "bytes": 238
+          }
+        }
+      ],
+      "wall_ms": 2142,
+      "model_calls": 0,
+      "promotion": {
+        "ok": false,
+        "reason": "verdict REFUSED — gate stops here per GPT (preserve the failure)"
+      }
+    },
+    "encounters": {
+      "encounter1": {
+        "objective": "Extract every host and port pair from config.txt and report them as host=port, one per line, in the order they appear.",
+        "routed": false,
+        "refusal": [
+          "no-route"
+        ],
+        "taskId": "goal-e506a752"
+      },
+      "encounter2": {
+        "routed": false,
+        "route_selected": null,
+        "approvals": 0,
+        "failure_codes": [
+          "no-route"
+        ],
+        "grader": {
+          "satisfied": false,
+          "detail": "extraction mismatch (want 2 pairs, got 0)"
+        },
+        "taskId": "goal-3d8a00fa"
+      }
+    },
+    "cumulative_cost": {
+      "objective_executions": 2,
+      "acquisitions": 1,
+      "candidate_evaluations": 3,
+      "retries": 0,
+      "model_usage": []
+    }
+  },
+  "written_at": "2026-09-16T18:40:59.704Z"
+}
