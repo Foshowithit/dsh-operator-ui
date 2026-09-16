@@ -211,6 +211,7 @@
       "version": "1.0.0",
       "status": "candidate",
       "workflow": "example-text-stats-v1",
+      "requires": ["filesystem:read", "shell:execute"],
       "verification": {
         "expectOutput": "example-text-stats:done",
         "terminalStatus": "completed"
