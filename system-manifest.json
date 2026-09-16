@@ -128,6 +128,13 @@
     "writes": "the ONLY files teaching ever writes: the candidate workflow YAML under teaching.workflowsDir and per-eval fixture files under teaching.workspaceDir (both operator-configured path references); everything durable about the teaching itself lives in tasks.json — no third store",
     "honesty": "teaching paths unconfigured → the teach action reports NOT_CONFIGURED instead of pretending; eval evidence (expected vs observed totals per case, run ids) is sealed in the teaching envelope"
   },
+  "memory": {
+    "$comment": "M2.5 Capability Memory & Lifecycle: PROMOTED → USED → OBSERVED → RE-EVALUATED → IMPROVED / SUPERSEDED / RETIRED.",
+    "readModel": "capability operating history (uses, objective-satisfaction record, blocks after clean execution, last-verified, recent window) is DERIVED from the durable task envelopes at /rcos?op=history — never a new store, never copied state",
+    "noScore": "history is NEVER collapsed into a single confidence score — the underlying evidence (the recent outcomes themselves) stays inspectable and every number traces to tasks",
+    "decay": "a capability whose recent window degrades (≥2 of last 5 objectives unsatisfied, ≥3 uses) is flagged 'Needs re-evaluation' with the reason named; routing continues conditionally unless the operator retires it — trust degrades visibly, never silently",
+    "lineage": "version evolution never overwrites history: promoted learned entries carry provenance (teaching task, source task, eval run ids); improved versions link improvedFrom and the old version stays reconstructable"
+  },
   "receipt": {
     "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
     "contract": "docs/GENERIC-INSTALL-DESIGN.md §3.6"

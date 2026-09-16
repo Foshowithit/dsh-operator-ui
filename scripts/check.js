@@ -447,5 +447,26 @@ check('teach: three identities + eval-before-candidate + explicit promotion + sc
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'teach.js')], { stdio: 'pipe' });
 });
 
+// 12. M2.5 Capability Memory: operating history is a READ MODEL over the
+// task envelopes (no new store), decay is NAMED evidence — never a
+// "confidence score" — and version lineage never overwrites history.
+check('memory: history read-model + named decay (no score) + lineage provenance', () => {
+  const h = readFileSync(join(root, 'lib', 'history.js'), 'utf8');
+  for (const must of ['capabilityHistory', 'listTasks', 'objectivesSatisfied', 'blocksAfterExecution', 'lastVerifiedAt', 'needsReevaluation', 'decayReason', 'recent']) {
+    if (!h.includes(must)) throw new Error('lib/history.js lost ' + must);
+  }
+  if (/writeFile|mkdir|rename/.test(h)) throw new Error('history read-model must never write');
+  if (/\bscore\s*[:=]/i.test(h) || /confidence\s*[:=]/i.test(h)) throw new Error('history must not collapse evidence into a confidence score');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("op === 'history'")) throw new Error('host lost the /rcos history op');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['op=history', 'histLine', 'decayLine', 'Needs re-evaluation', 'learned via']) {
+    if (!client.includes(must)) throw new Error('client lost memory surface: ' + must);
+  }
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.memory || !m.memory.noScore) throw new Error('manifest lost the memory section');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'history.js')], { stdio: 'pipe' });
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
