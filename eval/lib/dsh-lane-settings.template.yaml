@@ -4,16 +4,18 @@
 # recreating the clean lane home.
 llm-pi-ai:
   providers:
-    zai-eval:
-      apiKeyEnv: ZAI_EVAL_KEY
-      api: anthropic-messages
-      baseURL: https://api.z.ai/api/anthropic
+    muse-eval:
+      apiKeyEnv: MUSE_EVAL_KEY
+      api: openai-responses
+      baseURL: https://opencode.ai/zen/go/v1
+      headers:
+        x-opencode-session: rcos-eval-lane
       defaultInput:
         - text
       models:
-        - id: glm-5.3
+        - id: muse-spark-1.3-contributor
 agent-default-model:
-  provider: zai-eval
-  model: glm-5.3
+  provider: muse-eval
+  model: muse-spark-1.3-contributor
 agent-loop:
   maxParallelToolCalls: 1

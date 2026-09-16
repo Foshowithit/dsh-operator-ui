@@ -44,7 +44,12 @@ const baselinePath = join(root, 'eval', 'baseline-config.json');
 // re-confirms the lane before launch).
 function laneEnv() {
   const env = { ...process.env, DSH_HOME: LANE_HOME };
-  if (baseline.model_lane && baseline.model_lane.credential_source === 'zcode-zai-coding-plan') {
+  const src = baseline.model_lane && baseline.model_lane.credential_source;
+  if (src === 'vault-opencode-muse-contributor') {
+    try {
+      env.MUSE_EVAL_KEY = readFileSync(join(process.env.HOME, '.chow-secrets', 'opencode-muse-eval.key'), 'utf8').trim();
+    } catch { /* leave unset — the run will fail auth honestly */ }
+  } else if (src === 'zcode-zai-coding-plan') {
     try {
       const cfg = JSON.parse(readFileSync(join(process.env.HOME, '.zcode', 'v2', 'config.json'), 'utf8'));
       env.ZAI_EVAL_KEY = cfg.provider['builtin:zai-coding-plan'].options.apiKey;
