@@ -54,7 +54,7 @@ import { readFileSync } from 'node:fs';
 function readFileSync_(p, enc) { return readFileSync(p, enc); }
 
 // Metered cognitive-model call (teaching cost): prompt → text.
-async function think(prompt, maxTokens = 4096) {
+async function think(prompt, maxTokens = 8192) {
   const key = zaiKey();
   if (!key) throw new Error('no model credential available for acquisition');
   const started = Date.now();
@@ -92,12 +92,25 @@ Compose ONE candidate workflow in Archon YAML. STRICT SCHEMA (this exact dialect
 - The workflow must print OPERATOR-LEGIBLE result lines (labeled, not raw dumps) so evidence can be graded: include the word RESULT in each result line, e.g. 'RESULT key=value'
 - Deterministic shell (sh-compatible), no network, no credentials.
 
-Reply with ONLY a fenced yaml code block containing the workflow.`;
+Also provide ROUTING VOCABULARY: 5-10 single lowercase words a future objective would likely use when it needs this capability.
+
+Reply with EXACTLY two fenced blocks:
+1. a yaml code block containing the workflow
+2. a json code block: {\"description\": \"<one sentence>\", \"tags\": [\"word\", ...]}`;
 }
 
 function parseYamlBlock(text) {
-  const m = text.match(/```yaml\n([\s\S]*?)```/) || text.match(/```\n([\s\S]*?)```/);
+  // fence-tolerant: accept an unterminated final fence (truncation)
+  const m = text.match(/```yaml\n([\s\S]*?)(?:```|$)/) || text.match(/```\n([\s\S]*?)(?:```|$)/);
   return m ? m[1] : null;
+}
+function parseRouting(text) {
+  const m = text.match(/```json\n([\s\S]*?)```/);
+  if (!m) return { description: 'LEARNED during recursive probe', tags: [] };
+  try {
+    const j = JSON.parse(m[1]);
+    return { description: String(j.description || 'LEARNED during recursive probe'), tags: (j.tags || []).map((t) => String(t).toLowerCase()) };
+  } catch { return { description: 'LEARNED during recursive probe', tags: [] }; }
 }
 
 async function stageFixture(objId) {
@@ -126,7 +139,9 @@ async function gradeOutput(expected, stage, evidenceText) {
     const meta = new Set(['total_pairs', 'status', 'artifact', 'count']);
     const got = [];
     for (const m of evidenceText.matchAll(/RESULT\s+(\S+)=(\d+)/g)) {
-      if (!meta.has(m[1])) got.push([m[1], m[2]]);
+      // fixture hosts are dotted names; summary keys (total_pairs,
+      // host_entries, status, ...) are not pairs and are skipped
+      if (!meta.has(m[1]) && m[1].includes('.')) got.push([m[1], m[2]]);
     }
     for (const m of evidenceText.matchAll(/host=(\S+)\s+port=(\d+)/g)) {
       got.push([m[1], m[2]]);
@@ -203,7 +218,11 @@ if (!g1.route?.selected) {
   probe.cumulative_cost.acquisitions += 1;
   probe.cumulative_cost.model_usage.push({ phase: 'acquisition', model: MODEL.model, input_tokens: acq.usage.input_tokens ?? null, output_tokens: acq.usage.output_tokens ?? null, wall_ms: acq.wall_ms });
   const yaml = parseYamlBlock(acq.text);
-  if (!yaml) throw new Error('acquisition produced no YAML block');
+  if (!yaml) {
+    console.log('acquisition reply head:', acq.text.slice(0, 300));
+    throw new Error('acquisition produced no YAML block');
+  }
+  const routing = parseRouting(acq.text);
   const nameMatch = yaml.match(/^name:\s*(\S+)/m);
   const wfName = nameMatch ? nameMatch[1] : 'learned-candidate-v0-1-0';
   await writeFile(join(ARCHON_WORKFLOWS, wfName + '.yaml'), yaml, 'utf8');
@@ -233,10 +252,14 @@ if (!g1.route?.selected) {
   // registry (operator action in the real flow; the probe driver performs
   // the write on the operator's behalf, recorded as such).
   if (grader.satisfied) {
+    // Declared output contract: read the expectation marker back from the
+    // candidate YAML so the 3-check gate can verify it on every future use.
+    const marker = (yaml.match(/learned-[\w-]+:done/) || [null])[0];
     reg.capabilities.push({
       id: wfName.replace(/-v0-1-0$/, ''), name: 'LEARNED ' + FAMILY, kind: 'workflow', version: '0.1.0',
       status: 'promoted', workflow: wfName, requires: ['filesystem:read', 'shell:execute'],
-      description: 'LEARNED during recursive probe', tags: [], provenance: { builtBy: 'rcos-recursive-probe', teachingModel: MODEL.model, promotedBy: 'operator' },
+      verification: marker ? { expectOutput: marker, terminalStatus: 'completed' } : undefined,
+      description: routing.description, tags: routing.tags, provenance: { builtBy: 'rcos-recursive-probe', teachingModel: MODEL.model, promotedBy: 'operator' },
     });
     await writeFile(join(LANE_HOME, 'operator-ui', 'seed-registry.json'), JSON.stringify(reg, null, 2) + '\n', 'utf8');
     probe.teaching.promoted = true;
