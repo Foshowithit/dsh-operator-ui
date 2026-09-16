@@ -3,6 +3,8 @@ name: M1 reconcile verification
 on:
   push:
     branches: [m1-truth-reconcile]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
