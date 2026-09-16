@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { record, grade } from './record.mjs';
-import { runContext, snapshotRcosLane, assertCleanLane, writeRunManifest } from './experiment.mjs';
+import { runContext, snapshotRcosLane, assertCleanLane, writeRunManifest, assertParity } from './experiment.mjs';
 
 const execFn = (cmd, args) => { execFileSync(cmd, args); };
 
@@ -135,6 +135,18 @@ async function prepareLane() {
 }
 
 async function main() {
+  // Parity preflight (GPT): shared resources SAME, architecture recorded.
+  const baseline = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8'));
+  const parity = assertParity(baseline, ctx, {
+    no_cognitive_model: true, // rcos v1: deterministic workflow pipeline, no LLM in the loop
+    model_endpoint: null, model_id: null, model_sampling: null,
+    hardware: baseline.hardware,
+    corpus_hash: ctx.corpus_hash,
+    budget: baseline.budget,
+    tool_availability: { verdict: 'EQUIVALENT', explained: 'RCOS goal lane: deterministic workflow runtime on the configured Archon; no cognitive model in the v1 zero-credential pipeline' },
+  }, { requiresModel: false });
+  console.log('parity: OK (' + parity.length + ' rows)');
+
   let laneRegistryPath = SEED_REGISTRY;
   let lanePrep = null;
   if (process.argv.includes('--prepare-lane')) {
