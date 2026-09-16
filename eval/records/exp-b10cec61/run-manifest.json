@@ -1,0 +1,109 @@
+{
+  "experiment_id": "exp-b10cec61",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:d1ed5a0f31d5551e3ca8352e05511b2a078372bfba6a443f9b6f9b445633c529",
+  "system_build_sha": "1e61d860d49f91308847de9cb89a2c58b021958c",
+  "lane": "rcos",
+  "started_at": "2026-09-16T18:06:47.903Z",
+  "kind": "shakedown",
+  "lane_snapshot": {
+    "dshHome": "/tmp/opui-m1-home",
+    "registryHash": "sha256:7cdac8caf9a5b7818b53e7dde411935e4d3c3e4d1e72d6d966ffdbe738a52660",
+    "capabilities": [
+      {
+        "id": "jsonl-log-writer",
+        "version": "1.2.0",
+        "status": "promoted",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "brief-verifier",
+        "version": "0.9.1",
+        "status": "promoted",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "explainer-planner",
+        "version": "2.0.0",
+        "status": "promoted",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "canvas-render-node",
+        "version": "0.4.0",
+        "status": "candidate",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "cross-model-replicate",
+        "version": "0.1.0",
+        "status": "candidate",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "stl-inspector",
+        "version": "3.1.0",
+        "status": "retired",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "tts-loudness-fix",
+        "version": "1.0.3",
+        "status": "promoted",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "eval-rubric-tightener",
+        "version": "0.6.0",
+        "status": "candidate",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "rcos-verify-echo",
+        "version": "1.0.0",
+        "status": "seeded",
+        "seed": true,
+        "devAcquired": false
+      },
+      {
+        "id": "example-text-stats",
+        "version": "1.0.0",
+        "status": "candidate",
+        "seed": false,
+        "devAcquired": false
+      },
+      {
+        "id": "workspace-word-count",
+        "version": "0.1.0",
+        "status": "promoted",
+        "seed": false,
+        "devAcquired": true
+      }
+    ],
+    "devAcquiredCount": 1,
+    "durableTasks": 23,
+    "receiptLevel": "RCOS_VERIFIED",
+    "clean": false
+  },
+  "defects": [
+    "lane ran on a DIRTY snapshot (dev home) — acceptable ONLY in shakedown"
+  ],
+  "families": [
+    "F09-log-analysis",
+    "F08-format-conversion"
+  ],
+  "encounters": [
+    1,
+    2
+  ],
+  "written_at": "2026-09-16T18:06:47.955Z"
+}
