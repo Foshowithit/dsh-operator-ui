@@ -281,7 +281,9 @@ async function runRcosObjective(obj, staged) {
       break;
     }
     const routeMiss = codes.has('no-route') || codes.has('objective-not-satisfied');
-    if (pass === 1 && routeMiss) {
+    // Contamination rule: acquisition is attempted only on NON-held-out
+    // gaps. Held-out encounters execute and are graded, but never teach.
+    if (pass === 1 && routeMiss && !obj.hidden) {
       teachOutcome = await teachForFamily(obj.family, staged.objective, staged.stage, staged.expected);
       if (teachOutcome.attempted && teachOutcome.ok) continue; // retry same objective after acquisition
     }
@@ -345,7 +347,9 @@ console.log('NOTE: after lane preparation, RESTART the lane server (8413 for rco
 const picked = manifest.stream.slice(0, MAX_OBJECTIVES).map((id) => ({ id, ...manifest.objectives.find((o) => o.id === id) }));
 let done = 0;
 for (const obj of picked) {
-  if (obj.hidden) throw new Error('scored stream tried a HELD-OUT objective: ' + obj.id);
+  // hidden=true = held out from TEACHING (encounters 3-5). They ARE executed
+  // and graded — the ban is on teaching/evaluating against them, not on
+  // running them (runRcosObjective enforces that per objective).
   const staged = await stageFixture(obj.id);
   const preHash = sha256s(JSON.stringify(obj));
   let out, grader;
