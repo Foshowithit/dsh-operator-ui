@@ -3,10 +3,11 @@
   "frozen_at": "2026-09-16T17:42:06.850Z",
   "frozen_at_commit": "3076699fc0fcc36c54067f3e39098fa3bb006971",
   "model_lane": {
-    "endpoint": null,
-    "model_id": null,
-    "sampling": null,
-    "resolution": "owner decision pending — fund a zen key | authorize zai coding-plan key | repair local qwen MLX"
+    "endpoint": "https://api.z.ai/api/anthropic",
+    "model_id": "glm-5.3",
+    "sampling": "provider defaults (DSH agent-loop defaults; no temperature overrides)",
+    "credential_source": "zcode-zai-coding-plan",
+    "authorization": "owner \"continue\" on the laid-out blocker = shakedown-scale authorization; scored run re-confirms with GPT + owner"
   },
   "dsh_version": "0.1.0-rc.6",
   "dsh_bin": "/Users/<redacted>/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh",

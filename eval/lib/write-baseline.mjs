@@ -44,13 +44,16 @@ try {
 
 const toolInventory = { bash: true, fs: 'dsh built-ins', notes: 'recorded from the headless profile tool list; RCOS lane exposes the same base tools via its workflow runtime' };
 
+// Preserve a previously resolved model_lane across re-freezes (the freeze
+// refreshes environment facts; the owner's lane decision is not re-litigated).
+let prevModelLane = null;
+try { prevModelLane = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8')).model_lane || null; } catch { /* first freeze */ }
+
 const baseline = {
   protocol: 'eval-protocol-v1',
   frozen_at: new Date().toISOString(),
   frozen_at_commit: rcosCommit,
-  // Model lane (GPT parity row 1-3): UNRESOLVED until the owner picks the
-  // funded lane. The runners REFUSE to start while this is null.
-  model_lane: {
+  model_lane: prevModelLane || {
     endpoint: null,
     model_id: null,
     sampling: null,
