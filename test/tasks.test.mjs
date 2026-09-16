@@ -14,8 +14,12 @@ test('non-RCOS run is never promoted into an RCOS task', () => {
   assert.equal(envelopeFromRun({ id: 'r2', conversation_id: 'other', status: 'completed' }), null);
 });
 
-test('verdict scope upgrades only when objective evaluation is satisfied', () => {
+test('goal API keeps verdict string while scoped detail upgrades only on objective satisfaction', () => {
   const base = { taskId: 'task-deadbeef', objective: 'x', verdict: 'SHIP', startedAt: 'x', attempts: [], failureCodes: [], capabilityValidation: { pass: true } };
-  assert.equal(envelopeFromGoal(base).verdict.scope, 'capability-validation');
-  assert.equal(envelopeFromGoal({ ...base, objectiveEvaluation: { status: 'SATISFIED', pass: true } }).verdict.scope, 'objective-evaluation');
+  const capabilityOnly = envelopeFromGoal(base);
+  assert.equal(capabilityOnly.verdict, 'SHIP');
+  assert.equal(capabilityOnly.verdictDetail.scope, 'capability-validation');
+  const objectiveSatisfied = envelopeFromGoal({ ...base, objectiveEvaluation: { status: 'SATISFIED', pass: true } });
+  assert.equal(objectiveSatisfied.verdict, 'SHIP');
+  assert.equal(objectiveSatisfied.verdictDetail.scope, 'objective-evaluation');
 });
