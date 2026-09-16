@@ -418,5 +418,34 @@ check('authority: scope contract + approval gate before dispatch + envelope poli
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'client.js')], { stdio: 'pipe' });
 });
 
+// 11. Teach Mode (M2): capability acquisition with three separate identities,
+// an eval-before-candidate hard rule, explicit human promotion, and writes
+// confined to the two operator-configured teaching paths.
+check('teach: three identities + eval-before-candidate + explicit promotion + scoped writes', () => {
+  const t = readFileSync(join(root, 'lib', 'teach.js'), 'utf8');
+  for (const must of ['sourceTaskId', 'teachingTaskId', 'capabilityId', 'kind: \'teaching\'', 'CANDIDATE', 'REFUSED',
+    'builtBy', 'EVAL_SET', 'requires', 'lifecycle', 'promotedAt', 'promoteCandidate', 'Not added to Intelligence']) {
+    if (!t.includes(must)) throw new Error('lib/teach.js lost ' + must);
+  }
+  // Promotion must refuse non-candidates and duplicate ids (never overwrite).
+  for (const must of ['not a CANDIDATE', 'already in the registry', 'requiresUnknown']) {
+    if (!t.includes(must)) throw new Error('lib/teach.js lost promotion guard: ' + must);
+  }
+  const cfg = readFileSync(join(root, 'lib', 'config.js'), 'utf8');
+  for (const must of ['DSH_OPERATOR_UI_TEACH_WORKFLOWS', 'DSH_OPERATOR_UI_TEACH_WORKSPACE']) {
+    if (!cfg.includes(must)) throw new Error('lib/config.js lost teaching paths: ' + must);
+  }
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/teach'")) throw new Error('host lost the /teach route');
+  if (!host.includes('promoteTaskId')) throw new Error('host lost the promotion route');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['TeachingCard', 'Teach RCOS', 'Promote to Intelligence', 'teachFrom', 'RCOS learned this capability']) {
+    if (!client.includes(must)) throw new Error('client lost teach surface: ' + must);
+  }
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.teachMode || !m.teachMode.hardRule) throw new Error('manifest lost the teachMode section');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'teach.js')], { stdio: 'pipe' });
+});
+
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

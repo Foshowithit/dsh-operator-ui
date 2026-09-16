@@ -211,7 +211,10 @@
       "version": "1.0.0",
       "status": "candidate",
       "workflow": "example-text-stats-v1",
-      "requires": ["filesystem:read", "shell:execute"],
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
       "verification": {
         "expectOutput": "example-text-stats:done",
         "terminalStatus": "completed"
@@ -229,6 +232,60 @@
         "stats",
         "readme"
       ]
+    },
+    {
+      "id": "workspace-word-count",
+      "name": "Workspace word count (LEARNED)",
+      "kind": "workflow",
+      "version": "0.1.0",
+      "status": "promoted",
+      "workflow": "workspace-word-count-v0-1-0",
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
+      "verification": {
+        "expectOutput": "learned-workspace-word-count:done",
+        "terminalStatus": "completed"
+      },
+      "description": "Counts lines, words, and bytes across every .txt file in the workspace, with totals",
+      "tags": [
+        "workspace",
+        "words",
+        "count",
+        "every",
+        "file",
+        "text",
+        "totals"
+      ],
+      "provenance": {
+        "builtBy": "rcos-teaching-m2",
+        "sourceTaskId": "goal-bbe8add7",
+        "teachingTaskId": "teach-9b1c4197",
+        "evalSet": [
+          {
+            "caseId": "eval-single-line",
+            "runId": "98ab9882-aba6-410c-b0e4-21c5ff4c696d",
+            "pass": true
+          },
+          {
+            "caseId": "eval-multi-line",
+            "runId": "823cf930-8a81-4882-8a75-fb98e1edc59e",
+            "pass": true
+          },
+          {
+            "caseId": "eval-unicode",
+            "runId": "77ccb7d1-4fcb-4b4b-a7e7-4f63e276c5e6",
+            "pass": true
+          }
+        ],
+        "promotedBy": "operator",
+        "promotedAt": "2026-09-16T16:45:09.273Z"
+      },
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": null
     }
   ],
   "_fixture_note": "EXAMPLE ONLY — a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. `example-text-stats` is a real (non-seeded) candidate: useful work with thin evidence, so derived eligibility reads CONDITIONAL by design. Production registries live machine-local, outside this repo."
