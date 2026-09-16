@@ -1,0 +1,17 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "cache_ttl",
+      "old": "900",
+      "new": "jsonl"
+    },
+    {
+      "key": "max_retries",
+      "old": "info",
+      "new": "strict"
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

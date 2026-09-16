@@ -1,0 +1,59 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "harborline.org",
+      "count": 2
+    },
+    {
+      "domain": "juniperlabs.io",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.net",
+      "count": 1
+    },
+    {
+      "domain": "cedarsupply.com",
+      "count": 1
+    },
+    {
+      "domain": "dockside.com",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.com",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.net",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.io",
+      "count": 1
+    },
+    {
+      "domain": "harborline.com",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.org",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.net",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.org",
+      "count": 1
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

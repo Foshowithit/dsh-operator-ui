@@ -1,0 +1,55 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "eastfield.org",
+      "count": 3
+    },
+    {
+      "domain": "kilnworks.net",
+      "count": 2
+    },
+    {
+      "domain": "graniteco.com",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.io",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.net",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.org",
+      "count": 1
+    },
+    {
+      "domain": "harborline.io",
+      "count": 1
+    },
+    {
+      "domain": "harborline.net",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.net",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.io",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.net",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.org",
+      "count": 1
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}
