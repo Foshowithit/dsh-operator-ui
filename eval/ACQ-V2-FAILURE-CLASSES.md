@@ -17,13 +17,17 @@ fixture and re-graded against post-run workspace state + evidence
 
 ## What this rewrites
 
-The sealed v1 number (acquisition success 2/18) is a **lower bound**.
-Forensic replay reclassifies the 16 refusals as:
+The defensible statement (GPT-adjudicated wording — the 9 unverified cases
+are UNKNOWN, never "successful"): **v1's measured 2/18 acquisition success
+is a lower bound; 4 additional candidates were subsequently proven correct,
+9 remain unverified because of grader-coverage limitations, 2 were proven
+wrong, and 1 is unrecoverable.** Specifically:
 
 - 4 provably-correct candidates misgraded by instrumentation (grader read
   the wrong directory);
-- 9 completed-execution candidates with no grader in scope — acquisition
-  may have succeeded but was unverifiable under the frozen harness;
+- 9 completed-execution candidates that remain UNKNOWN/unverifiable under
+  the frozen harness — plausible-looking output is not objective
+  correctness, and they are never counted as successes;
 - 2 genuinely wrong outputs (both F01, the same failure mode: the
   candidate's evidence lacked the TOTAL contract line);
 - (the remaining refused attempt corresponds to a candidate whose file was
