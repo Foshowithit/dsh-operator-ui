@@ -217,7 +217,7 @@
       },
       "admitted_after": [],
       "evals": [],
-      "reuse_count": 0,
+      "reuse_count": 8,
       "last_eval": null,
       "description": "Counts lines, words, and bytes of README.txt in the run workspace",
       "tags": [
