@@ -1,0 +1,14 @@
+{
+  "suite": "devsuite-v3 (revision-experiment variants, GPT GO ruling)",
+  "seed": 16180339,
+  "generator_version": "1.0.0",
+  "generator_source_sha256": "sha256:4016227bc8f4649bf346e0f193b200bb500e4ac305f8165206c8b9ac2d76ae1c",
+  "manifest_sha256": "sha256:d07850aaf5bf4c03abf7a7121e8a9fbba2e615a081be81de2a41d2d4dfe2c82d",
+  "graders_v2_sha256": "sha256:d3b81d5aafe34ac8b6a9983903adf2d7bed6b8f17be0a380370bebd991cd96e5",
+  "grader_controls_sha256": "sha256:ca3763b75264a6accb859ff3ec40605991a9a8660f090a68429ea298e262620b",
+  "static_checks_sha256": "sha256:221d4d44ce5386c9bd2d65666b1affd706531abdf33f4d50e635558c3a8fd966",
+  "controls_result": "222/222 PASS (74 fixtures x golden/subtle-wrong/empty)",
+  "isolation_result": "clean",
+  "generated_at": "2026-09-16T22:14:30.063Z",
+  "freeze_note": "Measurement machinery frozen per GPT ruling: graders, static validator, family contracts, artifact contract, promotion criteria unchanged during the experiment. Fresh independent seed only; generator source identical to devsuite v1/v2 freezes."
+}

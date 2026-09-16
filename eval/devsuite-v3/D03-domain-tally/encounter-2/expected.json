@@ -1,0 +1,51 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "ironwood.org",
+      "count": 3
+    },
+    {
+      "domain": "brightworks.io",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.net",
+      "count": 1
+    },
+    {
+      "domain": "cedarsupply.io",
+      "count": 1
+    },
+    {
+      "domain": "dockside.org",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.com",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.io",
+      "count": 1
+    },
+    {
+      "domain": "harborline.net",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.io",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.net",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.org",
+      "count": 1
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

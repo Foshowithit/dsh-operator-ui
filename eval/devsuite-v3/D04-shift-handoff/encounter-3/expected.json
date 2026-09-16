@@ -1,0 +1,31 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "farid",
+      "minutes": 52
+    },
+    {
+      "name": "anne",
+      "minutes": 114
+    },
+    {
+      "name": "gus",
+      "minutes": 217
+    },
+    {
+      "name": "boris",
+      "minutes": 393
+    },
+    {
+      "name": "cleo",
+      "minutes": 273
+    },
+    {
+      "name": "ellie",
+      "minutes": 396
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

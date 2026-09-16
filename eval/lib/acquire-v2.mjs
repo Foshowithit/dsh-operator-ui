@@ -143,6 +143,16 @@ Reply with EXACTLY two fenced blocks:
 2. a json code block: {"description": "<one sentence>", "tags": ["word", ...]}`;
   }
 
+  // Grader-failure CATEGORY only: the frozen graders' detail strings carry
+  // want/got values (expected answers). The revision channel must never see
+  // them (GPT ruling) — the model re-derives correctness from the objective
+  // and its own observed outputs.
+  function categoryOf(detail) {
+    if (!detail) return 'result-substance mismatch';
+    const cut = String(detail).split(/\bwant\b|\(expected|\bexpected\b|:/)[0].trim();
+    return cut || 'result-substance mismatch';
+  }
+
   function diagnosePrompt(ctx) {
     const { objective, prevYaml, failureKind, checks, runStatus, outputs, graderDetail, snapshot } = ctx;
     const ev = [];
@@ -154,7 +164,7 @@ Reply with EXACTLY two fenced blocks:
     } else {
       ev.push(`WORKFLOW RUN STATUS: ${runStatus}`);
       ev.push(`NODE OUTPUTS (verbatim):\n${String(outputs).slice(0, 4000) || '(none captured)'}`);
-      ev.push(`EXTERNAL GRADER VERDICT: ${graderDetail}`);
+      ev.push(`EXTERNAL GRADER CATEGORY: ${categoryOf(graderDetail)} — the objective's declared result contract was not met. Compare your produced output (above) against the objective text yourself; expected values are not provided.`);
       if (snapshot && snapshot.length) {
         ev.push(`POST-RUN WORKSPACE FILES: ${snapshot.map((f) => f.path).join(', ')}`);
       }
@@ -242,9 +252,10 @@ Reply with EXACTLY two fenced blocks:
       meter(reply.usage || {}, reply.wall_ms);
       log(`[acq2 ${p.family}] ${kind} #${usage.model_calls} (${(reply.usage || {}).output_tokens ?? '?'} out tokens)`);
 
+      const parentHash = prevHash || null;
       const parsed = parseReply(reply.text || '');
       if (!parsed.yaml) {
-        attempts.push({ rev: revision, kind, failureKind: 'parse', at: new Date().toISOString(), prompt_sha256: sha256s(prompt), model: { input_tokens: reply.usage?.input_tokens ?? null, output_tokens: reply.usage?.output_tokens ?? null } });
+        attempts.push({ rev: revision, kind, failureKind: 'parse', parentHash, at: new Date().toISOString(), prompt_sha256: sha256s(prompt), model: { input_tokens: reply.usage?.input_tokens ?? null, output_tokens: reply.usage?.output_tokens ?? null } });
         const b2 = budgetHit();
         if (b2) { terminal = { status: 'REFUSED', code: 'BUDGET_EXHAUSTED', detail: b2 }; } 
         continue;
@@ -261,7 +272,7 @@ Reply with EXACTLY two fenced blocks:
       name = nm;
       if (persist) await persist(`${p.family}-rev${revision}-${hash.slice(7, 19)}.yaml`, yamlText);
       if (!checks.ok) {
-        attempts.push({ rev: revision, kind, failureKind: 'static', staticFailures: checks.failures, yaml_sha256: hash, name: nm, at: new Date().toISOString(), prompt_sha256: sha256s(prompt), model: { input_tokens: reply.usage?.input_tokens ?? null, output_tokens: reply.usage?.output_tokens ?? null } });
+        attempts.push({ rev: revision, kind, failureKind: 'static', staticFailures: checks.failures, yaml_sha256: hash, parentHash, name: nm, at: new Date().toISOString(), prompt_sha256: sha256s(prompt), model: { input_tokens: reply.usage?.input_tokens ?? null, output_tokens: reply.usage?.output_tokens ?? null } });
         prevYaml = yamlText; prevHash = hash;
         const b2 = budgetHit();
         if (b2) terminal = { status: 'REFUSED', code: 'BUDGET_EXHAUSTED', detail: b2 };
@@ -280,7 +291,7 @@ Reply with EXACTLY two fenced blocks:
       const grade = p.grader(p.expected, evidence, wsFiles);
       attempts.push({
         rev: revision, kind, failureKind: grade.satisfied ? null : 'execution',
-        yaml_sha256: hash, name: nm, staticFailures: [], at: new Date().toISOString(),
+        yaml_sha256: hash, parentHash, name: nm, staticFailures: [], at: new Date().toISOString(),
         prompt_sha256: sha256s(prompt),
         run: { workflow: name, run_id: run.run_id, status: run.status },
         outputs: String(run.outputs).slice(0, 4000),
