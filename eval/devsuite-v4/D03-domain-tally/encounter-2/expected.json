@@ -1,0 +1,59 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "graniteco.net",
+      "count": 2
+    },
+    {
+      "domain": "graniteco.org",
+      "count": 2
+    },
+    {
+      "domain": "kilnworks.com",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.com",
+      "count": 1
+    },
+    {
+      "domain": "acmetools.net",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.org",
+      "count": 1
+    },
+    {
+      "domain": "dockside.net",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.net",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.org",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.com",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.io",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.net",
+      "count": 1
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

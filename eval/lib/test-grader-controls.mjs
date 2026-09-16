@@ -67,7 +67,7 @@ async function fixtures() {
       } catch { /* non-fixture entry */ }
     }
   }
-  for (const suite of ['devsuite', 'devsuite-v2']) {
+  for (const suite of ['devsuite', 'devsuite-v2', 'devsuite-v3', 'devsuite-v4']) {
     const base = join(root, 'eval', suite);
     for (const fam of (await readdir(base)).sort()) {
       for (const enc of (await readdir(join(base, fam))).sort()) {

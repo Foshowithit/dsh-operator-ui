@@ -1,0 +1,31 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "hana",
+      "minutes": 324
+    },
+    {
+      "name": "anne",
+      "minutes": 213
+    },
+    {
+      "name": "boris",
+      "minutes": 191
+    },
+    {
+      "name": "farid",
+      "minutes": 391
+    },
+    {
+      "name": "cleo",
+      "minutes": 219
+    },
+    {
+      "name": "gus",
+      "minutes": 92
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion"
+}

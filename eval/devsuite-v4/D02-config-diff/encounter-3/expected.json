@@ -1,0 +1,17 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "jobs_concurrency",
+      "old": "v2",
+      "new": "60"
+    },
+    {
+      "key": "tls_verify",
+      "old": "https://relay.internal",
+      "new": "128"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

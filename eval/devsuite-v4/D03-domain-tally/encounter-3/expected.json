@@ -1,0 +1,51 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "acmetools.io",
+      "count": 2
+    },
+    {
+      "domain": "brightworks.net",
+      "count": 2
+    },
+    {
+      "domain": "ironwood.org",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.net",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.com",
+      "count": 1
+    },
+    {
+      "domain": "dockside.org",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.net",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.org",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.io",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.net",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

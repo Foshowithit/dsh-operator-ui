@@ -1,0 +1,75 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "cedarsupply.org",
+      "count": 3
+    },
+    {
+      "domain": "brightworks.org",
+      "count": 2
+    },
+    {
+      "domain": "dockside.com",
+      "count": 2
+    },
+    {
+      "domain": "dockside.io",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.com",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.net",
+      "count": 1
+    },
+    {
+      "domain": "cedarsupply.com",
+      "count": 1
+    },
+    {
+      "domain": "dockside.net",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.io",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.org",
+      "count": 1
+    },
+    {
+      "domain": "harborline.com",
+      "count": 1
+    },
+    {
+      "domain": "harborline.net",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.io",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.org",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.com",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.net",
+      "count": 1
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion"
+}
