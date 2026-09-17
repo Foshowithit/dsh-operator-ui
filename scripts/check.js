@@ -128,8 +128,18 @@ check('repo hygiene: no dev-home, node_modules, or logs tracked', () => {
   if (bad.length) throw new Error('tracked: ' + bad.join(', '));
 });
 check('repo hygiene: required files present', () => {
-  for (const f of ['README.md', 'LICENSE', 'docs/runs-panel.png', 'docs/git-panel.png', 'docs/command-palette.png']) {
+  for (const f of ['README.md', 'LICENSE']) {
     readFileSync(join(root, f));
+  }
+  // The README is the front door and it ships screenshots; a dead image path is
+  // invisible to every other check here, so bind the two together. Screenshots
+  // must come from the sanitized demo lane — never a real workspace (see AGENTS.md).
+  const md = readFileSync(join(root, 'README.md'), 'utf8');
+  const refs = [...md.matchAll(/\]\(docs\/([^)\s]+\.png)\)/g)].map((m) => m[1]);
+  if (!refs.length) throw new Error('README references no docs/*.png — the visual README lost its screenshots');
+  for (const r of refs) {
+    if (/^(runs-panel|git-panel|command-palette|summary-tab|workflows-tab|capabilities-tab|browser-tab|permissions-|m2-)/.test(r)) throw new Error('README references a retired screenshot: ' + r);
+    readFileSync(join(root, 'docs', r));
   }
 });
 
