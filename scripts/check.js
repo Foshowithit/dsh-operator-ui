@@ -649,7 +649,7 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   if (/verifyGenesis|replayChain|verifyPublication/.test(syncSrc)) throw new Error('S0 must not reimplement P2 verification — ordinary R0 owns it');
   // no new protocol surface and no consumer-trust access
   if (/createServer|listen\(/.test(syncSrc)) throw new Error('S0 is a local coordinator, not a network surface');
-  if (/getTask|listTasks|upsertTask|pin_|quarantine/i.test(syncSrc)) throw new Error('S0 must not read or write consumer-local trust state');
+  if (/getTask|listTasks|upsertTask|pin_|quarantine/i.test(syncCode)) throw new Error('S0 must not read or write consumer-local trust state');
   // evidence transport never ingests
   if (!/ingested: false/.test(syncSrc)) throw new Error('S0 must record that copied evidence was not ingested');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'sync.js')], { stdio: 'pipe' });
