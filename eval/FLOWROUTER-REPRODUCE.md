@@ -1,7 +1,9 @@
 # Reproducing the FlowRouter evidence
 
 Everything below re-runs the harnesses that produced the receipts in
-`eval/receipts/`. Read this honestly: some phases re-run anywhere, one needs a
+`eval/receipts/` — **13 FlowRouter seal/composition/adversarial receipts, plus the
+earlier product-path receipt** (which is not one of the FlowRouter claims). Read
+this honestly: some phases re-run anywhere, one needs a
 second machine, and the receipts — not this guide — are the primary evidence.
 
 ## 0. What you need
@@ -50,9 +52,12 @@ DSH_BIN=$(command -v dsh) node eval/lib/flowrouter-i1-composition.mjs
 
 | Phase | Harness | Notes |
 |---|---|---|
+| P0 artifact integrity | `eval/lib/flowrouter-p0-receipt.mjs` | canonical digest recomputation |
+| P1 repository transport | `eval/lib/flowrouter-p1-receipt.mjs` | publish / index / discover / fetch |
+| P2 publisher identity | `eval/lib/flowrouter-p2-receipt.mjs` | genesis, key chain, pinning, forks |
 | R0 mirror replication | `eval/lib/flowrouter-r0-receipt.mjs` | starts its own repositories on loopback ports |
 | F0 multi-repository resolution | `eval/lib/flowrouter-f0-receipt.mjs` | starts four repository services |
-| F1 equivocation evidence | `eval/lib/flowrouter-f1-receipt.mjs` | uses the two-machine actor for the offline leg |
+| F1 equivocation evidence | `eval/lib/flowrouter-f1-receipt.mjs` | independent offline verifier process; a single physical host is sufficient (the physical-machine proofs are P1-X and I0) |
 | D0 possession index | `eval/lib/flowrouter-d0-receipt.mjs` | includes a controlled hostile index |
 | D1 endpoint directory | `eval/lib/flowrouter-d1-receipt.mjs` | includes a controlled hostile directory |
 | S0 exact-scope backfill | `eval/lib/flowrouter-s0-receipt.mjs` | includes an adversarial F1 control |
