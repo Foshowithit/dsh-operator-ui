@@ -54,7 +54,14 @@ three layers (untrusted claims / cryptographic evidence / consumer-local trust),
 the three operations that may write consumer-local state, and the rule that
 verification only ever flows upward.
 
+## The write-up
+
+[`docs/flowrouter-engineering-note.md`](docs/flowrouter-engineering-note.md) — a
+short engineering note for someone who wants the argument, the provenance
+discipline, and the limits in one read, without climbing through the receipts.
+
 ## Read it in this order
+
 
 
 | Document | What it gives you |
