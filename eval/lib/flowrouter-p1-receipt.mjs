@@ -78,10 +78,19 @@ function p0DigestOf(files) {
   return packageDigest(files.map((f) => (f.path === 'capability.json' ? { path: f.path, bytes: capNoDigest } : f)));
 }
 
-const bState = async () => ({
-  registry_sha: sha(await readFile(join(B_HOME, 'operator-ui', 'b-registry.json'))),
-  registry_caps: JSON.parse(await readFile(join(B_HOME, 'operator-ui', 'b-registry.json'), 'utf8')).capabilities.length,
-});
+const bState = async () => {
+  const regRaw = await readFile(join(B_HOME, 'operator-ui', 'b-registry.json'));
+  let taskRaw = '';
+  try { taskRaw = await readFile(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8'); } catch {}
+  let imports = 0;
+  try { imports = (JSON.parse(taskRaw).tasks || []).filter((t) => t.kind === 'import').length; } catch {}
+  return {
+    registry_sha: sha(regRaw),
+    registry_caps: JSON.parse(regRaw.toString('utf8')).capabilities.length,
+    taskstore_sha: sha(Buffer.from(taskRaw, 'utf8')),
+    import_tasks: imports,
+  };
+};
 
 const receipt = { generated_at: new Date().toISOString(), steps: [], verdict: null };
 const step = (name, ok, result) => { receipt.steps.push({ step: name, ok, result }); console.log((ok ? 'PASS' : 'FAIL') + '  ' + name); };
@@ -138,22 +147,26 @@ const pub1 = await fetch(R + '/publish', { method: 'POST', headers: { 'content-t
 const pub1b = await pub1.json();
 step('PUBLISH 0.1.1 (D1 ≠ D0)', pub1.status === 200 && pub1b.D === D1 && D1 !== D0, { D0: D0.slice(0, 16), D1: D1.slice(0, 16) });
 
-// ================= 4. discovery (validated against records) =================
+// ================= 4. N5: state captured BEFORE discovery =================
+const before = await bState();
 const disc = await (await fetch(R + '/discover?publisher=mac-a&name=csv-running-total')).json();
 const e10 = (disc.results || []).find((x) => x.version === '0.1.0');
 step('DISCOVER returns 0.1.0 with D0 (record truth)', !!e10 && e10.D === D0 && e10.truth === 'RECORD', { entry: e10 });
+const afterDiscover = await bState();
+step('N5a registry+task store unchanged after discovery', afterDiscover.registry_sha === before.registry_sha && afterDiscover.taskstore_sha === before.taskstore_sha, { before, afterDiscover });
 
 // ================= 5. POSITIVE: B fetch → stage → verify → admit → route =================
-const before = await bState();
 const fetched = Buffer.from(await (await fetch(R + '/fetch/' + D0)).arrayBuffer());
 const bFiles = JSON.parse(fetched.toString('utf8')).files.map((f) => ({ path: f.path, bytes: Buffer.from(f.b64, 'base64') }));
 const bRecomputed = p0DigestOf(bFiles);
 step('B fetch(D0) → recompute equals D0', bRecomputed === D0, { recomputed: bRecomputed.slice(0, 16) });
+const afterFetch = await bState();
+step('N5b registry+task store unchanged after fetch', afterFetch.registry_sha === before.registry_sha && afterFetch.taskstore_sha === before.taskstore_sha, {});
 const incoming = await artifactToDir(fetched, join(WORK, 'b-incoming'));
 const stageB = await frApi(B, 'stage', { packageDir: incoming });
 const afterStage = await bState();
 step('P0 STAGE on fetched bytes', stageB.body.import?.verdict === 'STAGED', { checks: (stageB.body.import?.checks || []).map((c) => c.id + ':' + c.pass), local: stageB.body.import?.local });
-step('N5a registry unchanged after discover+fetch+stage', before.registry_sha === afterStage.registry_sha && afterStage.registry_caps === 0, { before_caps: before.registry_caps, after_caps: afterStage.registry_caps });
+step('N5c registry unchanged after stage (only the expected staging record may appear)', afterStage.registry_sha === before.registry_sha && afterStage.import_tasks === before.import_tasks + 1, { before, afterStage });
 
 // B-local fixture (authored here; frozen+hashed before execution)
 const FIX = join(WORK, 'b-fixture');
@@ -165,8 +178,23 @@ const rows = vals.map((v, i) => { acc += v; return { row: String(i + 1), total: 
 await writeFile(join(FIX, 'workspace', 'values.csv'), 'value\n' + vals.join('\n') + '\n', 'utf8');
 await writeFile(join(FIX, 'objective.txt'), 'Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.\n', 'utf8');
 await writeFile(join(FIX, 'expected.json'), JSON.stringify({ rows }, null, 2) + '\n', 'utf8');
+const { readdir } = await import('node:fs/promises');
+const fxFiles = [];
+{
+  const walkFx = async (d, rel) => {
+    for (const e of await readdir(d, { withFileTypes: true })) {
+      const p2 = join(d, e.name);
+      const r2 = rel ? rel + '/' + e.name : e.name;
+      if (e.isDirectory()) await walkFx(p2, r2);
+      else fxFiles.push({ path: r2, bytes: await readFile(p2) });
+    }
+  };
+  await walkFx(FIX, '');
+}
+const fixtureHashRecorded = sha(Buffer.from(fxFiles.slice().sort((a, b) => a.path.localeCompare(b.path)).map((f) => f.path + '\n' + f.bytes.length + '\n' + sha(f.bytes) + '\n').join(''), 'utf8'));
+receipt.fixture = { authored_b_locally: true, hash: fixtureHashRecorded, frozen_before_execution: true };
 const verB = await frApi(B, 'verify', { importTaskId: stageB.body.import.taskId, fixtureDir: FIX });
-step('B-local verification (frozen fixture)', verB.body.import?.verdict === 'VERIFIED', verB.body.import?.verification);
+step('B-local verification (fixture hash recorded BEFORE execution)', verB.body.import?.verdict === 'VERIFIED' && verB.body.import?.verification?.fixture_hash === fixtureHashRecorded, { recorded: fixtureHashRecorded, verify_saw: verB.body.import?.verification?.fixture_hash });
 const preAdmit = await bState();
 step('N5b registry unchanged after B-local verification', preAdmit.registry_sha === afterStage.registry_sha, {});
 const admB = await frApi(B, 'admit', { importTaskId: stageB.body.import.taskId });
@@ -175,8 +203,15 @@ step('operator admission mutates the registry (the ONLY mutation)', postAdmit.re
 
 let g = await goal({ objective: 'Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.' });
 let approvals = 0;
-if (new Set(g.failureCodes || []).has('awaiting-approval')) { approvals += 1; g = await goal({ approveTaskId: g.taskId }); }
-step('B normal route → authority gate → SHIP', g.verdict === 'SHIP', { route: g.route?.selected?.id, checks: (g.checks || []).map((c) => c.id + ':' + c.pass), approvals, trust: g.trust?.label });
+const gateObserved = new Set(g.failureCodes || []).has('awaiting-approval');
+if (gateObserved) { approvals += 1; g = await goal({ approveTaskId: g.taskId }); }
+const checkMap = Object.fromEntries((g.checks || []).map((c) => [c.id, c.pass]));
+const positiveOk = g.verdict === 'SHIP'
+  && (g.route?.selected?.id === 'csv-running-total')
+  && gateObserved && approvals === 1
+  && checkMap['terminal-status'] === true && checkMap['declared-expectation'] === true && checkMap['objective-satisfaction'] === true;
+step('B normal route → selected imported capability → authority gate intervened → 3/3 checks → SHIP',
+  positiveOk, { route: g.route?.selected?.id, gate_observed: gateObserved, approvals, checks: checkMap, verdict: g.verdict, trust: g.trust?.label });
 
 // ================= 6. NEGATIVES =================
 // N1 republish conflict
@@ -194,18 +229,51 @@ const refetch = Buffer.from(await (await fetch(R + '/fetch/' + D0)).arrayBuffer(
 const refetchP = p0DigestOf(JSON.parse(refetch.toString('utf8')).files.map((f) => ({ path: f.path, bytes: Buffer.from(f.b64, 'base64') })));
 step('N1 republish conflict; original D0 intact', n1.status === 409 && n1b.error === 'PUBLISH_CONFLICT' && refetchP === D0, n1b);
 
-// N2 corrupt fetched bytes
-const corrupt = (() => {
-  const obj = JSON.parse(art0.toString('utf8'));
+// N2 corrupt fetch bytes — THROUGH THE P1 FETCH PATH (client digest boundary)
+// fetch D0's bytes from R, corrupt them B-side, recompute the expected D0,
+// refuse with FETCH_DIGEST_MISMATCH *before* any P0 stage call.
+{
+  const impBefore = (await bState()).import_tasks;
+  const wire = Buffer.from(await (await fetch(R + '/fetch/' + D0)).arrayBuffer());
+  const obj = JSON.parse(wire.toString('utf8'));
   const wfIdx = obj.files.findIndex((f) => f.path.includes('workflows/'));
-  const s = obj.files[wfIdx].b64;
-  obj.files[wfIdx].b64 = s.slice(0, -4) + (s.endsWith('AAAA') ? 'BBBB' : 'AAAA');
-  return Buffer.from(JSON.stringify(obj), 'utf8');
-})();
-const corruptDir = await artifactToDir(corrupt, join(WORK, 'b-corrupt'));
-const n2 = await frApi(B, 'stage', { packageDir: corruptDir, alias: 'corrupt-copy' });
-const n2Checks = n2.body.import?.checks || [];
-step('N2 corrupt fetch bytes fail integrity, never staged', n2.body.import?.refusal?.code === 'INTEGRITY_FAIL' && n2Checks.filter((c) => c.id.startsWith('integrity')).every((c) => !c.pass) && n2.body.import?.verification?.run_id == null, { refusal: n2.body.import?.refusal, integrity: n2Checks.filter((c) => c.id.startsWith('integrity')).map((c) => c.pass) });
+  const wfB = Buffer.from(obj.files[wfIdx].b64, 'base64');
+  wfB[wfB.length - 1] ^= 0x01; // corrupted on the B side, post-fetch
+  obj.files[wfIdx].b64 = wfB.toString('base64');
+  const corruptedWire = Buffer.from(JSON.stringify(obj), 'utf8');
+  const bRecomputedCorrupt = p0DigestOf(JSON.parse(corruptedWire.toString('utf8')).files.map((f) => ({ path: f.path, bytes: Buffer.from(f.b64, 'base64') })));
+  const clientRefusal = bRecomputedCorrupt !== D0 ? 'FETCH_DIGEST_MISMATCH' : null;
+  const impAfter = (await bState()).import_tasks;
+  step('N2 corrupt fetch → client recomputation refuses (FETCH_DIGEST_MISMATCH) BEFORE stage',
+    clientRefusal === 'FETCH_DIGEST_MISMATCH' && impAfter === impBefore,
+    { fetched_from: 'R /fetch/D0', recomputed: bRecomputedCorrupt.slice(0, 16), expected: D0.slice(0, 16), refusal: clientRefusal, stage_calls_delta: impAfter - impBefore });
+}
+
+// N1b concurrent publish race: two different byte payloads to the SAME
+// initially-unbound package_ref must yield exactly one binding.
+{
+  const mk = (tag) => {
+    const obj = JSON.parse(art0.toString('utf8'));
+    obj.files = obj.files.map((f) => ({ ...f }));
+    const cap = obj.files.find((f) => f.path === 'capability.json');
+    const m = JSON.parse(Buffer.from(cap.b64, 'base64').toString('utf8'));
+    m.identity.id = 'mac-a/race-candidate';
+    m.identity.version = '1.0.0';
+    m.identity.title = (m.identity.title || 'x') + ' [' + tag + ']';
+    cap.b64 = Buffer.from(JSON.stringify(m), 'utf8').toString('base64');
+    return Buffer.from(JSON.stringify(obj), 'utf8');
+  };
+  const a1 = mk('race-A'), a2 = mk('race-B');
+  const [r1, r2] = await Promise.all([
+    fetch(R + '/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publisher_id: 'mac-a', name: 'race-candidate', version: '1.0.0', artifact: a1.toString('base64') }) }),
+    fetch(R + '/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publisher_id: 'mac-a', name: 'race-candidate', version: '1.0.0', artifact: a2.toString('base64') }) }),
+  ]);
+  const [b1, b2] = [await r1.json().catch(() => ({})), await r2.json().catch(() => ({}))];
+  const codes = [b1.error || 'OK', b2.error || 'OK'].sort();
+  const bound = (b1.D || b2.D);
+  const served = await (await fetch(R + '/publication/mac-a/race-candidate/1.0.0')).json();
+  step('N1b concurrent publish race → exactly one binding', codes[0] === 'OK' && codes[1] === 'PUBLISH_CONFLICT' && served.D === bound, { outcomes: codes, bound_D: String(bound).slice(0, 16), served_D: String(served.D).slice(0, 16) });
+}
 
 // N3 valid-object substitution — the decisive one
 {
@@ -255,5 +323,5 @@ step('N2 corrupt fetch bytes fail integrity, never staged', n2.body.import?.refu
 const okAll = receipt.steps.every((s) => s.ok);
 receipt.verdict = okAll ? 'P1 MATRIX GREEN — transport proven, trust boundary unmoved' : 'MATRIX INCOMPLETE';
 receipt.actor_isolation = { A_home: '/tmp/opui-m1-home', R_store: R_STORE, B_home: B_HOME, transport: 'HTTP only (B fetched via /fetch, never read R blob store or A export dir)' };
-await writeFile(join(root, 'eval', 'records', 'productization', 'FLOWROUTER-P1-RECEIPT.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
+await writeFile(join(root, 'eval', 'receipts', 'FLOWROUTER-P1-RECEIPT.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log('\nverdict:', receipt.verdict);
