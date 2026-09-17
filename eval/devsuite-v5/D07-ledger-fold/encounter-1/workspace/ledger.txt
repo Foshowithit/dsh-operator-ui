@@ -1,0 +1,7 @@
+credit 104
+debit 56
+debit 34
+debit 85
+debit 20
+credit 20
+debit 9

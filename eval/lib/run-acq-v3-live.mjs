@@ -92,6 +92,7 @@ for (const fam of FAMILIES) {
   const e2 = await loadEnc(fam, 'encounter-2');
   const e3 = await loadEnc(fam, 'encounter-3');
   const e4 = await loadEnc(fam, 'encounter-4');
+  const e5 = await loadEnc(fam, 'encounter-5');
 
   const sampleFiles = {};
   async function walk(d) {
@@ -111,7 +112,7 @@ for (const fam of FAMILIES) {
       mkGate('E2', e2),
       mkGate('E3', e3),
     ],
-    terminal: mkGate('E4', e4),
+    terminals: [mkGate('E4a', e4), mkGate('E4b', e5)],
   });
 
   summary.totals.model_calls += r.usage.model_calls;
@@ -137,7 +138,7 @@ for (const fam of FAMILIES) {
         promotedBy: 'operator (driver-recorded)',
         yaml_sha256: r.candidate.yaml_sha256,
         revisions: r.revisions,
-        terminalGate: 'E4 (sacred, single evaluation)',
+        terminalGates: 'E4a + E4b (sacred, one evaluation each, both required) ',
       },
     };
     registry.capabilities.push(cap);

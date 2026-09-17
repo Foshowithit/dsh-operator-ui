@@ -1,0 +1,23 @@
+{
+  "family": "D14",
+  "totals": [
+    {
+      "region": "gulf",
+      "total": "944"
+    },
+    {
+      "region": "north",
+      "total": "931"
+    },
+    {
+      "region": "west",
+      "total": "708"
+    },
+    {
+      "region": "east",
+      "total": "40"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

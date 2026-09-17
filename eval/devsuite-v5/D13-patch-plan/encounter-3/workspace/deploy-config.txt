@@ -1,0 +1,7 @@
+# current deployment values
+cache_mb=64
+heap=512m
+interval_s=30
+jobs=4
+log_level=on
+keepalive=info

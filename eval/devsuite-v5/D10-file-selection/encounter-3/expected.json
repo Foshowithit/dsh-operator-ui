@@ -1,0 +1,23 @@
+{
+  "family": "D10",
+  "files": [
+    {
+      "file": "bravo.log",
+      "size": "2055"
+    },
+    {
+      "file": "delta.dat",
+      "size": "1529"
+    },
+    {
+      "file": "echo.log",
+      "size": "1590"
+    },
+    {
+      "file": "fox.cfg",
+      "size": "2277"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

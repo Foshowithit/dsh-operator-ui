@@ -1,0 +1,37 @@
+{
+  "family": "D05",
+  "lines": [
+    {
+      "order": "o100",
+      "item": "anchor-bolt",
+      "total": "64"
+    },
+    {
+      "order": "o101",
+      "item": "gib-key",
+      "total": "77"
+    },
+    {
+      "order": "o102",
+      "item": "damper-cable",
+      "total": "35"
+    },
+    {
+      "order": "o103",
+      "item": "flat-washer",
+      "total": "68"
+    },
+    {
+      "order": "o104",
+      "item": "hex-nut",
+      "total": "60"
+    },
+    {
+      "order": "o105",
+      "item": "anchor-bolt",
+      "total": "64"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

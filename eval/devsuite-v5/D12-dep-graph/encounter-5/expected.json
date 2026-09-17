@@ -1,0 +1,32 @@
+{
+  "family": "D12",
+  "counts": [
+    {
+      "component": "api",
+      "deps": "1"
+    },
+    {
+      "component": "auth",
+      "deps": "1"
+    },
+    {
+      "component": "build",
+      "deps": "2"
+    },
+    {
+      "component": "daemon",
+      "deps": "0"
+    },
+    {
+      "component": "export",
+      "deps": "0"
+    },
+    {
+      "component": "frontend",
+      "deps": "0"
+    }
+  ],
+  "heaviest": "build",
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

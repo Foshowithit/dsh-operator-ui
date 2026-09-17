@@ -1,0 +1,27 @@
+{
+  "family": "D13",
+  "applied": [
+    {
+      "key": "jobs",
+      "from": "64",
+      "to": "info"
+    },
+    {
+      "key": "timeout",
+      "from": "512m",
+      "to": "3"
+    },
+    {
+      "key": "interval_s",
+      "from": "30",
+      "to": "on"
+    },
+    {
+      "key": "keepalive",
+      "from": "4",
+      "to": "90"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

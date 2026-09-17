@@ -1,0 +1,8 @@
+# component dependency edges
+
+api
+auth -> export
+daemon
+export
+frontend
+gateway

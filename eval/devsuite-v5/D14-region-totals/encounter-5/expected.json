@@ -1,0 +1,23 @@
+{
+  "family": "D14",
+  "totals": [
+    {
+      "region": "north",
+      "total": "1369"
+    },
+    {
+      "region": "west",
+      "total": "1196"
+    },
+    {
+      "region": "gulf",
+      "total": "1031"
+    },
+    {
+      "region": "east",
+      "total": "360"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

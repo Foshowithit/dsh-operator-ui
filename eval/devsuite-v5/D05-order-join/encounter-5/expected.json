@@ -1,0 +1,47 @@
+{
+  "family": "D05",
+  "lines": [
+    {
+      "order": "o100",
+      "item": "expansion-shell",
+      "total": "37"
+    },
+    {
+      "order": "o101",
+      "item": "flat-washer",
+      "total": "75"
+    },
+    {
+      "order": "o102",
+      "item": "coupler",
+      "total": "17"
+    },
+    {
+      "order": "o103",
+      "item": "gib-key",
+      "total": "23"
+    },
+    {
+      "order": "o104",
+      "item": "bracket",
+      "total": "74"
+    },
+    {
+      "order": "o105",
+      "item": "bracket",
+      "total": "74"
+    },
+    {
+      "order": "o106",
+      "item": "hex-nut",
+      "total": "88"
+    },
+    {
+      "order": "o107",
+      "item": "hex-nut",
+      "total": "88"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

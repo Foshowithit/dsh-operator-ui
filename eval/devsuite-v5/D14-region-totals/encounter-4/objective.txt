@@ -1,0 +1,1 @@
+Total the amounts per region in sales.csv and report each region with its total, sorted by total descending then region alphabetically, one per line, as RESULT region=<region> total=<amount>. The amount column comes first in this export.

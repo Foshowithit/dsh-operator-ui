@@ -1,0 +1,7 @@
+# files required for release
+boot.img
+core.pkg
+diag.bin
+env.map
+firmware.sig
+grub.cfg

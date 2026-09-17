@@ -336,26 +336,34 @@ Reply with EXACTLY two fenced blocks:
       // loop → revise phase
     }
     if (frontier >= p.gates.length && (!terminal || terminal.status !== 'REFUSED')) {
-      // ---- E4: sacred terminal. One evaluation, never feeds back. ----
-      const t = p.terminal;
-      await stageWorkspace(t.dir);
-      await writeFile(join(workflowsDir, name + '.yaml'), yamlText, 'utf8');
-      const run = await runWorkflowOnWorkspace(name, t.objective);
-      const wsFiles = await workspaceSnapshot(executionWorkspace);
-      const evidence = run.outputs; // same defect fix as the gate phase
-      const grade = t.grader(t.expected, evidence, wsFiles);
-      attempts.push({
-        rev: revisions, gate: 'E4-terminal', failureKind: grade.satisfied ? null : 'terminal',
-        yaml_sha256: currentHash, parentHash: null, name,
-        run: { workflow: name, run_id: run.run_id, status: run.status },
-        outputs: String(run.outputs).slice(0, 4000),
-        grader: grade,
-        at: new Date().toISOString(),
-      });
-      log(`E4 TERMINAL: run=${run.status} ${grade.satisfied ? 'PASS → PROMOTE' : 'FAIL → REFUSE'}`);
-      terminal = grade.satisfied
-        ? { status: 'CANDIDATE_READY', terminalRun: { run_id: run.run_id, status: run.status } }
-        : { status: 'REFUSED', code: 'TERMINAL_FAILED', detail: 'E4 sacred terminal evaluation failed — no revision permitted', terminalRun: { run_id: run.run_id, status: run.status } };
+      // ---- SACRED TERMINALS: one evaluation each, in order, never feeds
+      // back. Promotion requires EVERY terminal to pass in this same
+      // candidate version (GPT breadth ruling: >= 2 unseen proofs). ----
+      const terminals = p.terminals || (p.terminal ? [p.terminal] : []);
+      const terminalRuns = [];
+      let allPass = true;
+      for (const t of terminals) {
+        await stageWorkspace(t.dir);
+        await writeFile(join(workflowsDir, name + '.yaml'), yamlText, 'utf8');
+        const run = await runWorkflowOnWorkspace(name, t.objective);
+        const wsFiles = await workspaceSnapshot(executionWorkspace);
+        const evidence = run.outputs; // same defect fix as the gate phase
+        const grade = t.grader(t.expected, evidence, wsFiles);
+        terminalRuns.push({ gate: t.enc, run_id: run.run_id, status: run.status, satisfied: grade.satisfied, detail: grade.detail });
+        attempts.push({
+          rev: revisions, gate: t.enc, failureKind: grade.satisfied ? null : 'terminal',
+          yaml_sha256: currentHash, parentHash: null, name,
+          run: { workflow: name, run_id: run.run_id, status: run.status },
+          outputs: String(run.outputs).slice(0, 4000),
+          grader: grade,
+          at: new Date().toISOString(),
+        });
+        log(`${t.enc} TERMINAL: run=${run.status} ${grade.satisfied ? 'PASS' : 'FAIL'}`);
+        if (!grade.satisfied) { allPass = false; break; } // remaining terminals unexposed? NO: each is one shot; a failed first terminal refuses the episode
+      }
+      terminal = allPass
+        ? { status: 'CANDIDATE_READY', terminalRuns }
+        : { status: 'REFUSED', code: 'TERMINAL_FAILED', detail: 'a sacred terminal evaluation failed — no revision permitted', terminalRuns };
     }
 
     return {

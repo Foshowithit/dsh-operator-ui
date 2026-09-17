@@ -1,0 +1,31 @@
+{
+  "family": "D11",
+  "contacts": [
+    {
+      "name": "ava-calder",
+      "phone": "7915316031"
+    },
+    {
+      "name": "ava-ellery",
+      "phone": "5895746044"
+    },
+    {
+      "name": "ava-dune",
+      "phone": "7408282441"
+    },
+    {
+      "name": "farrow-archer",
+      "phone": "9274435685"
+    },
+    {
+      "name": "dmitri-calder",
+      "phone": "5009986970"
+    },
+    {
+      "name": "farrow-ellery",
+      "phone": "6374217728"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

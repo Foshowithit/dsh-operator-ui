@@ -1,0 +1,32 @@
+{
+  "family": "D12",
+  "counts": [
+    {
+      "component": "api",
+      "deps": "0"
+    },
+    {
+      "component": "auth",
+      "deps": "2"
+    },
+    {
+      "component": "build",
+      "deps": "1"
+    },
+    {
+      "component": "daemon",
+      "deps": "2"
+    },
+    {
+      "component": "export",
+      "deps": "1"
+    },
+    {
+      "component": "gateway",
+      "deps": "1"
+    }
+  ],
+  "heaviest": "auth",
+  "encounter": 3,
+  "role": "regression"
+}

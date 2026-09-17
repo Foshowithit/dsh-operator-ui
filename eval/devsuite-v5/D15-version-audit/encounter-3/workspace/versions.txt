@@ -1,0 +1,6 @@
+# component versions
+daemon: v2.8.2
+agent: v2.1.6
+broker: v2.2.2
+cli: v2.8.3
+exporter: v1.3.6

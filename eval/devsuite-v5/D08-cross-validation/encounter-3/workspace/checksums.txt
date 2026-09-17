@@ -1,0 +1,5 @@
+initrd.gz:68bd9b58
+boot.img:6cc3466d
+hash.txt:43933aa3
+core.pkg:b56f2f1e
+diag.bin:ef7e3308

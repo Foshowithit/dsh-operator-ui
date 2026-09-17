@@ -1,0 +1,1 @@
+Normalize every contact in contacts.txt: the name becomes lowercase with a single hyphen between words (first-last), and the phone becomes exactly 10 digits with all punctuation removed. Report in file order, one per line, as RESULT name=<first-last> phone=<10 digits>.

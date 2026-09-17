@@ -1,0 +1,27 @@
+{
+  "family": "D13",
+  "applied": [
+    {
+      "key": "timeout",
+      "from": "30",
+      "to": "3"
+    },
+    {
+      "key": "jobs",
+      "from": "4",
+      "to": "info"
+    },
+    {
+      "key": "heap",
+      "from": "info",
+      "to": "90"
+    },
+    {
+      "key": "keepalive",
+      "from": "64",
+      "to": "90"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

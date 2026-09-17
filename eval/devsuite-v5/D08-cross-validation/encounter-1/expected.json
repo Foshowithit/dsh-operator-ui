@@ -1,0 +1,31 @@
+{
+  "family": "D08",
+  "statuses": [
+    {
+      "file": "boot.img",
+      "status": "ok"
+    },
+    {
+      "file": "diag.bin",
+      "status": "ok"
+    },
+    {
+      "file": "env.map",
+      "status": "unexpected"
+    },
+    {
+      "file": "firmware.sig",
+      "status": "ok"
+    },
+    {
+      "file": "grub.cfg",
+      "status": "mismatch"
+    },
+    {
+      "file": "initrd.gz",
+      "status": "ok"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}
