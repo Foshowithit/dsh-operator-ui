@@ -1,0 +1,382 @@
+{
+  "generated_at": "2026-09-17T09:28:08.058Z",
+  "spec": "8fb55a4 (I1 — full federation composition / traceability)",
+  "seam_values": [
+    {
+      "name": "P0/P2_publish",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+      "tuple": {
+        "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+        "name": "csv-running-total",
+        "version": "0.1.0"
+      },
+      "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"
+    },
+    {
+      "name": "R0_mirror",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"
+    },
+    {
+      "name": "D1_endpoint",
+      "endpoints": [
+        "http://127.0.0.1:13182"
+      ],
+      "count": 1
+    },
+    {
+      "name": "D0_tuple",
+      "candidates": [
+        {
+          "publisher_scheme": "p2-selfcert-v1",
+          "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+          "name": "csv-running-total",
+          "version": "0.1.0"
+        }
+      ],
+      "count": 1
+    },
+    {
+      "name": "explicit_selection",
+      "selected_tuple": {
+        "publisher_scheme": "p2-selfcert-v1",
+        "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+        "name": "csv-running-total",
+        "version": "0.1.0"
+      },
+      "decided_by": "caller/operator"
+    },
+    {
+      "name": "S0_backfill",
+      "outcome": {
+        "COPIED": 1
+      },
+      "observed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "destination_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+    },
+    {
+      "name": "F0_resolution",
+      "state": "CONSISTENT",
+      "authenticated_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "selected_state": {
+        "head_sequence": 1,
+        "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e",
+        "proof_source": "dest",
+        "globally_fresh": false,
+        "note": "most advanced mutually compatible state observed in this query — not globally fresh"
+      }
+    },
+    {
+      "name": "P2_authenticated",
+      "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+      "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"
+    },
+    {
+      "name": "P0_recomputed",
+      "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+    },
+    {
+      "name": "consumer_local",
+      "pin_before_use": null,
+      "pin_after_stage": {
+        "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+        "sequence": 1,
+        "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e"
+      },
+      "pin_witness_sha": "352c665027f45d7b9416822df8cc3fd5eb6d10588ca830554b8dc9ef5267df12",
+      "registry_before_admit": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+      "registry_after_admit": "0413a9471112cf208d8c4fb910d5422142cd34733458ee9d4a1bf8be0eccc4c3",
+      "route": {
+        "id": "csv-running-total",
+        "version": "0.1.0",
+        "workflow": "csv-running-total-v0-1-0",
+        "lifecycle": "promoted"
+      },
+      "verdict": "SHIP",
+      "final_verdict": "SHIP"
+    },
+    {
+      "name": "F1_fork",
+      "state": "CONFLICT",
+      "relation": "SAME_SEQUENCE_DIVERGENT",
+      "proof_digest": "53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee"
+    },
+    {
+      "name": "F1_carriage",
+      "proof_digest": "53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee",
+      "identical": true,
+      "verifies": true,
+      "custody_outcome": {
+        "COPIED": 1
+      }
+    },
+    {
+      "name": "F1_ingest",
+      "quarantined": true,
+      "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED"
+    }
+  ],
+  "handoffs": [
+    {
+      "from": "origin R1",
+      "to": "mirror R2",
+      "owned_by": "R0",
+      "knows": "custody of one exact validated object (blob + immutable binding)"
+    },
+    {
+      "from": "directory Q",
+      "to": "consumer",
+      "owned_by": "D1",
+      "knows": "endpoint candidates only — no publisher, tuple, digest, freshness or ranking"
+    },
+    {
+      "from": "endpoint R2",
+      "to": "consumer",
+      "owned_by": "D0",
+      "knows": "exact tuple claims with a non-authoritative claimed_D"
+    },
+    {
+      "from": "mirror R2",
+      "to": "destination R3",
+      "owned_by": "S0",
+      "knows": "an exact named object, copied additively through ordinary R0"
+    },
+    {
+      "from": "destination R3",
+      "to": "consumer",
+      "owned_by": "F0",
+      "knows": "the resolved exact tuple + canonical proof material (read-only)"
+    },
+    {
+      "from": "consumer",
+      "to": "consumer-local stage",
+      "owned_by": "P2 + P0",
+      "knows": "publisher identity bound to the exact tuple and a locally recomputed artifact digest"
+    },
+    {
+      "from": "stage",
+      "to": "route",
+      "owned_by": "sealed P2 stage + explicit admission",
+      "knows": "the ONLY pin mutation is the stage; the ONLY routability change is explicit admission"
+    }
+  ],
+  "coverage": [
+    {
+      "phase": "P0",
+      "role": "exact artifact integrity",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "P1",
+      "role": "repository transport foundation",
+      "i1_coverage": "inherited sealed prerequisite"
+    },
+    {
+      "phase": "P1-X",
+      "role": "real-network physical portability",
+      "i1_coverage": "inherited sealed prerequisite"
+    },
+    {
+      "phase": "P2",
+      "role": "publisher authentication",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "F0",
+      "role": "exact multi-repository resolution",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "F1",
+      "role": "equivocation evidence (branch)",
+      "i1_coverage": "exercised (separate branch)"
+    },
+    {
+      "phase": "R0",
+      "role": "authenticated custody replication",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "I0",
+      "role": "prior federation composition",
+      "i1_coverage": "inherited sealed prerequisite"
+    },
+    {
+      "phase": "D0",
+      "role": "tuple discovery",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "D1",
+      "role": "endpoint discovery",
+      "i1_coverage": "exercised"
+    },
+    {
+      "phase": "S0",
+      "role": "exact-scope custody backfill",
+      "i1_coverage": "exercised"
+    }
+  ],
+  "steps": [
+    {
+      "step": "topology: origin R1, mirror R2, destination R3, consumer, configured directory",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13181,
+          "r2": 13182,
+          "r3": 13183
+        }
+      }
+    },
+    {
+      "step": "lane 1. P0/P2 — publisher authenticates the publication into origin R1",
+      "ok": true,
+      "result": {
+        "D": "f7c6c2bd44e4"
+      }
+    },
+    {
+      "step": "lane 2. R0 — the mirror independently verified and now holds the ORIGINAL publisher material",
+      "ok": true,
+      "result": {
+        "D": "f7c6c2bd44e4",
+        "identical": true
+      }
+    },
+    {
+      "step": "lane 3. D1 — one endpoint candidate from the configured directory, with no capability claim and no authority",
+      "ok": true,
+      "result": {
+        "endpoints": [
+          "http://127.0.0.1:13182"
+        ]
+      }
+    },
+    {
+      "step": "lane 4. D0 — exactly one exact P2 tuple candidate; the candidate carries no digest and no version selection",
+      "ok": true,
+      "result": {
+        "candidates": 1,
+        "version": "0.1.0"
+      }
+    },
+    {
+      "step": "lane 5. explicit selection — the caller picks the exact tuple (no rank, no latest, no scoring anywhere)",
+      "ok": true,
+      "result": {
+        "selected": {
+          "publisher_scheme": "p2-selfcert-v1",
+          "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf",
+          "name": "csv-running-total",
+          "version": "0.1.0"
+        }
+      }
+    },
+    {
+      "step": "lane 6. S0 — the exact named object is backfilled into the destination through ordinary R0 (one object, additive)",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "D": "f7c6c2bd44e4"
+      }
+    },
+    {
+      "step": "lane 7. F0 — exact resolution over the destination resolves the exact tuple with the canonical proof material",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "D": "f7c6c2bd44e4"
+      }
+    },
+    {
+      "step": "lane 8/9. P2 authenticates the ORIGINAL publisher and P0 recomputation confirms the artifact bytes",
+      "ok": true,
+      "result": {
+        "publisher": "5762ade14b72",
+        "recomputed": "f7c6c2bd44e4"
+      }
+    },
+    {
+      "step": "lane 10. stage → B-local verify → explicit admission → route → SHIP, with the admitted LOCAL capability",
+      "ok": true,
+      "result": {
+        "stage": "STAGED",
+        "verify": "VERIFIED",
+        "admit": true,
+        "verdict": "SHIP"
+      }
+    },
+    {
+      "step": "lane 10b. exactly one owned mutation per seam: the sealed stage moved the pin, explicit admission moved the registry, nothing else did",
+      "ok": true,
+      "result": {
+        "pin_moved_at_stage": true,
+        "registry_moved_at_admit": true,
+        "registry_untouched_by_stage": true,
+        "quarantine_untouched": true
+      }
+    },
+    {
+      "step": "branch 1. F0 sees NON-COMPARABLE observations across two independent repositories and F1 constructs the proof core",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "relation": "SAME_SEQUENCE_DIVERGENT"
+      }
+    },
+    {
+      "step": "branch 2. the proof crosses untrusted transport AND optional S0 evidence custody byte-identically, verifying at the destination — and custody alone quarantines NOBODY",
+      "ok": true,
+      "result": {
+        "custody": {
+          "COPIED": 1
+        },
+        "identical": true,
+        "verifies": true,
+        "quarantine_from_custody": false
+      }
+    },
+    {
+      "step": "branch 3. explicit ingest quarantines; the next import refuses BEFORE any pin mutation, and the earlier admission stays untouched",
+      "ok": true,
+      "result": {
+        "quarantined": true,
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED",
+        "caps": 1
+      }
+    },
+    {
+      "step": "branch 4. acknowledgment preserves the evidence and the pin while lifting the quarantine",
+      "ok": true,
+      "result": {
+        "ack": true,
+        "proofs": 1
+      }
+    },
+    {
+      "step": "seams. the object leaving each phase IS the object entering the next: canonical endpoint, exact tuple, publisher_id, D and material digest all continuous",
+      "ok": true,
+      "result": {
+        "endpoint_continuous": true,
+        "tuple_continuous": true,
+        "publisher_continuous": true,
+        "D_continuous": true,
+        "material_continuous": true
+      }
+    },
+    {
+      "step": "authority. I1 introduces no trust object, status, ranking, selector, freshness or identity field, and every consumer-local mutation is owned by a sealed step",
+      "ok": true,
+      "result": {
+        "no_authority_vocabulary": true,
+        "owned_mutations": true
+      }
+    }
+  ],
+  "claim": "The completed FlowRouter federation can take a consumer from only a canonical capability name and a configured untrusted directory to a consumer-local SHIP through untrusted discovery, authenticated custody transfer, exact federation resolution and local verification/admission — while repositories, directories, mirrors, sync bookkeeping, transport and orchestration acquire no authority beyond their already-sealed roles.",
+  "verdict": "I1 GREEN — the sealed phases compose into one traceable federation path from a name and a directory to a consumer-local SHIP"
+}
