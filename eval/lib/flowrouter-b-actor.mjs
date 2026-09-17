@@ -35,10 +35,13 @@ const { stagePackage, verifyImport, admitImport } = await import(join(REPO, 'lib
 const { runGoal } = await import(join(REPO, 'lib', 'goal.js'));
 const { resolveConfig } = await import(join(REPO, 'lib', 'config.js'));
 const { verifyProofCore } = await import(join(REPO, 'lib', 'equivocation.js'));
+const { recordProof, acknowledgeProof, listProofRecords, isQuarantined, quarantinedPublishers } = await import(join(REPO, 'lib', 'equivocation.js'));
+const { resolveFederated, fetchExact } = await import(join(REPO, 'lib', 'federation.js'));
 
 const cfgRes = resolveConfig();
 const cfg = cfgRes.config || {};
 const sha = (b) => createHash('sha256').update(b).digest('hex');
+const RUN_NONCE = randomUUID(); // receipt instrumentation only — never an identity or trust input
 
 // frozen P0 digest rule (local copy — identical to lib/flowrouter.js)
 function canonicalJson(value) {
@@ -68,9 +71,15 @@ async function bstate() {
   try { taskRaw = await readFile(join(process.env.DSH_HOME, 'operator-ui', 'tasks.json'), 'utf8'); } catch {}
   let imports = 0;
   try { imports = (JSON.parse(taskRaw).tasks || []).filter((t) => t.kind === 'import').length; } catch {}
+  const parsed = (() => { try { return JSON.parse(taskRaw).tasks || []; } catch { return []; } })();
+  const pin = parsed.find((t) => t.kind === 'pin') || null;
   return {
     registry_sha: sha(regRaw), registry_caps: (JSON.parse(regRaw.toString('utf8')).capabilities || []).length,
     taskstore_sha: sha(Buffer.from(taskRaw, 'utf8')), import_tasks: imports,
+    pin: pin ? pin.pin : null,
+    pin_witness_sha: pin && pin.witness ? sha(Buffer.from(JSON.stringify(pin.witness), 'utf8')) : null,
+    equivocation_records: parsed.filter((t) => t.kind === 'equivocation').length,
+    kinds: parsed.map((t) => t.kind).sort(),
   };
 }
 
@@ -82,8 +91,14 @@ const server = createServer(async (req, res) => {
     let body = null;
     if (req.method === 'POST') { body = ''; for await (const c of req) { body += c; if (body.length > 4_000_000) return json(res, 413, { error: 'too large' }); } try { body = JSON.parse(body || '{}'); } catch { return json(res, 400, { error: 'bad json' }); } }
 
+    if (req.method === 'GET' && url.pathname === '/actor') {
+      // Receipt instrumentation: which actor is this, and which run. A nonce
+      // is evidence of independence for the receipt, never a trust input.
+      return json(res, 200, { role: 'machine_B_consumer_and_mirrors', platform: platform(), release: release(), node: process.version, run_nonce: RUN_NONCE });
+    }
     if (req.method === 'GET' && url.pathname === '/machine') {
       return json(res, 200, {
+        role: 'machine_B_consumer_and_mirrors', run_nonce: RUN_NONCE,
         hostname: hostname(), platform: platform(), release: release(),
         node: process.version, pid: process.pid,
         registry_path: cfg.registry.path,
@@ -93,6 +108,52 @@ const server = createServer(async (req, res) => {
       });
     }
     if (req.method === 'GET' && url.pathname === '/bstate') return json(res, 200, await bstate());
+
+    // ---- I0 consumer surfaces: the sealed operations, driven over the wire ----
+    if (req.method === 'POST' && url.pathname === '/federation-resolve') {
+      const out = await resolveFederated({ peers: body.peers, scheme: body.scheme, publisher_id: body.publisher_id, name: body.name, version: body.version });
+      return json(res, 200, out);
+    }
+    if (req.method === 'POST' && url.pathname === '/federation-fetch') {
+      try {
+        const out = await fetchExact({ resolutionHandle: body.resolution_handle, D: body.D, bytesFrom: body.bytes_from });
+        return json(res, 200, out);
+      } catch (e) { return json(res, 409, { ok: false, error: e.code || 'FETCH_NOT_PERMITTED', reason: String(e.message).slice(0, 200) }); }
+    }
+    if (req.method === 'POST' && url.pathname === '/stage-fetched') {
+      // stage EXACTLY the bytes the caller sends (artifact transport stays
+      // network-only): verify material + tuple as the sealed path does.
+      const dir = join(process.env.DSH_HOME, 'i0-incoming');
+      await rm(dir, { recursive: true, force: true });
+      await mkdir(dir, { recursive: true });
+      const wire = Buffer.from(String(body.artifact_b64 || ''), 'base64');
+      const obj = JSON.parse(wire.toString('utf8'));
+      for (const f of obj.files) {
+        const dest = join(dir, f.path);
+        await mkdir(join(dest, '..'), { recursive: true });
+        await writeFile(dest, Buffer.from(f.b64, 'base64'));
+      }
+      const out = await stagePackage({ packageDir: dir, alias: body.alias, identityMaterial: body.identityMaterial, expectedTuple: body.expectedTuple });
+      return json(res, out.ok ? 200 : 409, out);
+    }
+    if (req.method === 'POST' && url.pathname === '/f1-ingest') {
+      const out = await recordProof({ core: body.proof_core, observedVia: body.observed_via });
+      return json(res, 200, { ok: true, recorded: out.recorded, deduplicated: !!out.deduplicated, proof_digest: out.proof_digest, quarantined: await isQuarantined(out.record.publisher_id) });
+    }
+    if (req.method === 'POST' && url.pathname === '/f1-acknowledge') {
+      const out = await acknowledgeProof({ proofDigest: body.proof_digest, operator: body.operator });
+      return out.ok ? json(res, 200, { ok: true, still_quarantined: out.still_quarantined }) : json(res, 404, out);
+    }
+    if (req.method === 'GET' && url.pathname === '/f1-status') {
+      const publisherId = url.searchParams.get('publisher_id') || null;
+      const proofs = await listProofRecords(publisherId || undefined);
+      return json(res, 200, {
+        ok: true,
+        quarantined: publisherId ? await isQuarantined(publisherId) : null,
+        quarantined_publishers: await quarantinedPublishers(),
+        proofs: proofs.map((t) => ({ proof_digest: t.proof_digest, publisher_id: t.publisher_id, relation: t.relation, acknowledged: t.acknowledged || null, recordedAt: t.recordedAt, observed_via: t.observed_via || [] })),
+      });
+    }
 
     if (req.method === 'POST' && url.pathname === '/reset') {
       // receipt-harness only: return B to a genuinely empty consumer state
