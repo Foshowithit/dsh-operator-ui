@@ -134,3 +134,77 @@ Manifest v0.1 changes; networking (publish/index/discover/fetch);
 marketplaces, reputation algorithms, global scores, generalized
 cross-system adapters. Those follow only after this mapping is adjudicated
 and the receipts above pass.
+
+---
+
+# AMENDMENTS (GPT adjudication of a0bcd3f) — appended, original record above unchanged
+
+Ruling: **ACCEPTED WITH 3 PRE-IMPLEMENTATION AMENDMENTS.** a0bcd3f freezes
+as the reconciliation baseline; implementation authorized; Manifest v0.1
+untouched; still no networking.
+
+## Amendment 1 — package digest definition (fix, f-d)
+
+The submitted "canonical JSON → bundle.sha256" was self-referential (the
+digest field lives inside the hashed content). Frozen rule (OCI-like):
+
+```
+content digest = SHA256( canonical ordered list of:
+    relative-path · byte-length · SHA256(file-bytes) )
+EXCEPT capability.json is canonicalized with implementation.bundle.digest
+OMITTED when computing the package digest; the digest is inserted after.
+```
+
+Distinguish two hashes:
+- **implementation digest** = SHA256(workflow YAML bytes) → `implementation.bundle.digest`
+- **package digest** = SHA256(canonical package contents per the rule) → `implementation.bundle.package_digest`
+
+Import repeats the identical procedure. Negative A (tamper) must
+demonstrate BOTH mismatches before anything executes.
+
+## Amendment 2 — identity namespacing + collision
+
+`identity.id` is globally namespaced (`publisher/name`). A bare local id is
+an ALIAS, never an identity:
+
+```
+source_identity: { id: "<publisher>/<name>", version }
+local:           { alias: "<bare-id>" }
+```
+
+If B already owns the alias: import MUST NOT overwrite or merge — it
+refuses `LOCAL_ID_COLLISION` or allocates an explicit new alias.
+Publisher names are supplied by export configuration (adapter concern).
+
+## Amendment 3 — verification truth split (frozen)
+
+```
+PACKAGE INTEGRITY → EXECUTABLE HERE → SOURCE EVIDENCE REPRODUCIBLE (optional)
+  → LOCAL CAPABILITY VERIFICATION → OPERATOR ADMISSION
+```
+
+B's verification fixture and expected outcome MUST be B-local — never
+contained in or derived from the imported package's answer material — and
+the fixture is FROZEN/HASHED **before** B executes the imported
+implementation. The claim established is exactly: *B independently
+observed that the imported implementation satisfies its declared contract
+locally.*
+
+**State split (frozen):** source truth (PROMOTED, evaluations, history)
+crosses only as `provenance.source.*`; receiver truth starts `STAGED /
+UNVERIFIED / INELIGIBLE` and only local verification then operator
+admission advance it. No imported lifecycle state crosses the line.
+
+## Acceptance matrix (sharpened + collision negative added)
+
+1. **Positive**: A promoted → export → clean B STAGED/INELIGIBLE →
+   integrity → compatibility → independent B-local verification → operator
+   admission → normal route → authority → execution → objective SHIP →
+   re-export preserving A provenance + appending B provenance.
+2. **Tamper negative**: one implementation byte changed → both digest
+   mismatches → never executed.
+3. **Compatibility negative**: authentic/integrity-green package whose
+   local requirement is unavailable → compatibility failure → INELIGIBLE,
+   never executed.
+4. **Collision negative**: B already owns the alias → refusal (or explicit
+   new alias); never overwrite existing intelligence.
