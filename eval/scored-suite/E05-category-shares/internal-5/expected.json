@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "delta",
+      "share": "34.1"
+    },
+    {
+      "category": "charlie",
+      "share": "26.2"
+    },
+    {
+      "category": "alpha",
+      "share": "25.0"
+    },
+    {
+      "category": "echo",
+      "share": "14.6"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

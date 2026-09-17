@@ -1,0 +1,22 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "grommet",
+      "system": "48",
+      "physical": "27"
+    },
+    {
+      "item": "arm",
+      "system": "7",
+      "physical": "42"
+    },
+    {
+      "item": "base",
+      "system": "28",
+      "physical": "48"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,1 @@
+Report the top 3 scores from scores.csv — including EVERY entry tied with the 3th-place score — sorted by score descending then name alphabetically, one per line, as RESULT name=<name> score=<n>. Comment lines starting with # must be ignored. Fields may be quoted.

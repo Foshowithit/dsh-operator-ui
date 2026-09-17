@@ -1,0 +1,19 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "cy",
+      "second": "di"
+    },
+    {
+      "first": "cy",
+      "second": "bo"
+    },
+    {
+      "first": "di",
+      "second": "bo"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,1 @@
+This file describes the run; the sequence itself is in the results file.

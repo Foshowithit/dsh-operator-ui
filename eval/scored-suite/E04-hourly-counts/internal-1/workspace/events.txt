@@ -1,0 +1,12 @@
+09:20 sync
+18:10 scan
+18:20 sync
+17:10 close
+19:55 open
+11:35 close
+10:35 open
+17:35 open
+18:05 open
+15:10 close
+10:45 open
+09:20 sync

@@ -1,0 +1,35 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "X8",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "C3",
+      "label": "trial"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "C3",
+      "label": "trial"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

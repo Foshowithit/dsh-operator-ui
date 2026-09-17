@@ -1,0 +1,42 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "dowel",
+      "system": "56",
+      "physical": "10"
+    },
+    {
+      "item": "knob",
+      "system": "6",
+      "physical": "54"
+    },
+    {
+      "item": "hinge",
+      "system": "24",
+      "physical": "56"
+    },
+    {
+      "item": "jig",
+      "system": "35",
+      "physical": "57"
+    },
+    {
+      "item": "clamp",
+      "system": "16",
+      "physical": "26"
+    },
+    {
+      "item": "base",
+      "system": "4",
+      "physical": "27"
+    },
+    {
+      "item": "flange",
+      "system": "42",
+      "physical": "32"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}

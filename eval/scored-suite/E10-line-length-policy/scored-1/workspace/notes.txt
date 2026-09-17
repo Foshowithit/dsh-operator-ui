@@ -1,0 +1,11 @@
+channel panel vector relay panel signal matrix vector panel bridge
+matrix relay vector orbit orbit
+vector signal signal buffer
+channel orbit orbit socket
+bridge orbit vector bridge orbit socket socket bridge vector socket channel
+vector bridge orbit socket
+signal matrix orbit vector
+channel relay orbit signal bridge signal vector vector panel orbit panel channel
+panel relay vector channel matrix matrix socket channel panel matrix
+socket buffer matrix socket channel buffer buffer orbit
+# end of notes

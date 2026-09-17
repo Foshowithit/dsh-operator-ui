@@ -1,0 +1,27 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "94"
+    },
+    {
+      "column": "feb",
+      "sum": "163"
+    },
+    {
+      "column": "mar",
+      "sum": "361"
+    },
+    {
+      "column": "apr",
+      "sum": "219"
+    },
+    {
+      "column": "may",
+      "sum": "209"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

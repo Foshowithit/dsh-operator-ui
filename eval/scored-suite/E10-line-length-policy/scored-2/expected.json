@@ -1,0 +1,27 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "4",
+      "length": "56"
+    },
+    {
+      "line": "5",
+      "length": "49"
+    },
+    {
+      "line": "6",
+      "length": "81"
+    },
+    {
+      "line": "10",
+      "length": "80"
+    },
+    {
+      "line": "14",
+      "length": "68"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

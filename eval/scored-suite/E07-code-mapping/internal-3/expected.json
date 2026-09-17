@@ -1,0 +1,27 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "E5",
+      "label": "edu"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "X6",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "X9",
+      "label": "UNKNOWN"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "gorse",
+      "score": "93"
+    },
+    {
+      "name": "duna",
+      "score": "89"
+    },
+    {
+      "name": "flint",
+      "score": "77"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

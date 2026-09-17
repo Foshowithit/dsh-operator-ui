@@ -1,0 +1,35 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "22"
+    },
+    {
+      "row": "2",
+      "total": "53"
+    },
+    {
+      "row": "3",
+      "total": "62"
+    },
+    {
+      "row": "4",
+      "total": "101"
+    },
+    {
+      "row": "5",
+      "total": "146"
+    },
+    {
+      "row": "6",
+      "total": "151"
+    },
+    {
+      "row": "7",
+      "total": "217"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

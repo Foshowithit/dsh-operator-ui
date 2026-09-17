@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "361"
+    },
+    {
+      "column": "feb",
+      "sum": "369"
+    },
+    {
+      "column": "mar",
+      "sum": "300"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

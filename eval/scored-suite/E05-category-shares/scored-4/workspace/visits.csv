@@ -1,0 +1,9 @@
+# channel visits
+
+channel,visits
+delta,7
+alpha,40
+echo,11
+foxtrot,41
+other,15
+# other is not a named channel

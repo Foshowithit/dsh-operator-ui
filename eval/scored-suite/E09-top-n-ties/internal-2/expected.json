@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "duna",
+      "score": "94"
+    },
+    {
+      "name": "axiom",
+      "score": "86"
+    },
+    {
+      "name": "cairn",
+      "score": "86"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

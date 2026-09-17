@@ -1,0 +1,12 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "arm",
+      "system": "21",
+      "physical": "17"
+    }
+  ],
+  "role": "contested-b",
+  "fixture_kind": "scored"
+}

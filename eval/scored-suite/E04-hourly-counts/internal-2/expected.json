@@ -1,0 +1,55 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "06",
+      "count": "3"
+    },
+    {
+      "hour": "08",
+      "count": "2"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "1"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "12",
+      "count": "1"
+    },
+    {
+      "hour": "13",
+      "count": "2"
+    },
+    {
+      "hour": "14",
+      "count": "1"
+    },
+    {
+      "hour": "16",
+      "count": "1"
+    },
+    {
+      "hour": "17",
+      "count": "1"
+    },
+    {
+      "hour": "18",
+      "count": "2"
+    },
+    {
+      "hour": "19",
+      "count": "3"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

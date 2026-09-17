@@ -1,0 +1,1 @@
+Placeholders look like {{name}}; values come from the values file.

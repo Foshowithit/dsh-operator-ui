@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "260"
+    },
+    {
+      "column": "feb",
+      "sum": "136"
+    },
+    {
+      "column": "mar",
+      "sum": "295"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

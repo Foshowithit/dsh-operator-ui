@@ -1,0 +1,9 @@
+# coverage plan
+
+name start end
+ada 12:00 13:13
+di 10:30 11:46
+eli 13:00 14:25
+hal 16:15 18:22
+
+# shifts listed chronologically by start

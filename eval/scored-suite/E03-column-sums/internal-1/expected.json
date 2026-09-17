@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "254"
+    },
+    {
+      "column": "feb",
+      "sum": "194"
+    },
+    {
+      "column": "mar",
+      "sum": "99"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

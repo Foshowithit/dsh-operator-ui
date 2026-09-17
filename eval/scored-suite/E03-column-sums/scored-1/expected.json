@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "250"
+    },
+    {
+      "column": "feb",
+      "sum": "143"
+    },
+    {
+      "column": "mar",
+      "sum": "209"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

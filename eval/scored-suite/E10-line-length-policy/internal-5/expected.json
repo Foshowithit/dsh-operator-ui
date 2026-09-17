@@ -1,0 +1,11 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "11",
+      "length": "76"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

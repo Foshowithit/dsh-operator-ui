@@ -1,0 +1,7 @@
+name start end
+bo 14:30 16:19
+ada 14:45 15:30
+eli 09:00 09:55
+gus 10:15 12:41
+
+# shifts listed chronologically by start

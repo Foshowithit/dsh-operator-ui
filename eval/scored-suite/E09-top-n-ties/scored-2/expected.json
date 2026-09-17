@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "boru",
+      "score": "83"
+    },
+    {
+      "name": "ember",
+      "score": "78"
+    },
+    {
+      "name": "flint",
+      "score": "74"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}
