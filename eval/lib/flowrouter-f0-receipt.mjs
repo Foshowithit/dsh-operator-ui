@@ -149,8 +149,8 @@ const r = await resolveOn(PEERS, Q);
 step('third configured peer ABSENT → PARTIAL (not CONSISTENT), candidate + fetch still permitted', r.body.state === 'PARTIAL' && r.body.candidate && r.body.candidate.D === D0 && r.body.fetch_permitted === true && r.body.observations.find((o) => o.repository_id === 'r3').status === 'ABSENT', { state: r.body.state, peers: r.body.observations.map((o) => o.repository_id + ':' + o.status) });
 
 const rid = r.body.observations.find((o) => o.status === 'VALID').repository_id;
-const fe = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolveResult: r.body, D: D0 });
-step('exact-D fetch from a VALID peer; D recomputed on receipt', fe.status === 200 && fe.body.recomputed_D === D0 && fe.body.fetched_from === rid, { from: fe.body.fetched_from, recomputed: fe.body.recomputed_D ? String(fe.body.recomputed_D).slice(0, 16) : (fe.body.error || 'missing') });
+const fe = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: r.body.resolution_handle, D: D0 });
+step('exact-D fetch via the B-authored resolution handle; D recomputed on receipt + canonical proof material returned', fe.status === 200 && fe.body.recomputed_D === D0 && fe.body.fetched_from === rid && !!fe.body.material && !!fe.body.proof_state, { from: fe.body.fetched_from, recomputed: fe.body.recomputed_D ? String(fe.body.recomputed_D).slice(0, 16) : (fe.body.error || 'missing'), proof_source: fe.body.proof_source });
 
 // ---------- full sealed local path to SHIP ----------
 if (!fe.body.bytes_b64) {
@@ -165,7 +165,9 @@ if (!fe.body.bytes_b64) {
     await mkdir(dirname(dest), { recursive: true });
     await writeFile(dest, Buffer.from(f.b64, 'base64'));
   }
-  const material = r.body.observations.find((o) => o.repository_id === rid).material;
+  // the stage handoff uses the FETCHED canonical F0-selected material —
+  // never a peer picked by the caller
+  const material = fe.body.material;
   const st = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, identityMaterial: material, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 } });
   const ver = await post(B, '/plugins/operator-ui/flowrouter?op=verify', { importTaskId: st.body.import?.taskId, fixtureDir: '/tmp/flowrouter-p0/b-fixture' });
   const adm = await post(B, '/plugins/operator-ui/flowrouter?op=admit', { importTaskId: st.body.import?.taskId });
@@ -230,7 +232,7 @@ if (!fe.body.bytes_b64) {
   await new Promise((res) => setTimeout(res, 800));
   const ru = await resolveOn([{ repository_id: 'r1', endpoint: ep('r1') }, { repository_id: 'r2', endpoint: ep('r2') }], { scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0' });
   const st1 = ru.body.observations.find((o) => o.repository_id === 'r1')?.status;
-  const fu = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolveResult: ru.body, D: D0 });
+  const fu = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: ru.body.resolution_handle, D: D0 });
   step('F3 unavailable peer → UNAVAILABLE; fetch exact-D from the other VALID peer', st1 === 'UNAVAILABLE' && ru.body.state === 'PARTIAL' && fu.status === 200 && fu.body.fetched_from === 'r2' && fu.body.recomputed_D === D0, { r1: st1, from: fu.body.fetched_from });
   serviceStart('r1');
   await waitUp('r1');
@@ -275,7 +277,7 @@ if (!fe.body.bytes_b64) {
 // F7: exact-D fetch NOT permitted after CONFLICT/EMPTY
 {
   const rc = await resolveOn([{ repository_id: 'r9', endpoint: 'http://127.0.0.1:19999' }], { scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0' });
-  const bad = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolveResult: rc.body, D: D0 });
+  const bad = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: rc.body.resolution_handle, D: D0 });
   step('F7 EMPTY resolution has no fetch path', rc.body.state === 'EMPTY' && bad.status === 409 && bad.body.error === 'FETCH_NOT_PERMITTED', { state: rc.body.state, fetch: bad.body.error });
 }
 // F8: duplicate configured repository_id → federation refuses to start
@@ -284,13 +286,64 @@ if (!fe.body.bytes_b64) {
   step('F8 duplicate configured repository_id → federation refuses to start', dup.status === 409 && dup.body.error === 'PEER_DUPLICATE_ID', dup.body);
 }
 
-// ================= causality checks =================
+// ================= resolve → fetch handoff attacks =================
+// The resolution is B's own (handle-referenced); the fetch re-observes its
+// byte source and independently rebinds the full tuple. A caller can
+// neither replay a resolution nor steer the proof material.
+{
+  const replay = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolveResult: r.body, D: D0 });
+  const forged = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: 'fedres_' + 'a'.repeat(32), D: D0 });
+  const wrongD = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: r.body.resolution_handle, D: '0'.repeat(64) });
+  step('H1 caller-supplied resolve JSON, forged handle, mismatched D → all FETCH_NOT_PERMITTED', replay.status === 409 && replay.body.error === 'FETCH_NOT_PERMITTED' && forged.status === 409 && forged.body.error === 'FETCH_NOT_PERMITTED' && wrongD.status === 409 && wrongD.body.error === 'FETCH_NOT_PERMITTED', { replay: replay.body.error, forged: forged.body.error, wrong_d: wrongD.body.error });
+}
+// H2: the caller may only steer the byte source among peers ALREADY VALID
+// for this exact tuple/D — a peer that never carried it is refused.
+{
+  const steer = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: r.body.resolution_handle, D: D0, bytes_from: 'r4' });
+  step('H2 bytes_from a peer not VALID for this exact tuple/D → FETCH_NOT_PERMITTED', steer.status === 409 && steer.body.error === 'FETCH_NOT_PERMITTED', { error: steer.body.error, reason: String(steer.body.reason || '').slice(0, 120) });
+}
+// H3: a resolution recorded VALID, then the sources stop carrying it —
+// fetch fails closed by RE-OBSERVATION, not by trusting the stored status.
+{
+  await restartFreshStore('r1');
+  await restartFreshStore('r2');
+  const stale = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: r.body.resolution_handle, D: D0 });
+  step('H3 peers stop carrying a previously VALID tuple → fetch fails closed on re-observation', stale.status === 409 && ['FETCH_UNAVAILABLE', 'FETCH_NOT_PERMITTED'].includes(stale.body.error), { error: stale.body.error, reason: String(stale.body.reason || '').slice(0, 140) });
+}
+// H4: bytes actually substituted at the byte source after resolution —
+// recomputation rejects them and failover serves the honest mirror.
+{
+  await post(ep('r1'), '/publisher', { genesis, events: [ev1] });
+  await post(ep('r2'), '/publisher', { genesis, events: [ev1] });
+  const p1res2 = await post(ep('r1'), '/publish', pubBody);
+  const p2res2 = await post(ep('r2'), '/publish', pubBody);
+  const res2 = await resolveOn([{ repository_id: 'r1', endpoint: ep('r1') }, { repository_id: 'r2', endpoint: ep('r2') }], Q);
+  const goodBlob = await readFile(join(WORK, 'store-r1', 'blobs', D0 + '.pkg'));
+  const swapped = JSON.parse(goodBlob.toString('utf8'));
+  const wfEntry = swapped.files.find((f) => f.path !== 'capability.json');
+  wfEntry.b64 = Buffer.from('# substituted artifact bytes\n').toString('base64');
+  await writeFile(join(WORK, 'store-r1', 'blobs', D0 + '.pkg'), JSON.stringify(swapped), 'utf8');
+  const fs2 = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: res2.body.resolution_handle, D: D0, bytes_from: 'r1' });
+  await writeFile(join(WORK, 'store-r1', 'blobs', D0 + '.pkg'), goodBlob);
+  step('H4 substituted bytes at the requested source are rejected; honest mirror serves instead', p1res2.status === 200 && p2res2.status === 200 && fs2.status === 200 && fs2.body.fetched_from === 'r2' && fs2.body.recomputed_D === D0, { from: fs2.body.fetched_from, recomputed: fs2.body.recomputed_D ? String(fs2.body.recomputed_D).slice(0, 16) : (fs2.body.error || null) });
+}
+
+// ================= causality checks ===============
 // C1: peer-order permutation → identical aggregate/candidate
 {
   const order = (peers) => resolveOn(peers, { scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0' });
   const o1 = await order([{ repository_id: 'r1', endpoint: ep('r1') }, { repository_id: 'r2', endpoint: ep('r2') }, { repository_id: 'r3', endpoint: ep('r3') }]);
   const o2 = await order([{ repository_id: 'r3', endpoint: ep('r3') }, { repository_id: 'r2', endpoint: ep('r2') }, { repository_id: 'r1', endpoint: ep('r1') }]);
-  const norm = (x) => JSON.stringify({ s: x.body.state, c: x.body.candidate && { D: x.body.candidate.D, seq: x.body.candidate.proof_state && x.body.candidate.proof_state.head_sequence } });
+  const norm = (x) => JSON.stringify({
+    s: x.body.state,
+    c: x.body.candidate && {
+      D: x.body.candidate.D,
+      seq: x.body.candidate.proof_state && x.body.candidate.proof_state.head_sequence,
+      // the SELECTED proof material must be order-independent too
+      source: x.body.candidate.material_source,
+      material: x.body.candidate.material && sha(Buffer.from(canonicalJson(x.body.candidate.material), 'utf8')).slice(0, 16),
+    },
+  });
   step('C1 peer-order permutation → identical aggregate + candidate', norm(o1) === norm(o2), { a: norm(o1), b: norm(o2) });
 }
 // C2: OBSERVE/RESOLVE leaves B's pins/task store byte-identical
@@ -342,6 +395,33 @@ if (!fe.body.bytes_b64) {
   step('C3a compatible seq4 + seq6 → seq6 regardless of peer order (labeled non-fresh)', d1.body.state === 'CONSISTENT' && d2.body.state === 'CONSISTENT' && seqs[0] === 6 && seqs[1] === 6 && d1.body.candidate.proof_state.globally_fresh === false, { seqs });
   const sib = await resolveOn([{ repository_id: 'r1', endpoint: ep('r1') }, { repository_id: 'r4', endpoint: ep('r4') }], q);
   step('C3b equal-sequence sibling branches → CONFLICT', sib.body.state === 'CONFLICT' && /equal-sequence/.test(sib.body.reason || ''), { state: sib.body.state, reason: sib.body.reason });
+
+  // C3c — the decisive end-to-end: bytes may come from the LOWER (seq-4)
+  // mirror, but the sealed P2 stage must receive the F0-SELECTED canonical
+  // (seq-6) material, so the pin advances to seq-6 regardless of which
+  // mirror served the bytes and regardless of peer order.
+  const peers12 = [{ repository_id: 'r1', endpoint: ep('r1') }, { repository_id: 'r2', endpoint: ep('r2') }];
+  const peers21 = [{ repository_id: 'r2', endpoint: ep('r2') }, { repository_id: 'r1', endpoint: ep('r1') }];
+  const h12 = (await resolveOn(peers12, q)).body;
+  const h21 = (await resolveOn(peers21, q)).body;
+  const f1 = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: h12.resolution_handle, D: D0, bytes_from: 'r1' });
+  const f2 = await post(B, '/plugins/operator-ui/federation?op=fetch', { resolution_handle: h21.resolution_handle, D: D0, bytes_from: 'r2' });
+  const matSeq = (f) => f.body.material && f.body.material.publication.identity_sequence;
+  const incoming2 = join(WORK, 'b-incoming-c3');
+  await rm(incoming2, { recursive: true, force: true });
+  for (const f of JSON.parse(Buffer.from(f1.body.bytes_b64, 'base64').toString('utf8')).files) {
+    const dest = join(incoming2, f.path);
+    await mkdir(dirname(dest), { recursive: true });
+    await writeFile(dest, Buffer.from(f.b64, 'base64'));
+  }
+  const tuple3 = { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.3.0', D: D0 };
+  // distinct local aliases: B already owns the plain name from the positive
+  // path, and the two causality runs are separate imports
+  const s1 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming2, alias: 'csv-running-total-fed-order12', identityMaterial: f1.body.material, expectedTuple: tuple3 });
+  const pin1 = (await bAuthorityState()).pin;
+  const s2 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming2, alias: 'csv-running-total-fed-order21', identityMaterial: f2.body.material, expectedTuple: tuple3 });
+  const pin2 = (await bAuthorityState()).pin;
+  step('C3c bytes from the seq-4 mirror still stage with F0-selected seq-6 material → pin seq-6 in both orders', f1.body.fetched_from === 'r1' && f2.body.fetched_from === 'r2' && matSeq(f1) === 6 && matSeq(f2) === 6 && s1.body.import?.verdict === 'STAGED' && s2.body.import?.verdict === 'STAGED' && pin1 && pin1.sequence === 6 && pin2 && pin2.sequence === 6, { bytes_from: [f1.body.fetched_from, f2.body.fetched_from], material_seq: [matSeq(f1), matSeq(f2)], stage: [s1.body.import?.verdict, s2.body.import?.verdict], stage_error: [s1.body.error || s1.body.reason || null, s2.body.error || s2.body.reason || null], pin_sequence: [pin1 && pin1.sequence, pin2 && pin2.sequence] });
 }
 
 const okAll = receipt.steps.every((s) => s.ok);
