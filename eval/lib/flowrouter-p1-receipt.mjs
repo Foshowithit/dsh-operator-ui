@@ -95,16 +95,47 @@ const bState = async () => {
 const receipt = { generated_at: new Date().toISOString(), steps: [], verdict: null };
 const step = (name, ok, result) => { receipt.steps.push({ step: name, ok, result }); console.log((ok ? 'PASS' : 'FAIL') + '  ' + name); };
 
-// ================= reset: clean B, clean R =================
+// ================= reset: FRESH B home + FRESH R process =================
 await mkdir(WORK, { recursive: true });
-await writeFile(join(B_HOME, 'operator-ui', 'b-registry.json'), JSON.stringify({ registry_version: 'rcos-public-v1', capabilities: [] }, null, 2) + '\n', 'utf8');
-await rm(R_STORE, { recursive: true, force: true });
+const { spawn, execFileSync } = await import('node:child_process');
 
-// (re)start R
-const { spawn } = await import('node:child_process');
-try { await fetch(R + '/discover'); } catch {
-  spawn(process.execPath, [join(root, 'eval', 'lib', 'flowrouter-service.mjs'), '--store', R_STORE], { detached: true, stdio: 'ignore' }).unref();
-  await new Promise((r) => setTimeout(r, 1500));
+// --- fresh R on a dedicated port/store every run ---
+try { execFileSync('pkill', ['-f', 'flowrouter-service.*' + R_STORE]); } catch {}
+try {
+  const pids = execFileSync('lsof', ['-ti', ':13093'], { encoding: 'utf8' }).trim();
+  for (const pid of pids.split('\n').filter(Boolean)) { try { process.kill(Number(pid), 'SIGKILL'); } catch {} }
+} catch {}
+await new Promise((r) => setTimeout(r, 1000));
+await rm(R_STORE, { recursive: true, force: true });
+spawn(process.execPath, [join(root, 'eval', 'lib', 'flowrouter-service.mjs'), '--store', R_STORE], { detached: true, stdio: 'ignore' }).unref();
+{
+  let ok = false;
+  for (let i = 0; i < 20 && !ok; i++) {
+    await new Promise((r) => setTimeout(r, 500));
+    try { const st = await (await fetch(R + '/status')).json(); ok = typeof st.publications === 'number'; } catch {}
+  }
+  const st = await (await fetch(R + '/status')).json();
+  step('R is a FRESH actor (zero publication records before anything)', st.publications === 0 && st.blobs === 0, st);
+}
+
+// --- fresh B home: restart the consumer lane so the task store is genuinely empty ---
+try { execFileSync('pkill', ['-f', 'dsh web --host 127.0.0.1 --port 8414']); } catch {}
+try {
+  const pids = execFileSync('lsof', ['-ti', ':8414'], { encoding: 'utf8' }).trim();
+  for (const pid of pids.split('\n').filter(Boolean)) { try { process.kill(Number(pid), 'SIGKILL'); } catch {} }
+} catch {}
+await new Promise((r) => setTimeout(r, 1500));
+try { await rm(join(B_HOME, 'operator-ui', 'tasks.json'), { force: true }); } catch {}
+await writeFile(join(B_HOME, 'operator-ui', 'b-registry.json'), JSON.stringify({ registry_version: 'rcos-public-v1', capabilities: [] }, null, 2) + '\n', 'utf8');
+const DSH_BIN = process.env.DSH_BIN || '/Users/adam26/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh';
+spawn(DSH_BIN, ['web', '--host', '127.0.0.1', '--port', '8414', '--no-open'], { env: { ...process.env, DSH_HOME: B_HOME }, detached: true, stdio: 'ignore' }).unref();
+{
+  let ok = false;
+  for (let i = 0; i < 40 && !ok; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    try { ok = (await fetch(B + '/plugins/operator-ui/rcos')).ok; } catch {}
+  }
+  if (!ok) throw new Error('fresh B lane did not come up on :8414');
 }
 
 // ================= 1. A exports (P0) =================
@@ -149,6 +180,7 @@ step('PUBLISH 0.1.1 (D1 ≠ D0)', pub1.status === 200 && pub1b.D === D1 && D1 !=
 
 // ================= 4. N5: state captured BEFORE discovery =================
 const before = await bState();
+step('B is a FRESH consumer (registry 0, import tasks 0) before discovery', before.registry_caps === 0 && before.import_tasks === 0 && before.taskstore_sha === sha(Buffer.from('', 'utf8')), before);
 const disc = await (await fetch(R + '/discover?publisher=mac-a&name=csv-running-total')).json();
 const e10 = (disc.results || []).find((x) => x.version === '0.1.0');
 step('DISCOVER returns 0.1.0 with D0 (record truth)', !!e10 && e10.D === D0 && e10.truth === 'RECORD', { entry: e10 });
@@ -197,6 +229,8 @@ const verB = await frApi(B, 'verify', { importTaskId: stageB.body.import.taskId,
 step('B-local verification (fixture hash recorded BEFORE execution)', verB.body.import?.verdict === 'VERIFIED' && verB.body.import?.verification?.fixture_hash === fixtureHashRecorded, { recorded: fixtureHashRecorded, verify_saw: verB.body.import?.verification?.fixture_hash });
 const preAdmit = await bState();
 step('N5b registry unchanged after B-local verification', preAdmit.registry_sha === afterStage.registry_sha, {});
+const afterVerify = await bState();
+step('N5d after verification: exactly the same single staged record, now verified; registry unchanged', afterVerify.registry_sha === before.registry_sha && afterVerify.import_tasks === before.import_tasks + 1 && verB.body.import?.verdict === 'VERIFIED', { import_tasks: afterVerify.import_tasks, registry_caps: afterVerify.registry_caps });
 const admB = await frApi(B, 'admit', { importTaskId: stageB.body.import.taskId });
 const postAdmit = await bState();
 step('operator admission mutates the registry (the ONLY mutation)', postAdmit.registry_caps === 1 && postAdmit.registry_sha !== preAdmit.registry_sha, { caps: postAdmit.registry_caps });
@@ -317,6 +351,30 @@ step('N1 republish conflict; original D0 intact', n1.status === 409 && n1b.error
   const p10 = p0DigestOf(JSON.parse(f10.toString('utf8')).files.map((f) => ({ path: f.path, bytes: Buffer.from(f.b64, 'base64') })));
   const p11 = p0DigestOf(JSON.parse(f11.toString('utf8')).files.map((f) => ({ path: f.path, bytes: Buffer.from(f.b64, 'base64') })));
   step('N6 exact versions: 0.1.0→D0, 0.1.1→D1, no latest', p10 === D0 && p11 === D1 && D0 !== D1, { p10: p10.slice(0, 16), p11: p11.slice(0, 16) });
+}
+
+// N7 reject-not-normalize: RAW percent-encoded identity forms
+{
+  const enc1 = await fetch(R + '/publication/mac-a/csv-running-total/%30.1.0');
+  const enc1b = await enc1.json().catch(() => ({}));
+  const enc2 = await fetch(R + '/discover?publisher=mac-a&name=csv-running-total&version=%30.1.0');
+  const enc2b = await enc2.json().catch(() => ({}));
+  const enc3 = await fetch(R + '/publication/%6dac-a/csv-running-total/0.1.0');
+  const enc3b = await enc3.json().catch(() => ({}));
+  step('N7 percent-encoded identity aliases rejected, never normalized',
+    enc1.status === 400 && enc1b.error === 'IDENTITY_NONCANONICAL'
+    && enc2.status === 400 && enc2b.error === 'IDENTITY_NONCANONICAL'
+    && enc3.status === 400 && enc3b.error === 'IDENTITY_NONCANONICAL',
+    { version_encoded: enc1b.error, discover_encoded: enc2b.error, publisher_encoded: enc3b.error });
+}
+
+// N8 compatibility discovery filter (frozen intersection semantics)
+{
+  const pos = await (await fetch(R + '/discover?publisher=mac-a&name=csv-running-total&compatibility=rcos')).json();
+  const neg = await (await fetch(R + '/discover?publisher=mac-a&name=csv-running-total&compatibility=nodejs')).json();
+  const posHit = (pos.results || []).some((x) => x.version === '0.1.0');
+  const negHit = (neg.results || []).some((x) => x.version === '0.1.0');
+  step('N8 compatibility= intersection filter (positive rcos / negative nodejs)', posHit && !negHit, { positive_hits: (pos.results || []).length, negative_hits: (neg.results || []).length });
 }
 
 // verdict
