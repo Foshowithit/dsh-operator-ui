@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-09-17T08:31:47.325Z",
+  "spec": "d0e935d (D0 — untrusted repository possession index)",
+  "steps": [
+    {
+      "step": "topology: an origin repository, a mirror, and a consumer",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13151,
+          "r2": 13152
+        }
+      }
+    },
+    {
+      "step": "P publishes to R1 and R2 mirrors it (the D0 subject is a mirrored P2 binding)",
+      "ok": true,
+      "result": {
+        "published": "f7c6c2bd44e4",
+        "mirrored": "f7c6c2bd44e4"
+      }
+    },
+    {
+      "step": "1. positive: name + mirror endpoint → exactly one exact P2 tuple candidate, no version choice",
+      "ok": true,
+      "result": {
+        "candidates": 1,
+        "version": "0.1.0"
+      }
+    },
+    {
+      "step": "1b. the discovered candidate feeds the ORDINARY sealed path → stage → verify → admit → route → SHIP, authenticating the original publisher",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "stage": "STAGED",
+        "verdict": "SHIP"
+      }
+    },
+    {
+      "step": "2. origin index and mirror index yield the identical candidate set and the identical downstream trust result",
+      "ok": true,
+      "result": {
+        "same_candidates": true,
+        "origin": "CONSISTENT",
+        "mirror": "CONSISTENT"
+      }
+    },
+    {
+      "step": "3. a false publisher entry yields a candidate that ordinary verification rejects — no pin, no admission",
+      "ok": true,
+      "result": {
+        "observation": "ABSENT",
+        "resolve_state": "EMPTY",
+        "fetch_permitted": false,
+        "stage_refusal": "SIGNED_STATEMENT_MISMATCH",
+        "pin_unchanged": true
+      }
+    },
+    {
+      "step": "4. a false/stale claimed_D has zero authority: the candidate carries no D and F0/P2 supplies the authenticated one",
+      "ok": true,
+      "result": {
+        "candidate_keys": [
+          "name",
+          "publisher_id",
+          "publisher_scheme",
+          "version"
+        ],
+        "authenticated_D": "f7c6c2bd44e4",
+        "claimed_D_in_candidate": "absent"
+      }
+    },
+    {
+      "step": "5. an indexed tuple the endpoint does not possess surfaces as ABSENT (aggregate EMPTY) — a harmless candidate failure",
+      "ok": true,
+      "result": {
+        "state": "EMPTY",
+        "observation": "ABSENT"
+      }
+    },
+    {
+      "step": "6. malformed entries are rejected by normalization, and invalid publication material is still rejected by P2",
+      "ok": true,
+      "result": {
+        "rejected": 2,
+        "candidates": 1,
+        "stage": "REFUSED"
+      }
+    },
+    {
+      "step": "7. repetition with identical or with 10,000 DIFFERENT claimed_D values always yields exactly one candidate",
+      "ok": true,
+      "result": {
+        "one": 1,
+        "many_same": 1,
+        "many_diff_D": 1,
+        "digest_stable": true
+      }
+    },
+    {
+      "step": "8. arbitrary permutations (including differing D claims for one tuple) normalize identically, over a stub that reverses order",
+      "ok": true,
+      "result": {
+        "a": 2,
+        "b": 2,
+        "via_index": 2,
+        "digest_stable": true
+      }
+    },
+    {
+      "step": "9. multiple exact versions are all returned as candidates and D0 selects none of them",
+      "ok": true,
+      "result": {
+        "versions": [
+          "0.1.0",
+          "0.2.0",
+          "2.0.0"
+        ],
+        "selection_fields": "none"
+      }
+    },
+    {
+      "step": "10. withholding: an index that omits a held publication is indistinguishable from an empty one — no completeness claim",
+      "ok": true,
+      "result": {
+        "omitting_index": 0,
+        "actual_holder_entries": 1,
+        "completeness_claimed": false
+      }
+    },
+    {
+      "step": "11. an index that disappears changes nothing retroactively: the already-observed candidate still resolves through the publication endpoint",
+      "ok": true,
+      "result": {
+        "resolve": "CONSISTENT",
+        "dead_index": "D0_INDEX_UNAVAILABLE",
+        "pin_unchanged": true
+      }
+    },
+    {
+      "step": "12. discovery and normalization leave consumer pins/witness/registry/task store and repository state byte-identical",
+      "ok": true,
+      "result": {
+        "registry_identical": true,
+        "pin_identical": true,
+        "r1": 1,
+        "r2": 1
+      }
+    },
+    {
+      "step": "13. flood bound: 10,000 fake D claims → one slot; 256 → truncated false; 257 → canonical first 256 with truncated true, order-independent",
+      "ok": true,
+      "result": {
+        "flood": 1,
+        "at_256": "256/truncated=false",
+        "at_257": "256/truncated=true/unique=257",
+        "order_independent": true
+      }
+    },
+    {
+      "step": "14. the same tuple known through 1, 2 or N indexes (and repeated inside one) authenticates identically — copy count adds nothing",
+      "ok": true,
+      "result": {
+        "identical_candidates": true,
+        "auth": [
+          "VERIFIED",
+          "VERIFIED",
+          "VERIFIED"
+        ]
+      }
+    }
+  ],
+  "positive": {
+    "learned_from_index": "http://127.0.0.1:13152",
+    "candidate": {
+      "publisher_scheme": "p2-selfcert-v1",
+      "publisher_id": "f0cffa88ed02829a154bcc19cdf8be697cce3c91a24ca1b5350d85d20b8e1859",
+      "name": "csv-running-total",
+      "version": "0.1.0"
+    },
+    "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+    "final_verdict": "SHIP"
+  },
+  "verdict": "D0 GREEN — a name and an endpoint yield exact tuple candidates that feed the sealed path; false, stale, duplicated, reordered, omitted or unavailable index observations affect only completeness or cost"
+}
