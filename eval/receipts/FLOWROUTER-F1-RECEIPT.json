@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T06:48:59.634Z",
+  "generated_at": "2026-09-17T06:58:12.146Z",
   "steps": [
     {
       "step": "three fresh repositories started (R1, R2 independent; R3 evidence carrier)",
@@ -28,7 +28,7 @@
         "stage": "STAGED",
         "verify": "VERIFIED",
         "pin": 2,
-        "witness": "87b3016b696d"
+        "witness": "d9266e779d8a"
       }
     },
     {
@@ -41,7 +41,7 @@
           "r2:VALID"
         ],
         "relation": "SAME_SEQUENCE_DIVERGENT",
-        "digest": "a5816b6fe42a42b4",
+        "digest": "7643f6267d1cde3d",
         "read_only": true,
         "publish": [
           "f7c6c2bd",
@@ -97,11 +97,26 @@
       }
     },
     {
-      "step": "case 6 the carrier holds no authoritative state; the core a carrier forwards verifies byte-identically at the receiving consumer",
+      "step": "case 6 B → R3 → C: byte-identical transport, C verifies to the same digest offline",
       "ok": true,
       "result": {
-        "carrier_publications": 0,
-        "digest_match": true
+        "stored": true,
+        "bytes_identical": true,
+        "c_digest": "7643f6267d1cde3d"
+      }
+    },
+    {
+      "step": "case 6b a tampered carrier response fails C's offline verification",
+      "ok": true,
+      "result": {
+        "tamper": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 6c the carrier still has no authoritative state (no publications, no local quarantine concept)",
+      "ok": true,
+      "result": {
+        "carrier_publications": 0
       }
     },
     {
@@ -137,10 +152,10 @@
       "step": "case 9 three conflicting branches in different order → identical canonical pair, core bytes and digest; annotations never bind",
       "ok": true,
       "result": {
-        "digest": "75bacebc17228957",
+        "digest": "a1a0886378bd4b82",
         "pair": [
-          "2f745961",
-          "7b08f41d"
+          "1f8176ff",
+          "acb3ebc0"
         ]
       }
     },
@@ -175,7 +190,7 @@
       "step": "case 11 an offline process with no peers/config computes the identical digest and verdict",
       "ok": true,
       "result": {
-        "digest": "a5816b6fe42a42b4",
+        "digest": "7643f6267d1cde3d",
         "relation": "SAME_SEQUENCE_DIVERGENT"
       }
     },
@@ -185,22 +200,43 @@
       "result": {
         "machine": "independent machine B",
         "machine_platform": "linux",
-        "digest": "a5816b6fe42a42b4",
+        "digest": "7643f6267d1cde3d",
         "tamper": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 12 after >200 ordinary tasks: the proof record, the quarantine and the pin witness all survive; the import still refuses",
+      "ok": true,
+      "result": {
+        "tasks": 203,
+        "proofs": 2,
+        "quarantined": true,
+        "witness_identical": true,
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED"
+      }
+    },
+    {
+      "step": "case 12b acknowledged evidence survives further churn; quarantine lifts by the acknowledgment, not by evidence loss",
+      "ok": true,
+      "result": {
+        "proofs": 2,
+        "quarantined": false,
+        "acknowledged": 2,
+        "stage": "STAGED"
       }
     }
   ],
-  "_pinWitnessSha": "87b3016b696d22c518d8e2e89ae0855e18b924dd316638c9a8dc052cd5c2e44f",
+  "_pinWitnessSha": "d9266e779d8abde708672e8f7eb566c96dd9d3c1cc172447cc3bd72b12088f22",
   "cross_machine": {
-    "digest": "a5816b6fe42a42b4c0107048efd8c439d29d965c6b0a5c03ebbcdb699ad6daf5",
+    "digest": "7643f6267d1cde3dc18757c68478ee5b3d55bf4fe5bc58b031e2d8e672e98ce7",
     "relation": "SAME_SEQUENCE_DIVERGENT",
-    "publisher_id": "eba07624614abf8d268985cdd6b4773516d270a2280af3a7d715ee7b33a44f87"
+    "publisher_id": "88c0fcb6df36057a70c46f0381dbe4157f070f33bec58895c696a9e2f7621c6e"
   },
   "cross_machine_verification": {
     "machine_role": "independent machine B",
     "platform": "linux",
     "node": "v22.23.2",
-    "digest": "a5816b6fe42a42b4c0107048efd8c439d29d965c6b0a5c03ebbcdb699ad6daf5",
+    "digest": "7643f6267d1cde3dc18757c68478ee5b3d55bf4fe5bc58b031e2d8e672e98ce7",
     "relation": "SAME_SEQUENCE_DIVERGENT",
     "tampered_copy": "EQUIVOCATION_PROOF_INVALID"
   },
