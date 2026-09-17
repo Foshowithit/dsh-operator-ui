@@ -59,6 +59,19 @@ explicit consumer-side ingest does.
 If you only read one thing, read `FLOWROUTER-CLAIMS.md` — it is deliberately
 written so that nothing is claimed more strongly than the evidence supports.
 
+### Four words, in plain terms
+
+- **digest** — a fingerprint of a file's exact bytes. Change one byte and the
+  fingerprint changes, so a receiver can always tell whether what it got is what
+  was sent.
+- **mirror** — a second server that holds a copy of someone else's published
+  artifact, so the publisher can go offline and the artifact is still reachable.
+- **pin** — a note a consumer keeps about *which* publisher identity state it has
+  already accepted, so it can notice if it is later shown something
+  inconsistent with what it saw before.
+- **custody** — who is holding which bytes right now. In FlowRouter, custody
+  earns nothing: holding a copy never makes a copy more trustworthy.
+
 ## The evidence
 
 Every phase was built under one discipline:
@@ -87,7 +100,7 @@ P0 → P1 → P1-X → P2 → F0 → F1 → R0 → I0 → D0 → D1 → S0 → I
  └ canonical artifact digest
 ```
 
-Fourteen raw receipts live in [`eval/receipts/`](eval/receipts/). Each one is
+Thirteen FlowRouter seal/composition/adversarial receipts — plus the earlier product-path receipt, which is not one of the FlowRouter claims — live in [`eval/receipts/`](eval/receipts/). Each one is
 the output of the exact implementation commit named in its parent commit
 message — the receipts are the evidence, and the code that produced them is in
 [`eval/lib/`](eval/lib/).

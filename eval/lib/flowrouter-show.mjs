@@ -34,9 +34,10 @@ for (const seam of i1.seam_values) {
   line(`  ${seam.name}`);
   for (const [k, v] of Object.entries(seam)) {
     if (k === 'name') continue;
+    // complete values, never clipped: this is the evidence surface, and the
+    // dataset is small enough to print in full
     const rendered = typeof v === 'string' ? v : JSON.stringify(v);
-    const val = rendered.length > 120 ? rendered.slice(0, 117) + '...' : rendered;
-    line(`      ${k.padEnd(24)} ${val}`);
+    line(`      ${k.padEnd(24)} ${rendered}`);
   }
 }
 line();
