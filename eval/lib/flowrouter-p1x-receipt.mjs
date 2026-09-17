@@ -2,13 +2,13 @@
 // eval/lib/flowrouter-p1x-receipt.mjs — P1-X INDEPENDENT-EXECUTOR REPETITION
 // (GPT directive). B is the DELL (chow), a genuinely independent machine:
 // Linux x86_64, own RCOS home/registry/task store, own executor process.
-// The capability artifact crosses ONLY over the network (Dell fetches from
+// The capability artifact crosses ONLY over the network (independent machine B fetches from
 // R on the Mac by digest); no scp/rsync/shared mount carries it.
 //
-// Positive: A export → R publish → Dell discover → Dell fetch D0 →
-// Dell recompute → Dell stage → Dell-authored fixture (hashed ON the Dell)
-// → Dell executor verify → operator admit → normal Dell route → authority
-// gate → Dell execution → SHIP.
+// Positive: A export → R publish → independent machine B discover → independent machine B fetch D0 →
+// independent machine B recompute → independent machine B stage → independent machine B-authored fixture (hashed ON the independent machine B)
+// → independent machine B executor verify → operator admit → normal independent machine B route → authority
+// gate → independent machine B execution → SHIP.
 // Negatives (boundary-critical): corrupt transport before stage · forged
 // valid-D index substitution · unavailable blob/no substitution · exact
 // 0.1.0/0.1.1 retrieval · B nonmutation before admission.
@@ -22,7 +22,7 @@ import { canonicalJson, packageDigest } from '../../lib/flowrouter.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const A = 'http://127.0.0.1:8412';
-const B = 'http://100.111.182.5:8415';                 // the Dell
+const B = 'http://100.111.182.5:8415';                 // the independent machine B
 const MAC_TS = '100.114.125.71';                       // Mac's Tailscale IP
 const R_URL_ON_DELL = 'http://' + MAC_TS + ':13093';   // how the DELL reaches R
 const R_URL_LOCAL = 'http://127.0.0.1:13093';
@@ -71,13 +71,13 @@ spawn(process.execPath, [join(root, 'eval', 'lib', 'flowrouter-service.mjs'), '-
   }
   step('R is a FRESH actor on the Mac (zero publications)', ok, (await get(R_URL_LOCAL, '/status')).body);
 }
-step('Dell reaches R over the network (Tailscale)', (await (await fetch(R_URL_ON_DELL + '/status')).json()).publications === 0, { from: 'Dell', to: R_URL_ON_DELL });
+step('independent machine B reaches R over the network (Tailscale)', (await (await fetch(R_URL_ON_DELL + '/status')).json()).publications === 0, { from: 'independent machine B', to: R_URL_ON_DELL });
 
 // ============ B starts fresh ============
 {
   const rst = await post(B, '/reset');
   const st = await get(B, '/bstate');
-  step('B (Dell) starts empty: registry 0 caps, 0 import tasks', rst.body.reset === true && st.body.registry_caps === 0 && st.body.import_tasks === 0, st.body);
+  step('B (independent machine B) starts empty: registry 0 caps, 0 import tasks', rst.body.reset === true && st.body.registry_caps === 0 && st.body.import_tasks === 0, st.body);
 }
 
 // ============ A export + publish 0.1.0 / 0.1.1 ============
@@ -137,42 +137,42 @@ const D1 = (() => {
 const pub1 = await post(R_URL_LOCAL, '/publish', { publisher_id: 'mac-a', name: 'csv-running-total', version: '0.1.1', artifact: artifactBytesOf(files1).toString('base64') });
 step('PUBLISH 0.1.1 → D1 (≠ D0)', pub1.status === 200 && pub1.body.D === D1 && D1 !== D0, { D0: D0.slice(0, 16), D1: D1.slice(0, 16) });
 
-// ============ Dell discovery → fetch → stage (all B-side, via network) ============
+// ============ independent machine B discovery → fetch → stage (all B-side, via network) ============
 const before = (await get(B, '/bstate')).body;
 const disc = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total' });
 const e10 = (disc.body.results || []).find((x) => x.version === '0.1.0');
-step('Dell discover (over the network) returns 0.1.0 = D0, record truth', !!e10 && e10.D === D0 && e10.truth === 'RECORD', { discovered_from: disc.body.discovered_from, entry: e10 ? { D: e10.D.slice(0, 16), truth: e10.truth } : null });
+step('independent machine B discover (over the network) returns 0.1.0 = D0, record truth', !!e10 && e10.D === D0 && e10.truth === 'RECORD', { discovered_from: disc.body.discovered_from, entry: e10 ? { D: e10.D.slice(0, 16), truth: e10.truth } : null });
 const afterDisc = (await get(B, '/bstate')).body;
-step('N5a Dell state unchanged after discovery', afterDisc.registry_sha === before.registry_sha && afterDisc.taskstore_sha === before.taskstore_sha, {});
+step('N5a independent machine B state unchanged after discovery', afterDisc.registry_sha === before.registry_sha && afterDisc.taskstore_sha === before.taskstore_sha, {});
 
 const fs1 = await post(B, '/fetch-stage', { rUrl: R_URL_ON_DELL, D: D0 });
-step('Dell fetch-stage: network fetch + B-side recompute + B-side staging', fs1.status === 200 && fs1.body.import?.verdict === 'STAGED' && fs1.body.fetch?.recomputed_D === D0, { fetch: fs1.body.fetch, local: fs1.body.import?.local });
+step('independent machine B fetch-stage: network fetch + B-side recompute + B-side staging', fs1.status === 200 && fs1.body.import?.verdict === 'STAGED' && fs1.body.fetch?.recomputed_D === D0, { fetch: fs1.body.fetch, local: fs1.body.import?.local });
 const afterStage = (await get(B, '/bstate')).body;
-step('N5b Dell registry unchanged after stage (one staging record appears)', afterStage.registry_sha === before.registry_sha && afterStage.import_tasks === before.import_tasks + 1, { import_tasks: afterStage.import_tasks });
+step('N5b independent machine B registry unchanged after stage (one staging record appears)', afterStage.registry_sha === before.registry_sha && afterStage.import_tasks === before.import_tasks + 1, { import_tasks: afterStage.import_tasks });
 
-// ============ Dell-authored fixture (hashed ON the Dell) ============
+// ============ independent machine B-authored fixture (hashed ON the independent machine B) ============
 const fx = await post(B, '/make-fixture', { values: [23, 5, 41, 12, 7, 30] });
-step('Fixture authored AND hashed on the Dell (before execution)', fx.body.hash_computed_on === bMachine.hostname && !!fx.body.fixture_hash, { fixtureDir: fx.body.fixtureDir, hash: fx.body.fixture_hash, computed_on: fx.body.hash_computed_on });
+step('Fixture authored AND hashed on the independent machine B (before execution)', fx.body.hash_computed_on === bMachine.hostname && !!fx.body.fixture_hash, { fixtureDir: fx.body.fixtureDir, hash: fx.body.fixture_hash, computed_on: fx.body.hash_computed_on });
 
-// ============ Dell verify (Dell executor executes the import) ============
+// ============ independent machine B verify (independent machine B executor executes the import) ============
 const ver = await post(B, '/verify', { importTaskId: fs1.body.import.taskId, fixtureDir: fx.body.fixtureDir });
-step('Dell-local verification: Dell executor ran the imported implementation', ver.body.import?.verdict === 'VERIFIED' && ver.body.import?.verification?.fixture_hash === fx.body.fixture_hash, { error: ver.body.error || null, verification: ver.body.import?.verification || null, fixture_match: ver.body.import?.verification?.fixture_hash === fx.body.fixture_hash });
+step('independent machine B-local verification: independent machine B executor ran the imported implementation', ver.body.import?.verdict === 'VERIFIED' && ver.body.import?.verification?.fixture_hash === fx.body.fixture_hash, { error: ver.body.error || null, verification: ver.body.import?.verification || null, fixture_match: ver.body.import?.verification?.fixture_hash === fx.body.fixture_hash });
 const afterVerify = (await get(B, '/bstate')).body;
-step('N5c Dell registry unchanged after verification (same single verified record)', afterVerify.registry_sha === before.registry_sha && afterVerify.import_tasks === before.import_tasks + 1, {});
+step('N5c independent machine B registry unchanged after verification (same single verified record)', afterVerify.registry_sha === before.registry_sha && afterVerify.import_tasks === before.import_tasks + 1, {});
 
-// ============ operator admission on the Dell ============
+// ============ operator admission on the independent machine B ============
 const adm = await post(B, '/admit', { importTaskId: fs1.body.import.taskId });
 const afterAdmit = (await get(B, '/bstate')).body;
-step('Operator admission mutates the Dell registry (the ONLY mutation)', adm.body.ok === true && afterAdmit.registry_caps === 1 && afterAdmit.registry_sha !== afterVerify.registry_sha, { caps: afterAdmit.registry_caps });
+step('Operator admission mutates the independent machine B registry (the ONLY mutation)', adm.body.ok === true && afterAdmit.registry_caps === 1 && afterAdmit.registry_sha !== afterVerify.registry_sha, { caps: afterAdmit.registry_caps });
 
-// ============ normal Dell route → gate → execution → SHIP ============
+// ============ normal independent machine B route → gate → execution → SHIP ============
 const OBJ = 'Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.';
 let g = (await post(B, '/goal', { objective: OBJ })).body.goal || {};
 const gateObserved = new Set(g.failureCodes || []).has('awaiting-approval');
 let approvals = 0;
 if (gateObserved) { approvals = 1; g = (await post(B, '/goal', { approveTaskId: g.taskId })).body.goal || {}; }
 const checkMap = Object.fromEntries((g.checks || []).map((c) => [c.id, c.pass]));
-step('Dell normal route → imported capability → Dell authority gate → Dell execution → SHIP',
+step('independent machine B normal route → imported capability → independent machine B authority gate → independent machine B execution → SHIP',
   g.verdict === 'SHIP' && g.route?.selected?.id === 'csv-running-total' && gateObserved && approvals === 1
   && checkMap['terminal-status'] === true && checkMap['declared-expectation'] === true && checkMap['objective-satisfaction'] === true,
   { route: g.route?.selected?.id, gate_observed: gateObserved, approvals, checks: checkMap, verdict: g.verdict, trust: g.trust?.label, evidence_head: (g.evidence?.outputs || []).slice(0, 4) });
@@ -199,9 +199,9 @@ const rfDigest = (() => {
 })();
 step('N1 republish conflict; D0 intact', n1.status === 409 && n1.body.error === 'PUBLISH_CONFLICT' && rfDigest === D0, n1.body);
 
-// N2 corrupt transport before stage (fetched on the Dell, corrupted on the Dell)
+// N2 corrupt transport before stage (fetched on the independent machine B, corrupted on the independent machine B)
 const n2 = await post(B, '/fetch-corrupt-stage', { rUrl: R_URL_ON_DELL, D: D0 });
-step('N2 corrupt transport → Dell-side recompute refuses BEFORE stage', n2.body.error === 'FETCH_DIGEST_MISMATCH' && n2.body.stage?.refused_before_stage === true && n2.body.stage_calls_delta === 0 && n2.body.corrupted_on === 'B', { requested: String(n2.body.requested_D).slice(0, 16), recomputed: String(n2.body.recomputed_D).slice(0, 16), stage_calls_delta: n2.body.stage_calls_delta });
+step('N2 corrupt transport → independent machine B-side recompute refuses BEFORE stage', n2.body.error === 'FETCH_DIGEST_MISMATCH' && n2.body.stage?.refused_before_stage === true && n2.body.stage_calls_delta === 0 && n2.body.corrupted_on === 'B', { requested: String(n2.body.requested_D).slice(0, 16), recomputed: String(n2.body.recomputed_D).slice(0, 16), stage_calls_delta: n2.body.stage_calls_delta });
 
 // N3 forged valid-D index substitution (forge R's index on the Mac)
 {
@@ -211,7 +211,7 @@ step('N2 corrupt transport → Dell-side recompute refuses BEFORE stage', n2.bod
   await writeFile(idxPath, JSON.stringify(idx, null, 2) + '\n', 'utf8');
   const d3 = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
   const e3 = (d3.body.results || [])[0] || {};
-  step('N3 forged valid-D substitution: Dell is served D0 (record truth), never D1', e3.D === D0 && e3.truth === 'INDEX_METADATA_STALE' && e3.D !== D1, { served: String(e3.D).slice(0, 16), truth: e3.truth });
+  step('N3 forged valid-D substitution: independent machine B is served D0 (record truth), never D1', e3.D === D0 && e3.truth === 'INDEX_METADATA_STALE' && e3.D !== D1, { served: String(e3.D).slice(0, 16), truth: e3.truth });
   const idx2 = JSON.parse(await readFile(idxPath, 'utf8'));
   idx2.find((e) => e.version === '0.1.0').D = 'f'.repeat(64);
   await writeFile(idxPath, JSON.stringify(idx2, null, 2) + '\n', 'utf8');
@@ -227,7 +227,7 @@ step('N2 corrupt transport → Dell-side recompute refuses BEFORE stage', n2.bod
   const hidden = blob + '.hidden';
   await rename(blob, hidden);
   const n4 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_DELL, D: D0 });
-  step('N4 unavailable blob → honest FETCH_UNAVAILABLE from the Dell, no substitution', n4.status === 404 && n4.body.error === 'FETCH_UNAVAILABLE', { status: n4.status, error: n4.body.error });
+  step('N4 unavailable blob → honest FETCH_UNAVAILABLE from the independent machine B, no substitution', n4.status === 404 && n4.body.error === 'FETCH_UNAVAILABLE', { status: n4.status, error: n4.body.error });
   await rename(hidden, blob);
 }
 
@@ -242,6 +242,6 @@ step('N2 corrupt transport → Dell-side recompute refuses BEFORE stage', n2.bod
 
 const okAll = receipt.steps.every((s) => s.ok);
 receipt.verdict = okAll ? 'P1-X MATRIX GREEN — independent-machine portability proven, trust boundary unmoved' : 'MATRIX INCOMPLETE';
-receipt.transfer_channel = { capability_artifact: 'network only — the Dell fetched bytes from R by digest over Tailscale; no scp/rsync/shared mount carried the artifact', code_deployment: 'rsync (plugin code, not the artifact) disclosed' };
+receipt.transfer_channel = { capability_artifact: 'network only — the independent machine B fetched bytes from R by digest over Tailscale; no scp/rsync/shared mount carried the artifact', code_deployment: 'rsync (plugin code, not the artifact) disclosed' };
 await writeFile(join(root, 'eval', 'receipts', 'FLOWROUTER-P1X-RECEIPT.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log('\nverdict:', receipt.verdict);

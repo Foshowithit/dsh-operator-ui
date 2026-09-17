@@ -101,7 +101,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && url.pathname === '/discover') {
-      // B-side discovery THROUGH THE NETWORK: the Dell asks R directly.
+      // B-side discovery THROUGH THE NETWORK: the independent machine B asks R directly.
       const { rUrl, publisher, name, version } = body;
       const qs = new URLSearchParams();
       if (publisher) qs.set('publisher', publisher);
