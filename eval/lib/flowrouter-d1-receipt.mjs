@@ -181,6 +181,21 @@ let positiveEndpoints = null;
   step('4/5/6. equivalent spellings dedupe, http/https stay distinct, and malformed locators are rejected while consuming no slots', disc.endpoints.length === 3 && disc.diagnostics.duplicates_collapsed === 2 && disc.diagnostics.invalid_locators === 5 && canon[0] === canon[1] && canon[0] !== canon[2] && canon[6] === 'https://example.com' && canon[5] === 'https://example.com' && canon[3] === null, { endpoints: disc.endpoints, collapsed: disc.diagnostics.duplicates_collapsed, invalid_locators: disc.diagnostics.invalid_locators, http_vs_https_distinct: canon[0] !== canon[2], root_dot_collapsed: canon[5] === canon[6] });
 }
 
+// ================= 6b. IPv6 locator canonicalization =================
+{
+  const pairs = [
+    ['http://[::1]', 'http://[::1]/'],
+    ['http://[2001:db8::1]:8080', 'http://[2001:db8::1]:8080/'],
+  ];
+  const dedupes = pairs.every(([a, b]) => canonicalOrigin(a) === canonicalOrigin(b));
+  const singleBracket = canonicalOrigin('http://[::1]') === 'http://[::1]' && canonicalOrigin('http://[2001:db8::1]:8080') === 'http://[2001:db8::1]:8080';
+  const defaultPortCollapsed = canonicalOrigin('http://[::1]:80/') === canonicalOrigin('http://[::1]') && canonicalOrigin('https://[::1]:443/') === canonicalOrigin('https://[::1]');
+  const distinct = canonicalOrigin('http://[2001:db8::1]:8080') !== canonicalOrigin('http://[2001:db8::2]:8080') && canonicalOrigin('http://[::1]') !== canonicalOrigin('http://[::1]:8080') && canonicalOrigin('http://[::1]') !== canonicalOrigin('https://[::1]');
+  // and they flow through normalization as one candidate per distinct origin
+  const norm = normalizeEndpointEntries([{ endpoint: 'http://[::1]' }, { endpoint: 'http://[::1]/' }, { endpoint: 'http://[::1]:80/' }, { endpoint: 'http://[::1]:8080/' }, { endpoint: 'http://[2001:db8::2]:8080' }]);
+  step('6b. IPv6 literals keep exactly ONE bracket pair: equivalent spellings dedupe, default ports collapse, addresses/ports/schemes stay distinct', dedupes && singleBracket && defaultPortCollapsed && distinct && norm.endpoints.length === 3 && norm.endpoints.includes('http://[::1]') && norm.endpoints.includes('http://[::1]:8080') && norm.diagnostics.duplicates_collapsed === 2, { canonical: [canonicalOrigin('http://[::1]'), canonicalOrigin('http://[2001:db8::1]:8080')], dedupes: dedupes, single_bracket: singleBracket, default_ports_collapsed: defaultPortCollapsed, distinct: distinct, candidates: norm.endpoints, collapsed: norm.diagnostics.duplicates_collapsed });
+}
+
 // ================= 7. repetition =================
 {
   dirMode = 'flood';
