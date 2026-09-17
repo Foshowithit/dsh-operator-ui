@@ -612,6 +612,24 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   const entryFields = [...entryLiteral.matchAll(/^\s*([A-Za-z_]+):/gm)].map((m) => m[1]).sort().join(',');
   if (entryFields !== 'claimed_D,name,publisher_id,publisher_scheme,version') throw new Error('possession entries must carry exactly the five frozen fields, got: ' + entryFields);
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'discovery.js')], { stdio: 'pipe' });
+
+  // D1 (spec ac80256): untrusted endpoint directory
+  const dirMod = readFileSync(join(root, 'lib', 'directory.js'), 'utf8');
+  for (const must of ['MAX_D1_ENDPOINTS = 256', 'canonicalOrigin', 'normalizeEndpointEntries', 'queryDirectory', 'discoverEndpoints']) {
+    if (!dirMod.includes(must)) throw new Error('lib/directory.js lost ' + must);
+  }
+  // entries are locators only: exactly one field, no capability vocabulary
+  if (!/Object\.keys\(e\)\.sort\(\)\.join\(','\) !== 'endpoint'/.test(dirMod)) throw new Error('a directory entry must carry exactly { endpoint }');
+  if (/publisher_id|publisher_scheme|claimed_D|publisher_auth|fresh|rank|popularity|availability|repository_id/.test(dirMod.replace(/\/\/.*$/gm, ''))) throw new Error('D1 must transport locators, never capability claims or authority fields');
+  // D1 never dereferences what it returns: the only fetch is the directory query
+  const fetches = [...dirMod.matchAll(/fetch\(/g)].length;
+  if (fetches !== 1) throw new Error('D1 must make exactly one kind of network call (the configured directory), got ' + fetches);
+  // no time/availability vocabulary anywhere
+  if (/last_seen|uptime|ttl|freshness|timestamp/i.test(dirMod)) throw new Error('D1 entries carry no time or availability vocabulary');
+  // discovery is read-only and reuses the sealed name grammar
+  if (/upsertTask|writeFile|mkdir|appendFile|rename/.test(dirMod)) throw new Error('D1 must never write local state');
+  if (!/const CANON_NAME = \/\^\[a-z0-9\]\[a-z0-9-\]\{0,63\}\$\//.test(dirMod)) throw new Error('D1 must reuse the sealed capability-name grammar exactly');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'directory.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
