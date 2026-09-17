@@ -8,6 +8,7 @@
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalJson, packageDigest } from '../../lib/flowrouter.js';
@@ -193,6 +194,37 @@ step('setup: publisher → R1 (T1 + T2) → mirror R2 as the configured source',
   const verified = verifyProofCore(JSON.parse(bytes.toString('utf8'))).proof_digest === pd;
   const after = await consumerState();
   step('6. the exact proof copies byte-identically and verifies at the destination, while quarantine stays unchanged (syncing a proof does NOT ingest it)', other.status === 200 && run.summary.COPIED === 1 && atDest.status === 200 && identical && verified && before.equivocation_records === after.equivocation_records && JSON.stringify(before.pin) === JSON.stringify(after.pin), { outcome: run.summary, identical, verified, quarantine_unchanged: before.equivocation_records === after.equivocation_records });
+}
+
+// ================= 6b. adversarial: digest-matching but INVALID evidence =================
+{
+  // A source can serve a core whose digest matches the requested digest while
+  // the core itself fails sealed F1 verification. The destination's evidence
+  // path is a dumb carrier and verifies nothing, so the COORDINATOR must.
+  const kA = generateKeypair();
+  const evA = createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 2, prevRecordDigest: recordDigest(ev1), action: 'AUTHORIZE', keyId: deriveKeyId(kA.publicKeyRaw), publicKeyRaw: kA.publicKeyRaw, permissions: ['publish'] });
+  const kB = generateKeypair();
+  const evB = createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 2, prevRecordDigest: recordDigest(ev1), action: 'AUTHORIZE', keyId: deriveKeyId(kB.publicKeyRaw), publicKeyRaw: kB.publicKeyRaw, permissions: ['publish'] });
+  const { buildProofCore } = await import('../../lib/equivocation.js');
+  const valid = buildProofCore({ genesis, states: [{ events: [ev1, evA] }, { events: [ev1, evB] }] }).core;
+  const tampered = JSON.parse(JSON.stringify(valid));
+  tampered.branches[0].events[1].signature = Buffer.alloc(64).toString('base64url');
+  const pd = proofDigest(tampered);
+  // a stub source that serves the tampered core under its (correct) digest
+  const stubPort = 13174;
+  const stub = createServer((req, res) => {
+    if (req.url.startsWith('/evidence/')) { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(tampered)); }
+    res.writeHead(404); res.end('{}');
+  });
+  await new Promise((r) => stub.listen(stubPort, '127.0.0.1', r));
+  const before = await consumerState();
+  const beforeEv = (await repoState('r3')).evidence;
+  const run = await syncExact({ source_endpoint: 'http://127.0.0.1:' + stubPort, destination: ep('r3'), explicit_scope: { proofs: [{ proof_digest: pd }] } });
+  const afterEv = (await repoState('r3')).evidence;
+  const after = await consumerState();
+  const atDest = await fetch(ep('r3') + '/evidence/' + pd);
+  stub.close();
+  step('6b. a digest-matching but cryptographically INVALID core is REFUSED at the destination — nothing is stored, quarantine and pins unchanged', run.summary.REFUSED === 1 && run.results[0].error_code === 'EVIDENCE_INVALID' && afterEv === beforeEv && atDest.status === 404 && before.equivocation_records === after.equivocation_records && JSON.stringify(before.pin) === JSON.stringify(after.pin), { outcome: run.summary, error: run.results[0].error_code, evidence_at_destination: atDest.status, quarantine_unchanged: before.equivocation_records === after.equivocation_records });
 }
 
 // ================= 7. idempotent repeat =================
