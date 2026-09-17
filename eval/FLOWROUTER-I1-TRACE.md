@@ -1,7 +1,7 @@
 # FlowRouter — one readable end-to-end trace (I1)
 
 Generated from `eval/receipts/FLOWROUTER-I1-RECEIPT.json` (sealed at spec 8fb55a4 / impl f39b095 / receipt 303bae9).
-Every value below is the value the receipt recorded for that seam.
+Every value below is rendered IN FULL — no field is clipped or omitted.
 
 ## The path
 
@@ -39,34 +39,108 @@ Every value below is the value the receipt recorded for that seam.
 
 ## The values crossing the seams (machine-checked continuity)
 
-```
-P0/P2_publish:
-  {"D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c", "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "tuple": {"publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}, "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"}
-R0_mirror:
-  {"D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c", "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"}
-D1_endpoint:
-  {"endpoints": ["http://127.0.0.1:13182"], "count": 1}
-D0_tuple:
-  {"candidates": [{"publisher_scheme": "p2-selfcert-v1", "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}], "count": 1}
-explicit_selection:
-  {"selected_tuple": {"publisher_scheme": "p2-selfcert-v1", "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}, "decided_by": "caller/operator"}
-S0_backfill:
-  {"outcome": {"COPIED": 1}, "observed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c", "destination_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"}
-F0_resolution:
-  {"state": "CONSISTENT", "authenticated_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c", "selected_state": {"head_sequence": 1, "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e", "proof_source": "dest", "globally_fresh": false, "note": "most advanced mutually compatible state observed in this query \u2014 not globally fresh"}}
-P2_authenticated:
-  {"publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "material_digest": "5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba"}
-P0_recomputed:
-  {"recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"}
-consumer_local:
-  {"pin_before_use": null, "pin_after_stage": {"publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "sequence": 1, "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e"}, "pin_witness_sha": "352c665027f45d7b9416822df8cc3fd5eb6d10588ca830554b8dc9ef5267df12", "registry_before_admit": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a
-F1_fork:
-  {"state": "CONFLICT", "relation": "SAME_SEQUENCE_DIVERGENT", "proof_digest": "53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee"}
-F1_carriage:
-  {"proof_digest": "53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee", "identical": true, "verifies": true, "custody_outcome": {"COPIED": 1}}
-F1_ingest:
-  {"quarantined": true, "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED"}
-```
+### P0/P2_publish
+
+| field | value |
+|---|---|
+| `D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+| `publisher_id` | `5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf` |
+| `tuple` | `{"publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}` |
+| `material_digest` | `5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba` |
+
+### R0_mirror
+
+| field | value |
+|---|---|
+| `D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+| `material_digest` | `5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba` |
+
+### D1_endpoint
+
+| field | value |
+|---|---|
+| `endpoints` | `["http://127.0.0.1:13182"]` |
+| `count` | `1` |
+
+### D0_tuple
+
+| field | value |
+|---|---|
+| `candidates` | `[{"publisher_scheme": "p2-selfcert-v1", "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}]` |
+| `count` | `1` |
+
+### explicit_selection
+
+| field | value |
+|---|---|
+| `selected_tuple` | `{"publisher_scheme": "p2-selfcert-v1", "publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "name": "csv-running-total", "version": "0.1.0"}` |
+| `decided_by` | `caller/operator` |
+
+### S0_backfill
+
+| field | value |
+|---|---|
+| `outcome` | `{"COPIED": 1}` |
+| `observed_D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+| `destination_D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+
+### F0_resolution
+
+| field | value |
+|---|---|
+| `state` | `CONSISTENT` |
+| `authenticated_D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+| `selected_state` | `{"head_sequence": 1, "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e", "proof_source": "dest", "globally_fresh": false, "note": "most advanced mutually compatible state observed in this query — not globally fresh"}` |
+
+### P2_authenticated
+
+| field | value |
+|---|---|
+| `publisher_id` | `5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf` |
+| `material_digest` | `5b66db6b0b4dd9512db6d8158d762366034857936ef1b3de1a9a534ff0d510ba` |
+
+### P0_recomputed
+
+| field | value |
+|---|---|
+| `recomputed_D` | `f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c` |
+
+### consumer_local
+
+| field | value |
+|---|---|
+| `pin_before_use` | `null` |
+| `pin_after_stage` | `{"publisher_id": "5762ade14b72dc9a51c907a236700a454a116b624663f6771eace6fcd78807cf", "sequence": 1, "head_digest": "a32ff97a003e085a6c0bee17bc46e60c0df51094ee7bf3fd8928afb800cd116e"}` |
+| `pin_witness_sha` | `352c665027f45d7b9416822df8cc3fd5eb6d10588ca830554b8dc9ef5267df12` |
+| `registry_before_admit` | `45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b` |
+| `registry_after_admit` | `0413a9471112cf208d8c4fb910d5422142cd34733458ee9d4a1bf8be0eccc4c3` |
+| `route` | `{"id": "csv-running-total", "version": "0.1.0", "workflow": "csv-running-total-v0-1-0", "lifecycle": "promoted"}` |
+| `verdict` | `SHIP` |
+| `final_verdict` | `SHIP` |
+
+### F1_fork
+
+| field | value |
+|---|---|
+| `state` | `CONFLICT` |
+| `relation` | `SAME_SEQUENCE_DIVERGENT` |
+| `proof_digest` | `53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee` |
+
+### F1_carriage
+
+| field | value |
+|---|---|
+| `proof_digest` | `53c51a2e4a3714dc0871e104acd72e4a28a55c60a665ec215250cae9ac7a41ee` |
+| `identical` | `true` |
+| `verifies` | `true` |
+| `custody_outcome` | `{"COPIED": 1}` |
+
+### F1_ingest
+
+| field | value |
+|---|---|
+| `quarantined` | `true` |
+| `refusal` | `PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED` |
 
 ## Phase coverage
 

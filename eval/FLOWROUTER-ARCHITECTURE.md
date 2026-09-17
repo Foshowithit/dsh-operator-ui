@@ -41,7 +41,10 @@ no layer can manufacture the layer above it.**
 │ CONSUMER-LOCAL TRUST  (never crosses a boundary; never transported)         │
 │   pins · pin witnesses · quarantine · acknowledgments · registry ·         │
 │   admission · routing · authority grants                                   │
-│   Owned by: the sealed P2 stage (pins) and explicit admission (routing).   │
+│   Owned ONLY by consumer-local sealed operations (nothing else may write): │
+│     P2 stage                → pins / pin witness                           │
+│     explicit admission      → registry / routing eligibility               │
+│     explicit F1 ingest/ack  → quarantine / acknowledgment state            │
 └────────────────────────────────────────────────────────────────────────────┘
                  ▲                    ▲                       ▲
         stage mutates pins    admission enables      explicit ingest
