@@ -169,14 +169,16 @@ const server = createServer(async (req, res) => {
       const chunks2 = [];
       for await (const c of req) { chunks2.push(c); if (Buffer.concat(chunks2).length > 400_000) return json(res, 413, { error: 'too large' }); }
       const { genesis, events } = JSON.parse(Buffer.concat(chunks2).toString('utf8') || '{}');
+      let chain;
       try {
-        replayChain(genesis, events || []); // verify before storing
+        chain = replayChain(genesis, events || []); // verify before storing
       } catch (e) {
         return json(res, 409, { error: e.code || 'IDENTITY_RECORD_INVALID', reason: String(e.message).slice(0, 200) });
       }
       publishers[genesis.publisher_id] = { genesis, events: events || [] };
       await writeFile(join(PUBLISHERS, genesis.publisher_id + '.json'), JSON.stringify(publishers[genesis.publisher_id], null, 2) + '\n', 'utf8');
-      return json(res, 200, { publisher_id: genesis.publisher_id, head_sequence: (events || []).length + 1 });
+      // report the VERIFIED chain's actual head (genesis = state 0)
+      return json(res, 200, { publisher_id: genesis.publisher_id, head_sequence: chain.head_sequence, head_digest: chain.head_digest });
     }
 
     // ---------------- POST /publish ----------------
@@ -228,14 +230,19 @@ const server = createServer(async (req, res) => {
         let auth = { publisher_auth: 'UNAUTHENTICATED', material: null };
         if (reqScheme === 'p2-selfcert-v1') {
           const assertion = parsed.publication;
-          if (assertion && (assertion.name !== name || assertion.version !== version)) {
+          // ---- frozen structured-tuple identity: the request must be
+          // FIELDWISE EQUAL to the signed statement; the binding committed is
+          // the SIGNED tuple, never an outer-request override. ----
+          const tupleMismatch = (why) => { writeFile(join(BLOBS, D + '.pkg'), artifactBytes); return json(res, 409, { error: 'SIGNED_STATEMENT_MISMATCH', reason: why + ' (no P2 binding created; raw blob retained)' }); };
+          if (!assertion) {
             await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
-            return json(res, 409, { error: 'SIGNED_STATEMENT_MISMATCH', reason: 'assertion name/version do not match the requested publication (no P2 binding created)' });
+            return json(res, 409, { error: 'PUBLISHER_AUTH_INVALID', reason: 'missing publication assertion for a p2-selfcert publication (no P2 binding created; raw blob retained)' });
           }
-          if (!assertion || assertion.D !== D) {
-            await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
-            return json(res, 409, { error: 'PUBLISHER_AUTH_INVALID', reason: 'missing publication assertion or D mismatch (no P2 binding created; raw blob retained)' });
-          }
+          if (assertion.publisher_scheme !== 'p2-selfcert-v1' || reqScheme !== assertion.publisher_scheme) return tupleMismatch('scheme mismatch');
+          if (publisher_id !== assertion.publisher_id) return tupleMismatch('request.publisher_id does not equal assertion.publisher_id');
+          if (name !== assertion.name) return tupleMismatch('request.name does not equal assertion.name');
+          if (version !== assertion.version) return tupleMismatch('request.version does not equal assertion.version');
+          if (assertion.D !== D) return tupleMismatch('assertion.D does not match the recomputed package digest');
           const stored = publishers[assertion.publisher_id];
           if (!stored) {
             await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
@@ -244,6 +251,7 @@ const server = createServer(async (req, res) => {
           let chain, vp;
           try {
             chain = replayChain(stored.genesis, stored.events);
+            if (stored.genesis.publisher_id !== assertion.publisher_id) throw Object.assign(new Error('verified genesis publisher_id does not equal assertion.publisher_id'), { code: 'SIGNED_STATEMENT_MISMATCH' });
             vp = verifyPublication(assertion, chain);
           } catch (e) {
             await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
@@ -257,11 +265,16 @@ const server = createServer(async (req, res) => {
           return json(res, 409, { error: 'PUBLISH_CONFLICT', reason: `package_ref already bound to ${existing.D}` });
         }
 
-        // blob FIRST, binding second (crash → orphan blob, never binding-to-absent)
+        // blob FIRST, binding second (crash → orphan blob, never binding-to-absent).
+        // For p2-selfcert the committed tuple is the SIGNED one (already
+        // proven fieldwise-equal to the request above).
+        const bindingTuple = auth.material
+          ? { publisher_scheme: auth.material.publication.publisher_scheme, publisher_id: auth.material.publication.publisher_id, name: auth.material.publication.name, version: auth.material.publication.version, D: auth.material.publication.D }
+          : { publisher_scheme: reqScheme, publisher_id, name, version, D };
         await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
-        await commitPublication({ publisher_scheme: reqScheme, publisher_id, name, version, D, published_at: nowIso(), ...auth });
+        await commitPublication({ ...bindingTuple, published_at: nowIso(), ...auth });
         await rebuildIndex();
-        return json(res, 200, { publisher_scheme: reqScheme, publisher_id, name, version, D, publisher_auth: auth.publisher_auth });
+        return json(res, 200, { ...bindingTuple, publisher_auth: auth.publisher_auth });
       });
     }
 
