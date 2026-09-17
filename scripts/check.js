@@ -630,6 +630,29 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   if (/upsertTask|writeFile|mkdir|appendFile|rename/.test(dirMod)) throw new Error('D1 must never write local state');
   if (!/const CANON_NAME = \/\^\[a-z0-9\]\[a-z0-9-\]\{0,63\}\$\//.test(dirMod)) throw new Error('D1 must reuse the sealed capability-name grammar exactly');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'directory.js')], { stdio: 'pipe' });
+
+  // S0 (spec ccf0387): exact-scope custody backfill
+  const syncSrc = readFileSync(join(root, 'lib', 'sync.js'), 'utf8');
+  for (const must of ['syncExact', 'normalizeScope', 'validateIntent', 'objectKey', 'COPIED', 'ALREADY_PRESENT', 'UNAVAILABLE']) {
+    if (!syncSrc.includes(must)) throw new Error('lib/sync.js lost ' + must);
+  }
+  // no source enumeration / version discovery anywhere in the coordinator.
+  // Strip comments AND string literals first: the refusal MESSAGE legitimately
+  // names the selectors it rejects.
+  const syncCode = syncSrc.replace(/\/\/.*$/gm, '').replace(/`[^`]*`/g, '``').replace(/'[^']*'/g, "''").replace(/"[^"]*"/g, '""');
+  if (/latest|\ball\b|everything|inventory|wildcard|version_range/i.test(syncCode)) throw new Error('S0 must accept no enumeration, latest or wildcard selector');
+  // the journal must never carry the forbidden freshness/completeness vocabulary
+  if (/UP_TO_DATE|LATEST|BEHIND|STALE|CURRENT|SOURCE_AHEAD|DESTINATION_BEHIND|FULLY_SYNCED_WITH_|COMPLETE_REPLICA/.test(syncSrc)) throw new Error('the S0 journal must never express freshness or completeness');
+  if (/scope_complete\s*:\s*[^,]*?(BEHIND|STALE|LATEST)/.test(syncSrc)) throw new Error('the S0 run record must not report freshness');
+  // publications reuse the sealed R0 surface rather than reimplementing it
+  if (!syncSrc.includes("'/replicate'")) throw new Error('publication backfill must reuse the sealed R0 replication surface');
+  if (/verifyGenesis|replayChain|verifyPublication/.test(syncSrc)) throw new Error('S0 must not reimplement P2 verification — ordinary R0 owns it');
+  // no new protocol surface and no consumer-trust access
+  if (/createServer|listen\(/.test(syncSrc)) throw new Error('S0 is a local coordinator, not a network surface');
+  if (/getTask|listTasks|upsertTask|pin_|quarantine/i.test(syncSrc)) throw new Error('S0 must not read or write consumer-local trust state');
+  // evidence transport never ingests
+  if (!/ingested: false/.test(syncSrc)) throw new Error('S0 must record that copied evidence was not ingested');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'sync.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
