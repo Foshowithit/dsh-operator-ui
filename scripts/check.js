@@ -544,6 +544,30 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   // the fetch/stage handoff carries the canonical F0-selected proof material
   if (!/material = cand\.material/.test(fed)) throw new Error('fetch must hand off the resolution\u2019s canonical proof material');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'federation.js')], { stdio: 'pipe' });
+
+  // F1 (spec e9e7ef6): portable equivocation evidence, local-only policy
+  const eq = readFileSync(join(root, 'lib', 'equivocation.js'), 'utf8');
+  for (const must of ['flowrouter.f1.equivocation-proof.v1', 'SAME_SEQUENCE_DIVERGENT', 'NONEXTENDING_FORK', 'PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED', 'proof_digest', 'buildProofCore', 'verifyProofCore', 'proofFromLocalHistory', 'isQuarantined']) {
+    if (!eq.includes(must)) throw new Error('lib/equivocation.js lost ' + must);
+  }
+  // the proof core is unsigned evidence: no signing primitive may appear, and
+  // verification must not reach for a peer/pin/registry
+  if (/signPublication|generateKeypair|createGenesis|privateKey/.test(eq)) throw new Error('F1 evidence must add no cryptography — the core is an unsigned container');
+  if (/fetch\(/.test(eq)) throw new Error('F1 verification must be offline — no network access');
+  // quarantine refusal lives in the sealed P2 stage path, before pin mutation
+  const frSrc = readFileSync(join(root, 'lib', 'flowrouter.js'), 'utf8');
+  const gate = frSrc.indexOf('isQuarantined(g.publisher_id)');
+  const pinWrite = frSrc.indexOf("taskId: pinTaskId, kind: 'pin'");
+  if (gate === -1 || pinWrite === -1 || gate > pinWrite) throw new Error('the F1 quarantine refusal must precede any pin mutation in the stage path');
+  if (!/witness: \{ genesis, events/.test(frSrc)) throw new Error('the pin must retain its identity witness (F1 3.2)');
+  // F0 resolve may RETURN a proof core but must never record one
+  if (!/proof_core: built.core/.test(fed)) throw new Error('federation must surface the F1 proof core on genuine forks');
+  if (!/function forkEvidence/.test(fed)) throw new Error('federation lost the fork-evidence builder');
+  const hostSrc2 = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  for (const must of ["'/f1'", 'handleF1', "op === 'ingest'", "op === 'acknowledge'", 'verifyProofCore(p.proof_core)']) {
+    if (!hostSrc2.includes(must)) throw new Error('the F1 surface lost ' + must);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'equivocation.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {

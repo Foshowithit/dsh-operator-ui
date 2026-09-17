@@ -34,6 +34,7 @@ process.env.DSH_HOME = argOf('--home', process.env.DSH_HOME || process.env.P1X_H
 const { stagePackage, verifyImport, admitImport } = await import(join(REPO, 'lib', 'flowrouter.js'));
 const { runGoal } = await import(join(REPO, 'lib', 'goal.js'));
 const { resolveConfig } = await import(join(REPO, 'lib', 'config.js'));
+const { verifyProofCore } = await import(join(REPO, 'lib', 'equivocation.js'));
 
 const cfgRes = resolveConfig();
 const cfg = cfgRes.config || {};
@@ -189,6 +190,16 @@ const server = createServer(async (req, res) => {
       return json(res, 200, { fixtureDir, authors: 'B', hash_computed_on: hostname(), fixture_hash: hash, values: vals, rows });
     }
 
+    // F1: OFFLINE equivocation-proof verification ON this independent machine.
+    // No peers, no registry, no pin; the verifier itself uses no network.
+    if (req.method === 'POST' && url.pathname === '/f1-verify') {
+      try {
+        const v = verifyProofCore(body && body.proof_core);
+        return json(res, 200, { ok: true, digest: v.proof_digest, relation: v.relation, publisher_id: v.publisher_id, network_used: false });
+      } catch (e) {
+        return json(res, 409, { ok: false, error: e.code || 'EQUIVOCATION_PROOF_INVALID', reason: String(e.message).slice(0, 200) });
+      }
+    }
     if (req.method === 'POST' && url.pathname === '/verify') {
       const out = await verifyImport({ importTaskId: body.importTaskId, fixtureDir: body.fixtureDir });
       return json(res, out.ok ? 200 : 409, out);
