@@ -1,0 +1,5 @@
+daemon: v2.9.5
+cli: v2.5.9
+exporter: v4.8.9
+broker: v5.0.9
+agent: v5.4.4

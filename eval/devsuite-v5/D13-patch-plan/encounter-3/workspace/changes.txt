@@ -1,0 +1,4 @@
+cache_mb: on
+heap: 64
+keepalive: 4
+interval_s: 512m

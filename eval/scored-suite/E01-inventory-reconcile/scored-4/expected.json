@@ -1,0 +1,27 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "clamp",
+      "system": "51",
+      "physical": "5"
+    },
+    {
+      "item": "knob",
+      "system": "55",
+      "physical": "16"
+    },
+    {
+      "item": "jig",
+      "system": "47",
+      "physical": "26"
+    },
+    {
+      "item": "flange",
+      "system": "11",
+      "physical": "46"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

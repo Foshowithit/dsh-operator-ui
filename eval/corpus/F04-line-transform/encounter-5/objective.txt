@@ -1,0 +1,1 @@
+Clean up list.txt: trim trailing whitespace, lowercase everything, sort the lines alphabetically, and save the result as sorted.txt (one word per line).

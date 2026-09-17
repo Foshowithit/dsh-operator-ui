@@ -1,0 +1,1 @@
+In points.csv, count the points within straight-line distance 10 of the origin (points exactly on the radius count) and identify the closest point to the origin. Report exactly two lines: RESULT within=<count> and RESULT closest=<name> (alphabetical tie-break if two are equally close).

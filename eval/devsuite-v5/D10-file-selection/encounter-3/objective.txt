@@ -1,0 +1,1 @@
+Report every file in the workspace whose size is greater than 1200 bytes, in alphabetical path order, one per line, as RESULT file=<path> size=<bytes>. Ignore non-data files only if their content says to ignore them — otherwise apply the size rule to every file.

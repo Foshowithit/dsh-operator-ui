@@ -1,0 +1,7 @@
+{
+  "name": "pkg-xenon",
+  "files": [
+    "a.txt",
+    "b.txt"
+  ]
+}

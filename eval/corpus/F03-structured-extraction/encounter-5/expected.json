@@ -1,0 +1,9 @@
+{
+  "family": "F03",
+  "fields": {
+    "alpha-2.example.test": 6966,
+    "echo-8.example.test": 3198,
+    "nova-3.example.test": 8878,
+    "vector-9.example.test": 4118
+  }
+}

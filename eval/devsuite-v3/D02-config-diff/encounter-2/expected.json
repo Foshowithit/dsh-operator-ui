@@ -1,0 +1,27 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "keepalive_s",
+      "old": "jsonl",
+      "new": "info"
+    },
+    {
+      "key": "idle_timeout",
+      "old": "60",
+      "new": "0.25"
+    },
+    {
+      "key": "sample_rate",
+      "old": "0.25",
+      "new": "strict"
+    },
+    {
+      "key": "timeout_ms",
+      "old": "512m",
+      "new": "info"
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

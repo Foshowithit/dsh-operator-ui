@@ -1,0 +1,27 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "log_level",
+      "old": "128",
+      "new": "60"
+    },
+    {
+      "key": "worker_count",
+      "old": "https://relay.internal",
+      "new": "0.25"
+    },
+    {
+      "key": "queue_depth",
+      "old": "strict",
+      "new": "128"
+    },
+    {
+      "key": "cache_ttl",
+      "old": "4",
+      "new": "300"
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

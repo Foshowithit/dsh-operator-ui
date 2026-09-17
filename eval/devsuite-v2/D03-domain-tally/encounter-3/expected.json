@@ -1,0 +1,55 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "dockside.org",
+      "count": 3
+    },
+    {
+      "domain": "acmetools.com",
+      "count": 2
+    },
+    {
+      "domain": "kilnworks.io",
+      "count": 2
+    },
+    {
+      "domain": "dockside.com",
+      "count": 1
+    },
+    {
+      "domain": "dockside.io",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.com",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.net",
+      "count": 1
+    },
+    {
+      "domain": "harborline.io",
+      "count": 1
+    },
+    {
+      "domain": "harborline.net",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.io",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.net",
+      "count": 1
+    },
+    {
+      "domain": "kilnworks.com",
+      "count": 1
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

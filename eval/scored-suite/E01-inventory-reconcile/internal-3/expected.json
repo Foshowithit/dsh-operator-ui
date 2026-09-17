@@ -1,0 +1,22 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "dowel",
+      "system": "60",
+      "physical": "57"
+    },
+    {
+      "item": "clamp",
+      "system": "57",
+      "physical": "38"
+    },
+    {
+      "item": "endcap",
+      "system": "46",
+      "physical": "51"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

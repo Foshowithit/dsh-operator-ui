@@ -1,0 +1,19 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "di",
+      "second": "ada"
+    },
+    {
+      "first": "di",
+      "second": "fay"
+    },
+    {
+      "first": "hal",
+      "second": "cy"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,31 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "farid",
+      "minutes": 294
+    },
+    {
+      "name": "ellie",
+      "minutes": 180
+    },
+    {
+      "name": "hana",
+      "minutes": 148
+    },
+    {
+      "name": "dev",
+      "minutes": 129
+    },
+    {
+      "name": "boris",
+      "minutes": 44
+    },
+    {
+      "name": "gus",
+      "minutes": 397
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

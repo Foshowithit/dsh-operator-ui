@@ -1,0 +1,19 @@
+{
+  "experiment_id": "scored-d30bc19e",
+  "protocol_hash": "sha256:f563d67755d8a991ed151a318f8e36ad155905926a2f751f58cc7f35b674af3c",
+  "corpus_hash": "sha256:52a90ce168a408752d75efe16b98a24627e2cbc430309e4d7f3ab04d6237d9a9",
+  "grader_hash": "sha256:c8d250edf1b12c1fa27b6d39f3355598b12227d179cf40af5dba70ba6e9f824e",
+  "system_build_sha": "3cfd69dc98fd92798cf56226ceef13d7950a5284",
+  "scored": true,
+  "lane": "dsh",
+  "kind": "scored-50",
+  "objectives": 50,
+  "acquisition": {
+    "attempts": 0,
+    "successes": 0,
+    "model_usage": []
+  },
+  "run_log": [],
+  "baseline_frozen_at_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
+  "written_at": "2026-09-16T19:54:04.273Z"
+}

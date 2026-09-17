@@ -1,0 +1,6 @@
+keepalive=64
+cache_mb=512m
+timeout=30
+jobs=4
+retries=on
+heap=info

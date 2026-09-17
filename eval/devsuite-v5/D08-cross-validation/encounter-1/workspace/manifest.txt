@@ -1,0 +1,5 @@
+boot.img
+diag.bin
+firmware.sig
+grub.cfg
+initrd.gz

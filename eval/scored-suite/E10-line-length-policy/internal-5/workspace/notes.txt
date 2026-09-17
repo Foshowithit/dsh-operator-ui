@@ -1,0 +1,13 @@
+# policy: max 48 chars per line
+
+bridge socket bridge relay buffer matrix matrix
+relay signal panel buffer buffer relay
+socket bridge bridge
+bridge channel matrix relay panel
+buffer signal
+bridge relay
+channel matrix matrix
+signal bridge socket bridge
+channel orbit signal orbit matrix buffer signal panel channel channel socket
+socket buffer relay matrix
+socket bridge

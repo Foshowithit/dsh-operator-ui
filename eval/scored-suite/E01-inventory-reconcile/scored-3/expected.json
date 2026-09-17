@@ -1,0 +1,32 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "flange",
+      "system": "14",
+      "physical": "45"
+    },
+    {
+      "item": "knob",
+      "system": "34",
+      "physical": "5"
+    },
+    {
+      "item": "arm",
+      "system": "37",
+      "physical": "20"
+    },
+    {
+      "item": "base",
+      "system": "23",
+      "physical": "35"
+    },
+    {
+      "item": "clamp",
+      "system": "5",
+      "physical": "2"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,243 @@
+{
+  "generated_at": "2026-09-17T04:28:04.560Z",
+  "steps": [
+    {
+      "step": "P1-X actors are independent machines",
+      "ok": true,
+      "result": {
+        "A": "Mac",
+        "B": "chow",
+        "B_platform": "linux"
+      }
+    },
+    {
+      "step": "R is a FRESH actor on the Mac (zero publications)",
+      "ok": true,
+      "result": {
+        "publications": 0,
+        "blobs": 0
+      }
+    },
+    {
+      "step": "independent machine B reaches R over the network (Tailscale)",
+      "ok": true,
+      "result": {
+        "from": "independent machine B",
+        "to": "http://203.0.113.2:13093"
+      }
+    },
+    {
+      "step": "B (independent machine B) starts empty: registry 0 caps, 0 import tasks",
+      "ok": true,
+      "result": {
+        "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+        "registry_caps": 0,
+        "taskstore_sha": "c9649cb9e623c903819a849ba6ee9b4aa3c0095d701eb38aed86b47f9a1330c2",
+        "import_tasks": 0
+      }
+    },
+    {
+      "step": "A export (P0)",
+      "ok": true,
+      "result": {
+        "identity": "mac-a/csv-running-total",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "PUBLISH 0.1.0 → D0",
+      "ok": true,
+      "result": {
+        "D0": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "PUBLISH 0.1.1 → D1 (≠ D0)",
+      "ok": true,
+      "result": {
+        "D0": "f7c6c2bd44e4a766",
+        "D1": "bc4bb52430fa5bc5"
+      }
+    },
+    {
+      "step": "independent machine B discover (over the network) returns 0.1.0 = D0, record truth",
+      "ok": true,
+      "result": {
+        "discovered_from": "http://203.0.113.2:13093",
+        "entry": {
+          "D": "f7c6c2bd44e4a766",
+          "truth": "RECORD"
+        }
+      }
+    },
+    {
+      "step": "N5a independent machine B state unchanged after discovery",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "independent machine B fetch-stage: network fetch + B-side recompute + B-side staging",
+      "ok": true,
+      "result": {
+        "fetch": {
+          "fetched_from": "http://203.0.113.2:13093",
+          "requested_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "extracted_to": "/home/<redacted>/p1x-home/incoming/f7c6c2bd44e4a766"
+        },
+        "local": {
+          "import": "STAGED",
+          "verification": "UNVERIFIED",
+          "routing": "INELIGIBLE",
+          "alias": "csv-running-total"
+        }
+      }
+    },
+    {
+      "step": "N5b independent machine B registry unchanged after stage (one staging record appears)",
+      "ok": true,
+      "result": {
+        "import_tasks": 1
+      }
+    },
+    {
+      "step": "Fixture authored AND hashed on the independent machine B (before execution)",
+      "ok": true,
+      "result": {
+        "fixtureDir": "/home/<redacted>/p1x-home/fixtures/p1x-8780b616",
+        "hash": "5f5875784d64eb892e877289bc4ac384d2d313945a75d5d479d5bb13fc49d64b",
+        "computed_on": "chow"
+      }
+    },
+    {
+      "step": "independent machine B-local verification: independent machine B executor ran the imported implementation",
+      "ok": true,
+      "result": {
+        "error": null,
+        "verification": {
+          "fixture_hash": "5f5875784d64eb892e877289bc4ac384d2d313945a75d5d479d5bb13fc49d64b",
+          "fixture_frozen_before_execution": true,
+          "run_id": "9349864c-4bdf-41f3-9370-f1ecbc14bf0c",
+          "run_status": "completed",
+          "marker_ok": true,
+          "grader": {
+            "satisfied": true,
+            "detail": "all running totals match locally-authored truth"
+          },
+          "verified_at": "2026-09-17T04:28:11.649Z"
+        },
+        "fixture_match": true
+      }
+    },
+    {
+      "step": "N5c independent machine B registry unchanged after verification (same single verified record)",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "Operator admission mutates the independent machine B registry (the ONLY mutation)",
+      "ok": true,
+      "result": {
+        "caps": 1
+      }
+    },
+    {
+      "step": "independent machine B normal route → imported capability → independent machine B authority gate → independent machine B execution → SHIP",
+      "ok": true,
+      "result": {
+        "route": "csv-running-total",
+        "gate_observed": true,
+        "approvals": 1,
+        "checks": {
+          "terminal-status": true,
+          "declared-expectation": true,
+          "objective-satisfaction": true
+        },
+        "verdict": "SHIP",
+        "trust": "Objective satisfied",
+        "evidence_head": [
+          "node: RESULT row=1 total=23\nRESULT row=2 total=28\nRESULT row=3 total=69\nRESULT row=4 total=81\nRESULT row=5 total=88\nRESULT row=6 total=118\nlearned-csv-running-total-v0-1-0:done"
+        ]
+      }
+    },
+    {
+      "step": "N1 republish conflict; D0 intact",
+      "ok": true,
+      "result": {
+        "error": "PUBLISH_CONFLICT",
+        "reason": "package_ref already bound to f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "N2 corrupt transport → independent machine B-side recompute refuses BEFORE stage",
+      "ok": true,
+      "result": {
+        "requested": "f7c6c2bd44e4a766",
+        "recomputed": "217c610c4c54bdb3",
+        "stage_calls_delta": 0
+      }
+    },
+    {
+      "step": "N3 forged valid-D substitution: independent machine B is served D0 (record truth), never D1",
+      "ok": true,
+      "result": {
+        "served": "f7c6c2bd44e4a766",
+        "truth": "INDEX_METADATA_STALE"
+      }
+    },
+    {
+      "step": "N3 companion: forged nonexistent D never served",
+      "ok": true,
+      "result": {
+        "served": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "N4 unavailable blob → honest FETCH_UNAVAILABLE from the independent machine B, no substitution",
+      "ok": true,
+      "result": {
+        "status": 404,
+        "error": "FETCH_UNAVAILABLE"
+      }
+    },
+    {
+      "step": "N6 exact versions over the network: 0.1.0→D0, 0.1.1→D1, no latest",
+      "ok": true,
+      "result": {
+        "d0": "f7c6c2bd44e4a766",
+        "d1": "bc4bb52430fa5bc5"
+      }
+    }
+  ],
+  "machines": {
+    "A": {
+      "hostname": "Mac",
+      "computer_name": "adam’s MacBook Pro",
+      "platform": "darwin arm64"
+    },
+    "R": {
+      "host": "mac",
+      "store": "/tmp/flowrouter-R",
+      "endpoint_for_B": "http://203.0.113.2:13093"
+    },
+    "B": {
+      "hostname": "chow",
+      "platform": "linux",
+      "release": "7.0.0-31-generic",
+      "node": "v22.23.2",
+      "pid": 4131255,
+      "registry_path": "/home/<redacted>/p1x-home/operator-ui/b-registry.json",
+      "teaching": {
+        "workflowsDir": "/home/<redacted>/p1x-wf",
+        "workspaceDir": "/home/<redacted>/p1x-ws"
+      },
+      "executor": "http://127.0.0.1:13094",
+      "home": "/home/<redacted>/p1x-home"
+    }
+  },
+  "verdict": "P1-X MATRIX GREEN — independent-machine portability proven, trust boundary unmoved",
+  "transfer_channel": {
+    "capability_artifact": "network only — the independent machine B fetched bytes from R by digest over Tailscale; no scp/rsync/shared mount carried the artifact",
+    "code_deployment": "rsync (plugin code, not the artifact) disclosed"
+  }
+}

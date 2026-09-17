@@ -1,0 +1,40 @@
+{
+  "protocol": "eval-protocol-v1",
+  "frozen_at": "2026-09-16T19:28:51.433Z",
+  "frozen_at_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
+  "model_lane": {
+    "endpoint": "https://opencode.ai/zen/go/v1",
+    "model_id": "muse-spark-1.3-contributor",
+    "sampling": "provider defaults",
+    "notes": "responses API; x-opencode-session header set by lane template",
+    "credential_source": "vault-opencode-muse-contributor",
+    "authorization": "owner provided the key directly for the experiment"
+  },
+  "dsh_version": "0.1.0-rc.6",
+  "dsh_bin": "dsh (env DSH_BIN or PATH at run time; the scored run recorded its resolved path in its run manifest)",
+  "rcos_commit": "25ef397fb0db48a1f5b14d97a172bc0a91ad3c3d",
+  "model": {
+    "provider": "muse-eval",
+    "id": "provider:",
+    "params": "unrecorded"
+  },
+  "profile": "headless",
+  "profile_config_hash": "sha256:a0a0e9f380872097cb7f8b7356f36433a2afeb8de5044a9e63d4ed47b4bee9f5",
+  "hardware": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 14,
+    "mem_gb": 48,
+    "hostname_hash": "sha256:8b3795aa2"
+  },
+  "toolInventory": {
+    "bash": true,
+    "fs": "dsh built-ins",
+    "notes": "recorded from the headless profile tool list; RCOS lane exposes the same base tools via its workflow runtime"
+  },
+  "budget": {
+    "wall_ms_per_objective": 300000,
+    "note": "identical max budget both lanes; costs beyond wall time recorded only where actually measurable"
+  },
+  "notes": "Both lanes: same fixture workspace, same objective text, same hardware. RCOS adds its architecture (routing/teach/memory); DSH runs its normal loop. Nothing removed from DSH."
+}

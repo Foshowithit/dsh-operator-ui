@@ -1,0 +1,43 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "2",
+      "length": "79"
+    },
+    {
+      "line": "3",
+      "length": "82"
+    },
+    {
+      "line": "4",
+      "length": "68"
+    },
+    {
+      "line": "6",
+      "length": "62"
+    },
+    {
+      "line": "7",
+      "length": "81"
+    },
+    {
+      "line": "9",
+      "length": "82"
+    },
+    {
+      "line": "10",
+      "length": "72"
+    },
+    {
+      "line": "12",
+      "length": "55"
+    },
+    {
+      "line": "14",
+      "length": "68"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

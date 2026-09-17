@@ -1,0 +1,31 @@
+{
+  "family": "D08",
+  "statuses": [
+    {
+      "file": "boot.img",
+      "status": "mismatch"
+    },
+    {
+      "file": "core.pkg",
+      "status": "missing"
+    },
+    {
+      "file": "env.map",
+      "status": "ok"
+    },
+    {
+      "file": "firmware.sig",
+      "status": "unexpected"
+    },
+    {
+      "file": "grub.cfg",
+      "status": "ok"
+    },
+    {
+      "file": "hash.txt",
+      "status": "ok"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

@@ -1,0 +1,22 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "clamp",
+      "system": "19",
+      "physical": "15"
+    },
+    {
+      "item": "arm",
+      "system": "52",
+      "physical": "59"
+    },
+    {
+      "item": "knob",
+      "system": "53",
+      "physical": "27"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

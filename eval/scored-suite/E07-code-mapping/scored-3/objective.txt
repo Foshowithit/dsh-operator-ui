@@ -1,0 +1,1 @@
+Map every code in used.txt using the lookup in codes.csv, in used.txt order, one per line, as RESULT code=<code> label=<label>. Codes missing from the lookup must be reported with label UNKNOWN. Comment lines starting with # must be ignored. Fields may be quoted.

@@ -1,0 +1,1 @@
+From supply.csv, list every item whose quantity is below 25, sorted alphabetically by item name, one per line, as RESULT item=<name> qty=<n>. The quantity column comes first in this export.

@@ -1,0 +1,23 @@
+{
+  "family": "D06",
+  "sections": [
+    {
+      "section": "drive",
+      "items": "2"
+    },
+    {
+      "section": "cooling",
+      "items": "3"
+    },
+    {
+      "section": "brakes",
+      "items": "3"
+    },
+    {
+      "section": "axles",
+      "items": "4"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

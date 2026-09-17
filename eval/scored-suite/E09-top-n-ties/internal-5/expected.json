@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "ember",
+      "score": "92"
+    },
+    {
+      "name": "axiom",
+      "score": "87"
+    },
+    {
+      "name": "duna",
+      "score": "66"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

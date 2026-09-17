@@ -1,0 +1,39 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "07",
+      "count": "1"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "1"
+    },
+    {
+      "hour": "16",
+      "count": "1"
+    },
+    {
+      "hour": "18",
+      "count": "1"
+    },
+    {
+      "hour": "19",
+      "count": "2"
+    },
+    {
+      "hour": "20",
+      "count": "2"
+    },
+    {
+      "hour": "21",
+      "count": "2"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

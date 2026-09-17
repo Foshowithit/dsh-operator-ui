@@ -1,0 +1,2 @@
+timeout: 30
+interval_s: 90

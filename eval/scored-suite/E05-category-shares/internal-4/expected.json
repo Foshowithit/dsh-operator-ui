@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "foxtrot",
+      "share": "41.7"
+    },
+    {
+      "category": "alpha",
+      "share": "34.5"
+    },
+    {
+      "category": "bravo",
+      "share": "15.8"
+    },
+    {
+      "category": "delta",
+      "share": "7.9"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}

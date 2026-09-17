@@ -1,0 +1,21 @@
+# weekly stock export
+
+item,qty
+"damper",13
+"bearing",21
+"nut",12
+# cycle 36 verified
+"gasket",26
+"plate",23
+# cycle 49 verified
+"o-ring",9
+# cycle 52 verified
+"insert",5
+# cycle 23 verified
+"liner",25
+"anvil",39
+"retainer",5
+# cycle 24 verified
+"spacer",29
+
+# end of export

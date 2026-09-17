@@ -1,0 +1,6 @@
+jobs=64
+timeout=512m
+interval_s=30
+keepalive=4
+retries=on
+heap=info

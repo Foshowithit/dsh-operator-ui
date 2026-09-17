@@ -1,0 +1,27 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "alpha",
+      "share": "43.7"
+    },
+    {
+      "category": "bravo",
+      "share": "31.1"
+    },
+    {
+      "category": "echo",
+      "share": "16.3"
+    },
+    {
+      "category": "foxtrot",
+      "share": "5.2"
+    },
+    {
+      "category": "charlie",
+      "share": "3.7"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

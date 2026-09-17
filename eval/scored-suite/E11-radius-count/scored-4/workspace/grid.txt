@@ -1,0 +1,1 @@
+Distance means straight-line distance from the origin (0,0); a point exactly on the radius counts as within.

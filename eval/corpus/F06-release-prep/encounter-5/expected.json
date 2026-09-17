@@ -1,0 +1,9 @@
+{
+  "family": "F06",
+  "version": "1.8.1",
+  "entries": [
+    "- tango: removed echo",
+    "- kilo: removed willow",
+    "- bravo: added unity"
+  ]
+}

@@ -1,0 +1,1 @@
+Convert stock.csv to stock.json — a JSON array of objects with numeric qty: [{"name":"…","qty":N},…]

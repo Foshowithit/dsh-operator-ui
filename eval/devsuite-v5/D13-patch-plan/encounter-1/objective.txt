@@ -1,0 +1,1 @@
+changes.txt lists planned changes, one per line as "key: newvalue". For each planned change (in plan order), report the key's CURRENT value from deploy-config.txt and the new value, one per line, as RESULT key=<key> from=<current> to=<new>. Do not modify any file.

@@ -1,0 +1,32 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "batch_size",
+      "old": "on",
+      "new": "300"
+    },
+    {
+      "key": "flush_ms",
+      "old": "v2",
+      "new": "4"
+    },
+    {
+      "key": "region",
+      "old": "300",
+      "new": "900"
+    },
+    {
+      "key": "log_level",
+      "old": "us-east-1",
+      "new": "jsonl"
+    },
+    {
+      "key": "sample_rate",
+      "old": "on",
+      "new": "512m"
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

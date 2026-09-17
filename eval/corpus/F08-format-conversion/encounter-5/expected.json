@@ -1,0 +1,21 @@
+{
+  "family": "F08",
+  "json": [
+    {
+      "name": "pixel",
+      "qty": 5
+    },
+    {
+      "name": "xenon",
+      "qty": 49
+    },
+    {
+      "name": "willow",
+      "qty": 2
+    },
+    {
+      "name": "alpha",
+      "qty": 26
+    }
+  ]
+}

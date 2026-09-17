@@ -1,0 +1,285 @@
+{
+  "generated_at": "2026-09-17T03:35:45.226Z",
+  "steps": [
+    {
+      "step": "A.export",
+      "ok": true,
+      "result": {
+        "ok": true,
+        "packageDir": "/tmp/flowrouter-p0/export/mac-a/csv-running-total",
+        "identity": "mac-a/csv-running-total",
+        "version": "0.1.0",
+        "implementation_digest": "6f0cda884bcef39ff7cd44a72da9f22cae93eef1ac0b49e6c162dbfd16bf6953",
+        "package_digest": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "B.stage(positive)",
+      "ok": true,
+      "result": {
+        "verdict": "STAGED",
+        "local": {
+          "import": "STAGED",
+          "verification": "UNVERIFIED",
+          "routing": "INELIGIBLE",
+          "alias": "csv-running-total"
+        },
+        "checks": [
+          {
+            "id": "schema",
+            "pass": true,
+            "detail": "manifest v0.1 shape valid"
+          },
+          {
+            "id": "integrity:implementation",
+            "pass": true,
+            "detail": "implementation digest matches"
+          },
+          {
+            "id": "integrity:package",
+            "pass": true,
+            "detail": "package digest matches"
+          },
+          {
+            "id": "compatibility",
+            "pass": true,
+            "detail": "no blocked local requirements"
+          },
+          {
+            "id": "collision",
+            "pass": true,
+            "detail": "alias free: csv-running-total"
+          },
+          {
+            "id": "staging",
+            "pass": true,
+            "detail": "STAGED / UNVERIFIED / INELIGIBLE — local verification required"
+          }
+        ]
+      }
+    },
+    {
+      "step": "B.verify",
+      "ok": true,
+      "result": {
+        "verdict": "VERIFIED",
+        "verification": {
+          "fixture_hash": "fb32907c1c244229f97aeae3e86b6f1fb10c8e60af01af10fab4188d0ab6661f",
+          "fixture_frozen_before_execution": true,
+          "run_id": "6f585ed5-9314-41dd-a906-91f0a349b0fb",
+          "run_status": "completed",
+          "marker_ok": true,
+          "grader": {
+            "satisfied": true,
+            "detail": "all running totals match locally-authored truth"
+          },
+          "verified_at": "2026-09-17T03:35:49.759Z"
+        }
+      }
+    },
+    {
+      "step": "B.admit",
+      "ok": true,
+      "result": {
+        "capability": {
+          "id": "csv-running-total",
+          "source_identity": {
+            "id": "mac-a/csv-running-total",
+            "version": "0.1.0"
+          },
+          "provenance_source": {
+            "lifecycle": "promoted",
+            "evidence": [
+              {
+                "at": null,
+                "run_id": "6c25c645-c84c-4337-8bef-b78ec651ab1e",
+                "task_id": "goal-5b7cee94",
+                "verdict": "ship"
+              }
+            ],
+            "provenance": {
+              "acquisition_task": "acq_88e01c78",
+              "built_by": "acquisition-v2 (production port of the sealed program 7b5c9cc)",
+              "promoted_by": "operator",
+              "source_task": "goal-5b7cee94"
+            },
+            "package_digest": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+            "evidence_standard": "staged-gates + dual-sacred-terminals + independent objective evaluation (Acquisition v2, sealed 7b5c9cc)"
+          },
+          "provenance_import": {
+            "import_task": "imp_bd323a92",
+            "staged_at": "2026-09-17T03:35:45.249Z",
+            "admitted_by": "operator",
+            "admitted_at": "2026-09-17T03:35:49.761Z",
+            "verification": {
+              "fixture_hash": "fb32907c1c244229f97aeae3e86b6f1fb10c8e60af01af10fab4188d0ab6661f",
+              "fixture_frozen_before_execution": true,
+              "run_id": "6f585ed5-9314-41dd-a906-91f0a349b0fb",
+              "run_status": "completed",
+              "marker_ok": true,
+              "grader": {
+                "satisfied": true,
+                "detail": "all running totals match locally-authored truth"
+              },
+              "verified_at": "2026-09-17T03:35:49.759Z"
+            }
+          }
+        }
+      }
+    },
+    {
+      "step": "B.route+ship",
+      "ok": true,
+      "result": {
+        "route": "csv-running-total",
+        "verdict": "SHIP",
+        "checks": [
+          {
+            "id": "terminal-status",
+            "pass": true
+          },
+          {
+            "id": "declared-expectation",
+            "pass": true
+          },
+          {
+            "id": "objective-satisfaction",
+            "pass": true
+          }
+        ],
+        "trust": "Objective satisfied",
+        "approvals": 1,
+        "evidence_head": [
+          "compute: RESULT row=1 total=14\nRESULT row=2 total=41\nRESULT row=3 total=50\nRESULT row=4 total=91\nRESULT row=5 total=97\nRESULT row=6 total=130\nRESULT row=7 total=148\nlearned-csv-running-total-v0-1-0:done"
+        ]
+      }
+    },
+    {
+      "step": "NEGATIVE-A.tamper",
+      "ok": true,
+      "result": {
+        "refusal": {
+          "code": "INTEGRITY_FAIL",
+          "reason": "authenticity check failed — never executed"
+        },
+        "integrity": [
+          {
+            "id": "integrity:implementation",
+            "pass": false,
+            "detail": "implementation digest mismatch (declared 6f0cda884bcef39f…, actual c3209e7c6ca0ef80…)"
+          },
+          {
+            "id": "integrity:package",
+            "pass": false,
+            "detail": "package digest mismatch (declared f7c6c2bd44e4a766…, actual ff6f0a50499e43eb…)"
+          }
+        ],
+        "executed": null,
+        "routing": "INELIGIBLE"
+      }
+    },
+    {
+      "step": "NEGATIVE-B.compat",
+      "ok": true,
+      "result": {
+        "refusal": {
+          "code": "COMPATIBILITY_FAIL",
+          "reason": "required tool unavailable locally: zztool-not-installed-here"
+        },
+        "integrity": [
+          true,
+          true
+        ],
+        "executed": null,
+        "routing": "INELIGIBLE"
+      }
+    },
+    {
+      "step": "NEGATIVE-C.collision",
+      "ok": true,
+      "result": {
+        "refusal": {
+          "code": "LOCAL_ID_COLLISION",
+          "reason": "this home already owns \"csv-running-total\" — import refused (pass an explicit non-colliding alias)"
+        }
+      }
+    },
+    {
+      "step": "RE-EXPORT.lineage",
+      "ok": true,
+      "result": {
+        "identity_id": "mac-a/csv-running-total",
+        "provenance": {
+          "acquisition_task": null,
+          "built_by": null,
+          "promoted_by": null,
+          "source_task": null
+        },
+        "import_chain_len": 1,
+        "first_import_entry": {
+          "admitted_at": "2026-09-17T03:35:49.761Z",
+          "imported_by": "this home",
+          "local_alias": "csv-running-total",
+          "source_package_digest": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "verification": {
+            "fixture_frozen_before_execution": true,
+            "fixture_hash": "fb32907c1c244229f97aeae3e86b6f1fb10c8e60af01af10fab4188d0ab6661f",
+            "grader": {
+              "detail": "all running totals match locally-authored truth",
+              "satisfied": true
+            },
+            "marker_ok": true,
+            "run_id": "6f585ed5-9314-41dd-a906-91f0a349b0fb",
+            "run_status": "completed",
+            "verified_at": "2026-09-17T03:35:49.759Z"
+          }
+        }
+      }
+    }
+  ],
+  "verdict": "P0 MATRIX GREEN — positive round trip + 3 negatives + lineage re-export",
+  "b_local_fixture": {
+    "authored_locally": true,
+    "values": [
+      14,
+      27,
+      9,
+      41,
+      6,
+      33,
+      18
+    ],
+    "expected": [
+      {
+        "row": "1",
+        "total": "14"
+      },
+      {
+        "row": "2",
+        "total": "41"
+      },
+      {
+        "row": "3",
+        "total": "50"
+      },
+      {
+        "row": "4",
+        "total": "91"
+      },
+      {
+        "row": "5",
+        "total": "97"
+      },
+      {
+        "row": "6",
+        "total": "130"
+      },
+      {
+        "row": "7",
+        "total": "148"
+      }
+    ],
+    "csv_sha256": "5669499336b2281cb30863b6d2240337e37063e40e5e4d1f9dd1781a30e83d98",
+    "note": "authored by the receipt harness; not derived from any package material; digest recorded before B executes the import"
+  }
+}

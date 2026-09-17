@@ -1,0 +1,19 @@
+# weekly stock export
+
+item,qty
+"retainer",16
+"collar",28
+"nut",27
+"spacer",20
+"damper",30
+# cycle 27 verified
+"gasket",34
+# cycle 33 verified
+"journal",39
+"insert",5
+# cycle 50 verified
+"keyway",13
+# cycle 9 verified
+"bearing",39
+
+# audited by dshears

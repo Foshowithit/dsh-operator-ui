@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "delta",
+      "share": "34.3"
+    },
+    {
+      "category": "bravo",
+      "share": "27.3"
+    },
+    {
+      "category": "foxtrot",
+      "share": "27.3"
+    },
+    {
+      "category": "alpha",
+      "share": "11.1"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,178 @@
+{
+  "generated_at": "2026-09-17T08:55:06.300Z",
+  "spec": "ac80256 (D1 — untrusted endpoint directory)",
+  "steps": [
+    {
+      "step": "topology: one repository (with a D0 possession index) + a consumer + a controlled directory",
+      "ok": true,
+      "result": {
+        "repo": "http://127.0.0.1:13161"
+      }
+    },
+    {
+      "step": "1. positive: name + directory only → one endpoint → one D0 tuple → F0/P2 → stage → B-local verify → explicit admit → route → SHIP, authenticating publisher P (not the directory)",
+      "ok": true,
+      "result": {
+        "endpoints": 1,
+        "candidates": 1,
+        "verdict": "SHIP"
+      }
+    },
+    {
+      "step": "2/3. an entry carries exactly {endpoint}: the two well-formed ones dedupe to one candidate and both extra-field entries are rejected",
+      "ok": true,
+      "result": {
+        "endpoints": 1,
+        "rejected": 2,
+        "reasons": {
+          "an entry carries exactly the field \"endpoint\"": 2
+        }
+      }
+    },
+    {
+      "step": "4/5/6. equivalent spellings dedupe, http/https stay distinct, and malformed locators are rejected while consuming no slots",
+      "ok": true,
+      "result": {
+        "endpoints": [
+          "http://127.0.0.1:13161",
+          "http://127.0.0.1:19999",
+          "https://example.com"
+        ],
+        "collapsed": 2,
+        "invalid_locators": 5,
+        "http_vs_https_distinct": true,
+        "root_dot_collapsed": true
+      }
+    },
+    {
+      "step": "6b. IPv6 literals keep exactly ONE bracket pair: equivalent spellings dedupe, default ports collapse, addresses/ports/schemes stay distinct",
+      "ok": true,
+      "result": {
+        "canonical": [
+          "http://[::1]",
+          "http://[2001:db8::1]:8080"
+        ],
+        "dedupes": true,
+        "single_bracket": true,
+        "default_ports_collapsed": true,
+        "distinct": true,
+        "candidates": [
+          "http://[2001:db8::2]:8080",
+          "http://[::1]",
+          "http://[::1]:8080"
+        ],
+        "collapsed": 2
+      }
+    },
+    {
+      "step": "7. 10,000 copies of one endpoint normalize to exactly one candidate (1 = 10,000 in trust weight)",
+      "ok": true,
+      "result": {
+        "endpoints": 1,
+        "collapsed": 9999
+      }
+    },
+    {
+      "step": "8. every response permutation normalizes to the identical candidate list",
+      "ok": true,
+      "result": {
+        "forward": [
+          "http://127.0.0.1:13161",
+          "https://a.example.com",
+          "https://b.example.com"
+        ],
+        "digest_stable": true
+      }
+    },
+    {
+      "step": "9. MAX_D1_ENDPOINTS = 256: 256 unique → 256 with truncated false; 257 → the canonical first 256 with truncated true, order-independent",
+      "ok": true,
+      "result": {
+        "at_256": "256/truncated=false",
+        "at_257": "256/truncated=true/unique=257",
+        "order_independent": true
+      }
+    },
+    {
+      "step": "10. a false endpoint (holding nothing for N) yields no useful candidate and mutates no trust state",
+      "ok": true,
+      "result": {
+        "d0": "D0_INDEX_UNAVAILABLE",
+        "pin_unchanged": true
+      }
+    },
+    {
+      "step": "11/12. the directory suggestion cannot override D0: an endpoint with no matching possession yields zero candidates, and no publisher identity is involved at D1 at all",
+      "ok": true,
+      "result": {
+        "candidates": 0,
+        "d1_carries_publisher_data": false
+      }
+    },
+    {
+      "step": "13. withholding: a directory that omits a working repository is indistinguishable from an empty one — no completeness claim is made",
+      "ok": true,
+      "result": {
+        "endpoints": 0,
+        "completeness_claimed": false
+      }
+    },
+    {
+      "step": "14. a directory that disappears after observation changes nothing: the normalized candidate still works through D0",
+      "ok": true,
+      "result": {
+        "dead_directory": "D1_DIRECTORY_UNAVAILABLE",
+        "candidates": 1
+      }
+    },
+    {
+      "step": "15. obtaining D1 results makes ZERO network calls to the returned endpoints (no automatic dereference)",
+      "ok": true,
+      "result": {
+        "endpoints": 2,
+        "calls_to_returned_endpoints": 0
+      }
+    },
+    {
+      "step": "16. D1 query/normalization leaves consumer pins/witness/registry/task store and repository state byte-identical",
+      "ok": true,
+      "result": {
+        "registry_identical": true,
+        "pin_identical": true,
+        "publications": 1
+      }
+    },
+    {
+      "step": "17. a directory-learned endpoint is indistinguishable from the SAME endpoint typed manually (identical D0 candidates and identical F0 result)",
+      "ok": true,
+      "result": {
+        "learned": "http://127.0.0.1:13161",
+        "typed": "http://127.0.0.1:13161",
+        "same_candidates": true,
+        "same_state": true
+      }
+    },
+    {
+      "step": "18. repeated membership inside a directory adds nothing: identical candidate list and identical authentication",
+      "ok": true,
+      "result": {
+        "endpoints": 1,
+        "state": "CONSISTENT",
+        "observations": 1
+      }
+    }
+  ],
+  "positive": {
+    "learned_from_directory": "http://127.0.0.1:13162",
+    "endpoint": "http://127.0.0.1:13161",
+    "candidate": {
+      "publisher_scheme": "p2-selfcert-v1",
+      "publisher_id": "667397522782b55e12412c4a8830c45b9a0d69f2a9578b5ec6047a8c207da1a6",
+      "name": "csv-running-total",
+      "version": "0.1.0"
+    },
+    "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+    "final_verdict": "SHIP"
+  },
+  "verdict": "D1 GREEN — a name and an untrusted directory yield endpoint candidates that safely enter D0→F0→P2; membership, repetition, ordering, availability and operator behavior carry zero authority"
+}

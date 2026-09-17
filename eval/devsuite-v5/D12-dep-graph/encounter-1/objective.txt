@@ -1,0 +1,1 @@
+From the dependency edges in deps.txt, count each component's DIRECT dependencies and report every component with its count, in alphabetical component order, one per line, as RESULT component=<name> deps=<count>. Then report the component with the most dependencies on its own line as RESULT heaviest=<name> (alphabetical tie-break).

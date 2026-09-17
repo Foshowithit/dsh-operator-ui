@@ -70,7 +70,10 @@
     "$comment": "Every DSH_OPERATOR_UI_* name the code reads, each naming the config key it wins over. check.js asserts code ⊇ manifest ⊇ DEPLOY.md.",
     "DSH_OPERATOR_UI_ARCHON": { "winsOver": "archon.baseUrl", "example": "http://127.0.0.1:3090" },
     "DSH_OPERATOR_UI_REGISTRY": { "winsOver": "registry.path", "example": "/path/to/capability-registry.json" },
-    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" }
+    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" },
+    "DSH_OPERATOR_UI_AUTHORITY_PRESET": { "winsOver": "authority.preset", "example": "ASK_BEFORE_ACTION" },
+    "DSH_OPERATOR_UI_TEACH_WORKFLOWS": { "winsOver": "teaching.workflowsDir", "example": "/path/to/archon-home/workflows" },
+    "DSH_OPERATOR_UI_TEACH_WORKSPACE": { "winsOver": "teaching.workspaceDir", "example": "/path/to/archon-registered-workspace" }
   },
   "statusRoute": {
     "path": "GET /plugins/operator-ui/status",
@@ -96,6 +99,41 @@
     "policy": "No secrets, ever — not in code, not in screenshots, not in the dev-home. Config carries slot NAMES only (archon.tokenVar names an env var; provider slots name envSlots). Presence checks only, values never read, never reported, never echoed.",
     "owningStores": ["$DSH_HOME/.env (DSH-owned)", "~/.archon/config.yaml (Archon-owned)"],
     "template": "fixtures/providers.example.yaml (slot names + REQUIRED/OPTIONAL markers; zeroCredentialProbe names the seed that must verify with NO credentials)"
+  },
+  "permissions": {
+    "$comment": "Permissions round: presets are operator PERSONALITIES over a lower-level authority contract of scopes (GPT refinement — never four global modes). A capability DECLARES what it requires; the preset pre-authorizes (grants) a subset; the task envelope carries the granted policy it ran (or waits) under. The SAME block renders Preview ('RCOS plans to …') before dispatch and Prove ('RCOS did …' + authority line) after — one vocabulary, two tenses.",
+    "scopes": [
+      "filesystem:read", "filesystem:write", "shell:execute", "network:outbound",
+      "browser:read", "browser:interact", "credentials:use",
+      "git:read", "git:modify", "git:push", "external:draft", "external:submit"
+    ],
+    "reservedScopes": ["physical:observe", "physical:control"],
+    "presets": {
+      "PLAN_ONLY": "pre-authorizes nothing — every execution needs explicit approval",
+      "ASK_BEFORE_ACTION": "pre-authorizes read-only-ish scopes (filesystem:read, git:read, browser:read, network:outbound, external:draft); writes/execution/credentials need approval",
+      "AUTO_WITHIN_POLICY": "pre-authorizes everything except the irreversible/external trio (credentials:use, git:push, external:submit)",
+      "FULL_ACCESS": "pre-authorizes every listed scope — still bound by capability/runtime safety (seeded + retired capabilities never route; registry still required)"
+    },
+    "failClosed": "a capability declaring an UNKNOWN scope can never auto-dispatch; PLAN_ONLY pre-authorizes nothing; a missing grant seals an awaiting-approval envelope BEFORE dispatch — nothing executes on a guess",
+    "approval": "approval resumes the SAME task (approveTaskId → retryOf + approved flag); the host re-checks the stored envelope is genuinely awaiting-approval first and refuses anything else (409); approval is per task, never a global mode flip",
+    "authorityConfig": "authority.preset (env DSH_OPERATOR_UI_AUTHORITY_PRESET > file > default ASK_BEFORE_ACTION) — a preset NAME only, never secrets",
+    "persistence": "the granted policy {preset, requires, granted, missing, mode, reason, approvedAt} rides the task envelope in operator-ui/tasks.json — no third store, no new persistence",
+    "faultIsolation": "every registered surface is wrapped in an error boundary: a bug may kill its card/surface (rendered as a killed-card fallback), never shell.overlay — the boundary contains, it never rethrows"
+  },
+  "teachMode": {
+    "$comment": "M2: capability ACQUISITION. Lifecycle GAP → TEACH → BUILD → EVALUATE → CANDIDATE → PROMOTE → ROUTE. THREE identities stay separate and are never mutated into each other: source_task_id (the task whose objective exposed the gap), teaching_task_id (the learning process), capability_id+version (the reusable intelligence IF learning succeeds).",
+    "hardRule": "successful generation does NOT equal learned capability — the candidate is EXECUTED on the real Archon against a held-out deterministic fixture set, and promotion may only be OFFERED when every case passes; a candidate failing any case is refused honestly ('Not added to Intelligence')",
+    "promotion": "always an EXPLICIT human action (Promote to Intelligence); the promoted registry entry carries permanent provenance (builtBy RCOS, sourceTaskId, teachingTaskId, per-case eval run ids, promotedBy operator, promotedAt, version); duplicate-id promotion is refused",
+    "authority": "the candidate DECLARES its required scopes at BUILD time — a learned capability cannot quietly acquire power; unknown scopes fail closed at promotion exactly as at dispatch",
+    "writes": "the ONLY files teaching ever writes: the candidate workflow YAML under teaching.workflowsDir and per-eval fixture files under teaching.workspaceDir (both operator-configured path references); everything durable about the teaching itself lives in tasks.json — no third store",
+    "honesty": "teaching paths unconfigured → the teach action reports NOT_CONFIGURED instead of pretending; eval evidence (expected vs observed totals per case, run ids) is sealed in the teaching envelope"
+  },
+  "memory": {
+    "$comment": "M2.5 Capability Memory & Lifecycle: PROMOTED → USED → OBSERVED → RE-EVALUATED → IMPROVED / SUPERSEDED / RETIRED.",
+    "readModel": "capability operating history (uses, objective-satisfaction record, blocks after clean execution, last-verified, recent window) is DERIVED from the durable task envelopes at /rcos?op=history — never a new store, never copied state",
+    "noScore": "history is NEVER collapsed into a single confidence score — the underlying evidence (the recent outcomes themselves) stays inspectable and every number traces to tasks",
+    "decay": "a capability whose recent window degrades (≥2 of last 5 objectives unsatisfied, ≥3 uses) is flagged 'Needs re-evaluation' with the reason named; routing continues conditionally unless the operator retires it — trust degrades visibly, never silently",
+    "lineage": "version evolution never overwrites history: promoted learned entries carry provenance (teaching task, source task, eval run ids); improved versions link improvedFrom and the old version stays reconstructable"
   },
   "receipt": {
     "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
@@ -123,11 +161,11 @@
     "seedPolicy": "seeded/example capabilities are clearly marked (status `seeded`, seed `true`) so they can never be mistaken for accumulated production intelligence; the private workflow library is never bundled",
     "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed — provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt",
     "goalMode": {
-      "route": "POST /plugins/operator-ui/goal {objective} | GET /goal?id= | GET /goal (recent, session-scoped)",
-      "pipeline": "objective → ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) → EXECUTE (the selected capability's own workflow binding on the configured Archon) → EVIDENCE (terminal poll + node outputs) → VERIFY (v0: a 2-check verification gate — terminal status + the registry-declared expectation marker; 'verifier quorum' stays reserved for independent verification authorities) → SHIP | BLOCK | FAILED",
-      "taskIdentity": "task_id ('goal-xxxxxxxx') is born at goal admission, ABOVE DSH/Archon; attempts are recorded per task; durable execution truth stays in Archon",
-      "honesty": "a capability that declares no expectation can reach COMPLETED but never SHIP; a goal that matches nothing is refused with reasons, never guessed",
-      "persistence": "goals are session-scoped in memory; durable state is Archon's run record + the sealed receipts — the plugin adds no other storage"
+      "route": "POST /plugins/operator-ui/goal {objective} | GET /goal?id= | GET /goal (recent, durable — operator-ui/tasks.json)",
+      "pipeline": "objective → ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) → EXECUTE (the selected capability's own workflow binding on the configured Archon) → EVIDENCE (terminal poll + node outputs) → VERIFY (M1: a 3-check evaluation gate — terminal status + the registry-declared expectation marker + objective-satisfaction over the evidence text) → SHIP | BLOCK | FAILED",
+      "taskIdentity": "task_id ('goal-xxxxxxxx') is born at goal admission, ABOVE DSH/Archon; attempts are recorded per task; the envelope (route, attempts, checks incl. objective-satisfaction, verdict + scope, trust ladder, next action, lineage) is sealed to operator-ui/tasks.json after every state change — retry = same task new attempt, fork = new task_id with lineage",
+      "honesty": "a capability that declares no expectation can reach COMPLETED but never SHIP; a goal that matches nothing is refused with reasons, never guessed; verdict scope is 'capability-validation' unless the objective-satisfaction check passed ('objective-evaluation') — never silently upgraded",
+      "persistence": "goals are durable in operator-ui/tasks.json (atomic tmp+rename writes; Archon's run record stays the execution truth; restarts lose nothing); the plugin writes only tasks.json + the sealed receipt"
     }
   }
 }

@@ -1,0 +1,11 @@
+host: alpha-2.example.test
+port: 6966
+
+host: echo-8.example.test
+port: 3198
+
+host: nova-3.example.test
+port: 8878
+
+host: vector-9.example.test
+port: 4118

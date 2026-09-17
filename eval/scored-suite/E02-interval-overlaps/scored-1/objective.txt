@@ -1,0 +1,1 @@
+In schedule.txt, every line gives a shift's start and end time. Report every PAIR of shifts that overlap (share at least one minute), in the order the FIRST shift appears in the file, one per line, as RESULT overlap=<first>,<second> using the names as written.

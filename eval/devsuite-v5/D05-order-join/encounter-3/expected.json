@@ -1,0 +1,32 @@
+{
+  "family": "D05",
+  "lines": [
+    {
+      "order": "o100",
+      "item": "coupler",
+      "total": "65"
+    },
+    {
+      "order": "o101",
+      "item": "flat-washer",
+      "total": "81"
+    },
+    {
+      "order": "o102",
+      "item": "bracket",
+      "total": "35"
+    },
+    {
+      "order": "o103",
+      "item": "expansion-shell",
+      "total": "90"
+    },
+    {
+      "order": "o104",
+      "item": "anchor-bolt",
+      "total": "35"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

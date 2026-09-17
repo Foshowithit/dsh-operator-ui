@@ -1,0 +1,39 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "44"
+    },
+    {
+      "row": "2",
+      "total": "123"
+    },
+    {
+      "row": "3",
+      "total": "143"
+    },
+    {
+      "row": "4",
+      "total": "172"
+    },
+    {
+      "row": "5",
+      "total": "226"
+    },
+    {
+      "row": "6",
+      "total": "252"
+    },
+    {
+      "row": "7",
+      "total": "264"
+    },
+    {
+      "row": "8",
+      "total": "335"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

@@ -1,0 +1,208 @@
+{
+  "protocol": "eval/EVAL-PROTOCOL-V2.md (GPT-approved; architecture frozen d8c543a; suite frozen 11c7320)",
+  "executor": "real Archon v0.10.1 (equivalence receipt bc31ac2)",
+  "invalidated_executions_disclosed": [
+    {
+      "experiment": "eval-v2-run",
+      "reason": "model-lane transient MODEL_ERROR storm (11/12 aborted, 2 calls total)",
+      "disposition": "discarded, records retained"
+    },
+    {
+      "experiment": "eval-v2-run2 families E01,E02,E03,E06,E08",
+      "reason": "same lane-flake class (0 completed calls)",
+      "disposition": "recovered under the protocol infra-recovery clause; family results from eval-v2-recovery"
+    },
+    {
+      "note": "harness recovery measure added post-freeze: transient lane errors retried with spacing (labeled; acquisition architecture unchanged)"
+    }
+  ],
+  "families": {
+    "E01": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 2,
+      "output_tokens": 13861,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-recovery (infra-recovery run)"
+    },
+    "E02": {
+      "terminal": "REFUSED",
+      "code": "TERMINAL_FAILED",
+      "calls": 2,
+      "output_tokens": 11760,
+      "scored_satisfied": 0,
+      "false_promotions": 0,
+      "source": "eval-v2-recovery (infra-recovery run)"
+    },
+    "E03": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 2,
+      "output_tokens": 13034,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-recovery (infra-recovery run)"
+    },
+    "E04": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 1,
+      "output_tokens": 7369,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E05": {
+      "terminal": "REFUSED",
+      "code": "TERMINAL_FAILED",
+      "calls": 1,
+      "output_tokens": 12047,
+      "scored_satisfied": 0,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E06": {
+      "terminal": "REFUSED",
+      "code": "TERMINAL_FAILED",
+      "calls": 1,
+      "output_tokens": 6630,
+      "scored_satisfied": 0,
+      "false_promotions": 0,
+      "source": "eval-v2-recovery (infra-recovery run)"
+    },
+    "E07": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 1,
+      "output_tokens": 8719,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E08": {
+      "terminal": "REFUSED",
+      "code": "BUDGET_EXHAUSTED",
+      "calls": 4,
+      "output_tokens": 29135,
+      "scored_satisfied": 0,
+      "false_promotions": 0,
+      "source": "eval-v2-recovery (infra-recovery run)"
+    },
+    "E09": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 1,
+      "output_tokens": 14643,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E10": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 1,
+      "output_tokens": 6476,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E11": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 2,
+      "output_tokens": 14925,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    },
+    "E12": {
+      "terminal": "CANDIDATE_READY",
+      "code": null,
+      "calls": 1,
+      "output_tokens": 9348,
+      "scored_satisfied": 6,
+      "false_promotions": 0,
+      "source": "eval-v2-run2 (valid)"
+    }
+  },
+  "totals": {
+    "families": 12,
+    "acquired": 8,
+    "refused": 4,
+    "scored_objectives": 72,
+    "satisfied": 48,
+    "false_promotions": 0,
+    "false_ships": 0,
+    "false_blocks": 0,
+    "model_calls": 19,
+    "output_tokens": 147947
+  },
+  "curve": [
+    {
+      "encounter": 1,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 8,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 18493
+    },
+    {
+      "encounter": 2,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 16,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 9247
+    },
+    {
+      "encounter": 3,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 24,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 6164
+    },
+    {
+      "encounter": 4,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 32,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 4623
+    },
+    {
+      "encounter": 5,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 40,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 3699
+    },
+    {
+      "encounter": 6,
+      "satisfied": 8,
+      "of": 12,
+      "cumulative_satisfied": 48,
+      "cumulative_output_tokens": 147947,
+      "tokens_per_satisfied": 3082
+    }
+  ],
+  "terminal_rejections_after_learning_pass": [
+    {
+      "family": "E02",
+      "code": "TERMINAL_FAILED",
+      "note": "prevented promotion after learning-gate pass (descriptive; not asserted correct or over-conservative)"
+    },
+    {
+      "family": "E05",
+      "code": "TERMINAL_FAILED",
+      "note": "prevented promotion after learning-gate pass (descriptive; not asserted correct or over-conservative)"
+    },
+    {
+      "family": "E06",
+      "code": "TERMINAL_FAILED",
+      "note": "prevented promotion after learning-gate pass (descriptive; not asserted correct or over-conservative)"
+    }
+  ]
+}

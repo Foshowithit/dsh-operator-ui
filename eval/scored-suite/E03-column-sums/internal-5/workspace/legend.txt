@@ -1,0 +1,1 @@
+Each row is one store; each column is one month.

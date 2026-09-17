@@ -1,0 +1,5 @@
+host: xenon-1.example.test
+port: 5909
+
+host: xenon-2.example.test
+port: 8969

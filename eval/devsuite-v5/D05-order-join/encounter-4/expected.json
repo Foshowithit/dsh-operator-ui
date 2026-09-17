@@ -1,0 +1,37 @@
+{
+  "family": "D05",
+  "lines": [
+    {
+      "order": "o100",
+      "item": "hex-nut",
+      "total": "35"
+    },
+    {
+      "order": "o101",
+      "item": "bracket",
+      "total": "67"
+    },
+    {
+      "order": "o102",
+      "item": "gib-key",
+      "total": "13"
+    },
+    {
+      "order": "o103",
+      "item": "damper-cable",
+      "total": "59"
+    },
+    {
+      "order": "o104",
+      "item": "hex-nut",
+      "total": "35"
+    },
+    {
+      "order": "o105",
+      "item": "coupler",
+      "total": "79"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

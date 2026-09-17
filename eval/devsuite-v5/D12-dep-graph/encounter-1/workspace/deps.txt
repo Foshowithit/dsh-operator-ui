@@ -1,0 +1,7 @@
+api
+auth
+export -> api
+export -> auth
+frontend -> api
+frontend -> auth
+gateway

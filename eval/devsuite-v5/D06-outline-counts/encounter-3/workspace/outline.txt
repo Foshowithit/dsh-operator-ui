@@ -1,0 +1,18 @@
+# maintenance outline — two-space indent means a sub-entry
+
+drive
+  notes 50
+  torque 96
+cooling
+  spec 82
+  checks 50
+  torque 13
+brakes
+  spec 41
+  checks 73
+  parts 3
+axles
+  torque 9
+  torque 17
+  spec 53
+  notes 25

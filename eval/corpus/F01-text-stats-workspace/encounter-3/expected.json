@@ -1,0 +1,30 @@
+{
+  "family": "F01",
+  "files": {
+    "README.txt": {
+      "lines": 3,
+      "words": 19,
+      "bytes": 116
+    },
+    "report-24.txt": {
+      "lines": 6,
+      "words": 31,
+      "bytes": 186
+    },
+    "catalog-46.txt": {
+      "lines": 4,
+      "words": 18,
+      "bytes": 110
+    },
+    "ledger-59.txt": {
+      "lines": 3,
+      "words": 15,
+      "bytes": 93
+    }
+  },
+  "total": {
+    "lines": 16,
+    "words": 83,
+    "bytes": 505
+  }
+}

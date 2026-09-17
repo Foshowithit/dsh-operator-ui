@@ -1,0 +1,1 @@
+Back-to-back intervals do not overlap. Overlap means sharing any minute.

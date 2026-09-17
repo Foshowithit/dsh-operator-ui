@@ -1,0 +1,9 @@
+# opening balance 150
+credit 33
+debit 63
+debit 6
+credit 70
+credit 76
+credit 86
+debit 74
+debit 66

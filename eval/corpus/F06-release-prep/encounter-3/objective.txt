@@ -1,0 +1,1 @@
+Prepare release evidence: report the current version from version.txt and list the Unreleased changelog entries verbatim.

@@ -1,0 +1,43 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "9"
+    },
+    {
+      "row": "2",
+      "total": "36"
+    },
+    {
+      "row": "3",
+      "total": "58"
+    },
+    {
+      "row": "4",
+      "total": "122"
+    },
+    {
+      "row": "5",
+      "total": "128"
+    },
+    {
+      "row": "6",
+      "total": "172"
+    },
+    {
+      "row": "7",
+      "total": "212"
+    },
+    {
+      "row": "8",
+      "total": "219"
+    },
+    {
+      "row": "9",
+      "total": "238"
+    }
+  ],
+  "role": "contested-b",
+  "fixture_kind": "scored"
+}

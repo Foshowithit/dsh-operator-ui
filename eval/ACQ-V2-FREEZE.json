@@ -1,0 +1,12 @@
+{
+  "architecture": "Capability Acquisition v2 (staged gates + dual sacred terminals + bounded redacted-evidence revision)",
+  "frozen_at_commit": "d8c543a4092db8cc8354a0e4b4ca187420f113df",
+  "frozen_by": "GPT ruling on the breadth report (checkpoint d8c543a)",
+  "no_further_changes": "acquisition prompt/gate/revision architecture — per ruling",
+  "known_limitations_frozen": [
+    "cross-file status-set composition (D08 class; budget-refused, never passed E1)",
+    "reuse variation with column order + exclusions (D14 class; E2 fail x3 revisions, budget-refused)"
+  ],
+  "executor_equivalence": "eval/records/executor-equivalence.json — local-dag-runner vs real Archon v0.10.1, all five axes agree on both cases (ordinary + dependency), zero model calls",
+  "breadth_checkpoint": "9/12 acquired, zero false promotions, d8c543a"
+}

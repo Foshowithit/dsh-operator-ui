@@ -1,0 +1,7 @@
+# coverage plan
+
+name start end
+bo 08:15 10:24
+fay 15:15 16:58
+gus 10:15 11:27
+di 09:00 10:55

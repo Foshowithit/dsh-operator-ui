@@ -1,0 +1,47 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "1"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "12",
+      "count": "3"
+    },
+    {
+      "hour": "13",
+      "count": "1"
+    },
+    {
+      "hour": "14",
+      "count": "2"
+    },
+    {
+      "hour": "16",
+      "count": "1"
+    },
+    {
+      "hour": "17",
+      "count": "1"
+    },
+    {
+      "hour": "19",
+      "count": "1"
+    },
+    {
+      "hour": "21",
+      "count": "2"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

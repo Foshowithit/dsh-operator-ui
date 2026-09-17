@@ -1,0 +1,35 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "X9",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

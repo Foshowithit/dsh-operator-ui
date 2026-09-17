@@ -1,0 +1,27 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "X1",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "E5",
+      "label": "edu"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "C3",
+      "label": "trial"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

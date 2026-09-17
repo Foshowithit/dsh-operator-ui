@@ -1,0 +1,23 @@
+{
+  "family": "D16",
+  "buckets": [
+    {
+      "bucket": "0-59s",
+      "count": "4"
+    },
+    {
+      "bucket": "60-119s",
+      "count": "0"
+    },
+    {
+      "bucket": "120-239s",
+      "count": "3"
+    },
+    {
+      "bucket": "240s+",
+      "count": "4"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

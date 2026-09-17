@@ -1,0 +1,23 @@
+{
+  "family": "D10",
+  "files": [
+    {
+      "file": "alpha.dat",
+      "size": "2375"
+    },
+    {
+      "file": "charlie.cfg",
+      "size": "2119"
+    },
+    {
+      "file": "delta.dat",
+      "size": "2195"
+    },
+    {
+      "file": "sub/deep.dat",
+      "size": "2432"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

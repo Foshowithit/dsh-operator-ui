@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "307"
+    },
+    {
+      "column": "feb",
+      "sum": "240"
+    },
+    {
+      "column": "mar",
+      "sum": "251"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}

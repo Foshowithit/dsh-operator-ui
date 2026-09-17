@@ -1,0 +1,1 @@
+Inventory this repository: report how many files there are by extension (.js, .md, .json), the total file count, and how many TODO items the repository contains.

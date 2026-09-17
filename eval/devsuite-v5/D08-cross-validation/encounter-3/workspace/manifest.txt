@@ -1,0 +1,5 @@
+# files required for release
+boot.img
+core.pkg
+hash.txt
+initrd.gz

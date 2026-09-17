@@ -1,0 +1,17 @@
+{
+  "family": "D13",
+  "applied": [
+    {
+      "key": "timeout",
+      "from": "4",
+      "to": "30"
+    },
+    {
+      "key": "interval_s",
+      "from": "30",
+      "to": "90"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}

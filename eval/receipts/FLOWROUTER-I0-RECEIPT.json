@@ -1,0 +1,472 @@
+{
+  "generated_at": "2026-09-17T08:10:40.642Z",
+  "spec": "060aa90 (I0 — integrated federation walkthrough / composition seal)",
+  "actors": {
+    "machine_A": {
+      "role": "publisher_and_origin",
+      "platform": "darwin",
+      "release": "25.4.0",
+      "node": "v24.15.0",
+      "run_nonce": "a88cbfaf-f8b1-4671-a0e1-12f4d562ca98"
+    },
+    "machine_B": {
+      "role": "machine_B_consumer_and_mirrors",
+      "platform": "linux",
+      "release": "7.0.0-31-generic",
+      "node": "v22.23.2",
+      "process": "one-shot (fresh process per operation)",
+      "run_nonce": null
+    }
+  },
+  "network_handoffs": [
+    {
+      "transfer": "network",
+      "shared_filesystem": false,
+      "hop": "R1 -> R2",
+      "object_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "source_actor": "machine_A",
+      "receiving_actor": "machine_B",
+      "source_endpoint": "machine_A:R1",
+      "receiving_endpoint": "machine_B:R2"
+    },
+    {
+      "transfer": "network",
+      "shared_filesystem": false,
+      "hop": "R2 -> consumer B",
+      "object_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "source_actor": "machine_B:R2",
+      "receiving_actor": "machine_B:consumer"
+    },
+    {
+      "transfer": "network",
+      "shared_filesystem": false,
+      "hop": "proof -> R3 carrier",
+      "object": "F1 proof_core",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
+      "source_actor": "consumer B",
+      "receiving_actor": "machine_B:R3"
+    }
+  ],
+  "checkpoints": [
+    {
+      "name": "publish",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+      "key_id": "3561fb8d3b3e743a65e45d10f3074008c82ddfb2ae1fe3836f6c0883900c5218",
+      "identity_sequence": 1,
+      "identity_head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
+      "tuple": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "name": "csv-running-total",
+        "version": "0.1.0"
+      },
+      "publisher_auth": "VERIFIED",
+      "artist": "machine_A"
+    },
+    {
+      "name": "mirror_hop_1",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "material_digest": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c",
+      "custody_from": "machine_A:R1"
+    },
+    {
+      "name": "mirror_hop_2",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "material_digest": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c",
+      "identical_to_origin": true,
+      "custody_from": "machine_B:R2"
+    },
+    {
+      "name": "f0_resolution",
+      "state": "CONSISTENT",
+      "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "observations": [
+        "r2:VALID",
+        "r3:VALID"
+      ],
+      "selected_state": {
+        "head_sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
+        "proof_source": "r2",
+        "globally_fresh": false,
+        "note": "most advanced mutually compatible state observed in this query — not globally fresh"
+      }
+    },
+    {
+      "name": "consumer_fetch",
+      "fetched_from": "r2",
+      "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "material_source": "r2",
+      "proof_state": {
+        "head_sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
+        "proof_source": "r2",
+        "globally_fresh": false,
+        "note": "most advanced mutually compatible state observed in this query — not globally fresh"
+      }
+    },
+    {
+      "name": "consumer_stage",
+      "verdict": "STAGED",
+      "import_task": "imp_049a14d2",
+      "pin_before": null,
+      "pin_after": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "pin_witness_sha": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
+      "registry_sha": "bf078aebf716284bfab732f1daeb9c1455d12aba6bf36ace6d010f6506b530ca"
+    },
+    {
+      "name": "consumer_verify",
+      "verdict": "VERIFIED",
+      "fixture_authors": "B"
+    },
+    {
+      "name": "consumer_admission",
+      "ok": true,
+      "registry_sha": "6614ec59e8906f0cae9b636600211454b0784b2ed2961a358a1bc7792448e396",
+      "registry_caps": 1
+    },
+    {
+      "name": "consumer_ship",
+      "verdict": "SHIP",
+      "route": {
+        "id": "csv-running-total",
+        "version": "0.1.0",
+        "workflow": "csv-running-total-v0-1-0",
+        "lifecycle": "promoted"
+      },
+      "gate_observed": true,
+      "checks": {
+        "terminal-status": true,
+        "declared-expectation": true,
+        "objective-satisfaction": true
+      },
+      "task_id": "goal-94c1e136"
+    },
+    {
+      "name": "f0_fork",
+      "state": "CONFLICT",
+      "reason": "equal-sequence valid heads differ",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
+      "relation": "SAME_SEQUENCE_DIVERGENT",
+      "branches": [
+        {
+          "head_sequence": 2,
+          "head_digest": "89f9fc5979d820669c14da073aaa99087a9effdda77ecc9574ae318c375b58f3"
+        },
+        {
+          "head_sequence": 2,
+          "head_digest": "ac7a15cd6169414a507b9b8627a2f9d7ea64e6ac7ae117beed22467fc0d91794"
+        }
+      ]
+    },
+    {
+      "name": "f1_transport_and_offline_verify",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
+      "bytes_identical": true,
+      "offline_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
+      "relation": "SAME_SEQUENCE_DIVERGENT"
+    },
+    {
+      "name": "f1_ingest",
+      "quarantined_before_ingest": false,
+      "quarantined_after_ingest": true,
+      "proofs": 1
+    },
+    {
+      "name": "quarantine_block",
+      "refusal": {
+        "code": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED",
+        "reason": "publisher is locally quarantined by a verified, unacknowledged equivocation proof"
+      },
+      "pin_before": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "pin_after": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "registry_unchanged": true
+    },
+    {
+      "name": "acknowledgment",
+      "ack": true,
+      "still_quarantined": false,
+      "proofs_kept": {
+        "at": "2026-09-17T08:11:01.013Z",
+        "by": "operator"
+      },
+      "pin_before": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "pin_after": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "post_ack_stage": "STAGED"
+    },
+    {
+      "name": "mirror_death_failover",
+      "resolved_state": "CONSISTENT",
+      "observations": [
+        "r2:VALID",
+        "r3:VALID"
+      ],
+      "killed": true,
+      "fetched_from": "r3",
+      "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+      "error": null
+    },
+    {
+      "name": "restart_boundaries",
+      "pin_before": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "pin_after": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "witness_before": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
+      "witness_after": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
+      "proofs_before": 1,
+      "proofs_after": 1,
+      "actor_restart_verified": true,
+      "bstate_status": 200,
+      "f1_status_status": 200,
+      "bstate_error": null,
+      "f1_error": null,
+      "actor_restarted": true
+    },
+    {
+      "name": "identifier_survival",
+      "per_actor": [
+        {
+          "actor": "machine_A:R1",
+          "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
+        },
+        {
+          "actor": "machine_B:R2",
+          "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
+        },
+        {
+          "actor": "machine_B:R3",
+          "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
+        }
+      ],
+      "identical": true,
+      "consumer_pin": {
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+        "sequence": 1,
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
+      },
+      "consumer_registry_caps": 1
+    }
+  ],
+  "steps": [
+    {
+      "step": "topology: publisher+origin on machine A, mirrors+consumer on an independent machine B (distinct actors, network only)",
+      "ok": true,
+      "result": {
+        "machine_B": {
+          "role": "machine_B_consumer_and_mirrors",
+          "platform": "linux"
+        },
+        "r2": {
+          "publications": 0,
+          "blobs": 0
+        },
+        "r3": {
+          "publications": 0,
+          "blobs": 0
+        }
+      }
+    },
+    {
+      "step": "1. P creates and authenticates the publication; R1 (machine A) receives P2 material + P0 artifact",
+      "ok": true,
+      "result": {
+        "D": "f7c6c2bd44e4a766",
+        "auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "2. R2 (machine B) replicates the publication from R1 (machine A) — artifact crossed the network only",
+      "ok": true,
+      "result": {
+        "replicated": true,
+        "D": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "3. R3 replicates from R2; the P2 material is byte-identical at R1, R2 and R3 (custody metadata never enters it)",
+      "ok": true,
+      "result": {
+        "identical": true,
+        "D": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "4. F0 resolution at B is read-only: CONSISTENT with candidate, and B registry/task store/pin unchanged",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "registry_identical": true,
+        "pin": null
+      }
+    },
+    {
+      "step": "5. B exact-D fetches and independently recomputes P0; the handoff carries the canonical proof material",
+      "ok": true,
+      "result": {
+        "from": "r2",
+        "recomputed": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "6. only the sealed P2 stage creates the pin — and it retains the identity witness; registry untouched by staging",
+      "ok": true,
+      "result": {
+        "stage_status": 200,
+        "verdict": "STAGED",
+        "error": null,
+        "pin": 1,
+        "witness": true
+      }
+    },
+    {
+      "step": "7. B authors its own fixture and verifies the imported capability locally (verification is B evidence)",
+      "ok": true,
+      "result": {
+        "verdict": "VERIFIED"
+      }
+    },
+    {
+      "step": "8. only explicit admission makes the capability routable (registry changed exactly here)",
+      "ok": true,
+      "result": {
+        "caps": 1
+      }
+    },
+    {
+      "step": "9. B routes to the ADMITTED LOCAL capability, passes its own gate, executes and SHIPs",
+      "ok": {
+        "id": "csv-running-total",
+        "version": "0.1.0",
+        "workflow": "csv-running-total-v0-1-0",
+        "lifecycle": "promoted"
+      },
+      "result": {
+        "verdict": "SHIP",
+        "gate": true,
+        "route": {
+          "id": "csv-running-total",
+          "version": "0.1.0",
+          "workflow": "csv-running-total-v0-1-0",
+          "lifecycle": "promoted"
+        }
+      }
+    },
+    {
+      "step": "10. two independent repositories expose incompatible signed histories; F0 sees the conflict and F1 constructs the proof core",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "relation": "SAME_SEQUENCE_DIVERGENT",
+        "digest": "fd085ade1c28f4dc"
+      }
+    },
+    {
+      "step": "11. the proof crosses through an untrusted mirror byte-identically and verifies OFFLINE on the independent machine to the same proof_digest",
+      "ok": true,
+      "result": {
+        "stored": true,
+        "identical": true,
+        "digest_match": true
+      }
+    },
+    {
+      "step": "12/13. storing/transporting the proof quarantined nobody; explicit F1 ingest at B activates the quarantine",
+      "ok": true,
+      "result": {
+        "before": false,
+        "after": true
+      }
+    },
+    {
+      "step": "14/15. quarantine refuses the next import BEFORE any pin mutation, and the admitted capability/registry are unchanged",
+      "ok": true,
+      "result": {
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED",
+        "registry_unchanged": true
+      }
+    },
+    {
+      "step": "16/17. acknowledgment preserves the proof bytes/digest and the pin, lifts the quarantine, and the retried import is judged by ordinary P2 semantics",
+      "ok": true,
+      "result": {
+        "ack": true,
+        "still_quarantined": false,
+        "post_ack_stage": "STAGED"
+      }
+    },
+    {
+      "step": "18. after a mirror dies, failover serves the SAME exact T/D from another VALID peer (never a version or source substitution)",
+      "ok": true,
+      "result": {
+        "from": "r3",
+        "recomputed": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "19. consumer AND repository restarts: pin, witness, proofs, quarantine state and mirrored publications all recover from disk",
+      "ok": true,
+      "result": {
+        "actor_back": true,
+        "pin": 1,
+        "witness_identical": true,
+        "proofs_before": 1,
+        "proofs_after": 1,
+        "quarantined": false,
+        "r3_serving": 200,
+        "f1_error": null
+      }
+    },
+    {
+      "step": "20. the same identifiers survive every handoff (D, publisher, material digest identical at origin and both mirrors) and no custody/copy-count field appears as a trust input",
+      "ok": true,
+      "result": {
+        "identical": true,
+        "trust_inputs_clean": true,
+        "caps": 1
+      }
+    }
+  ],
+  "machine_b_bootstrap": [
+    "R2: {\"publications\":0,\"blobs\":0}",
+    "R3: {\"publications\":0,\"blobs\":0}",
+    "RUNNER: 200"
+  ],
+  "machine_b_ready": true,
+  "mirror_restart": "{\"publications\":2,\"blobs\":1}",
+  "consumer_process_model": "one-shot: a fresh process per operation (no daemon, no in-memory carryover)",
+  "actor_restart_verified": true,
+  "verdict": "I0 GREEN — the sealed phases compose into one continuous real-network lifecycle without collapsing their trust boundaries"
+}

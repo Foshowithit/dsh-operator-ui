@@ -1,0 +1,18 @@
+{
+  "suite": "eval-v2 scored suite \u2014 12 NEW families E01\u2013E12 \u00d7 (5 internal I1\u2013I5 + 6 scored S1\u2013S6) = 132 fixtures; 72 scored objectives",
+  "seed": 41803398,
+  "generator_version": "4.0.0",
+  "generator_sha256": "sha256:615e161ed56b3ea30e2f8b8df59a599f9f9c9406650cb427e15ef1b1ac6a38fe",
+  "manifest_sha256": "sha256:35c975aa24dcac3b8b0f0f91c9bd4f31368c19d7878aa357fa9c93e57b5aa7ec",
+  "graders_sha256": "sha256:7a307a06fe430dd7312cf4a390c42bb4a7832345fb74a32fbe71f13d6768ed9a",
+  "controls_sha256": "sha256:8192dc3ab73c1c53f967d6f0a7ec03ed1078821ef591391b8bdf6424d7d1bad4",
+  "static_checks_sha256": "sha256:221d4d44ce5386c9bd2d65666b1affd706531abdf33f4d50e635558c3a8fd966",
+  "controls_result": "396/396 PASS (132 fixtures \u00d7 golden/subtle-wrong/empty)",
+  "fixture_consistency": "ALL 132 fixtures recomputed from workspace under family contract \u2014 consistent (generation-phase defects E02/E11 empty-expectation + E06 metadata-key clash + E10 line-number offset caught and repaired BEFORE this freeze, per the generation-time law)",
+  "isolation_vs_corpus": "clean",
+  "acquisition_architecture_frozen_at": "d8c543a4092db8cc8354a0e4b4ca187420f113df",
+  "executor": "real Archon v0.10.1 (:13091, equivalence receipt bc31ac2)",
+  "protocol": "eval/EVAL-PROTOCOL-V2.md (GPT-approved)",
+  "frozen_at": "2026-09-17T02:27:26.471Z",
+  "post_freeze_law": "no repair/re-generation based on RCOS behavior; failures recorded as-is"
+}

@@ -1,0 +1,1 @@
+Compare prod-a.env and prod-b.env. Report every key present in BOTH files whose value differs, in the order the key appears in prod-a.env, one per line, as RESULT key=<key> old=<value-a> new=<value-b>. Comment lines, blank lines, and keys present in only one file must be ignored. Values may contain = characters; report them verbatim.

@@ -1,0 +1,35 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "4",
+      "length": "48"
+    },
+    {
+      "line": "5",
+      "length": "73"
+    },
+    {
+      "line": "7",
+      "length": "72"
+    },
+    {
+      "line": "8",
+      "length": "80"
+    },
+    {
+      "line": "11",
+      "length": "65"
+    },
+    {
+      "line": "12",
+      "length": "55"
+    },
+    {
+      "line": "13",
+      "length": "70"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

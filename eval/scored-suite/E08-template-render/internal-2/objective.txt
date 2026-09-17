@@ -1,0 +1,1 @@
+Render deploy-card.txt by replacing every {{name}} placeholder with the matching value from deploy-values.txt. Report each rendered line in order, one per line, as RESULT line=<n> text=<rendered line>.

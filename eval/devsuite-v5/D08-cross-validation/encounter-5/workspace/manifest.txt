@@ -1,0 +1,6 @@
+boot.img
+core.pkg
+env.map
+grub.cfg
+hash.txt
+

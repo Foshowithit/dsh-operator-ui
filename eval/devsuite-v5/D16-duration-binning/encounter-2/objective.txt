@@ -1,0 +1,1 @@
+Bucket every duration in job-durations.csv into: 0-59s, 60-119s, 120-239s, 240s+ (upper bounds inclusive except the last bucket which includes everything 240 and above). Report every bucket with its count, in that bucket order, one per line, as RESULT bucket=<label> count=<n>.

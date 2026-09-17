@@ -1,0 +1,25 @@
+{
+  "family": "F01",
+  "files": {
+    "README.txt": {
+      "lines": 5,
+      "words": 21,
+      "bytes": 126
+    },
+    "index-29.txt": {
+      "lines": 4,
+      "words": 13,
+      "bytes": 79
+    },
+    "report-97.txt": {
+      "lines": 4,
+      "words": 21,
+      "bytes": 125
+    }
+  },
+  "total": {
+    "lines": 13,
+    "words": 55,
+    "bytes": 330
+  }
+}

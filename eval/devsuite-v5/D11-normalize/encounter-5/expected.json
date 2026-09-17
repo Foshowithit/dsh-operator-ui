@@ -1,0 +1,27 @@
+{
+  "family": "D11",
+  "contacts": [
+    {
+      "name": "dmitri-dune",
+      "phone": "7513911369"
+    },
+    {
+      "name": "dmitri-brooks",
+      "phone": "5792532234"
+    },
+    {
+      "name": "dmitri-calder",
+      "phone": "2713563250"
+    },
+    {
+      "name": "dmitri-calder",
+      "phone": "7478441594"
+    },
+    {
+      "name": "dmitri-ellery",
+      "phone": "3652045523"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

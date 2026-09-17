@@ -1,0 +1,32 @@
+{
+  "family": "D15",
+  "rows": [
+    {
+      "name": "broker",
+      "version": "4.5.1",
+      "status": "ahead"
+    },
+    {
+      "name": "agent",
+      "version": "1.5.1",
+      "status": "stale"
+    },
+    {
+      "name": "daemon",
+      "version": "4.6.9",
+      "status": "ahead"
+    },
+    {
+      "name": "cli",
+      "version": "2.6.6",
+      "status": "stale"
+    },
+    {
+      "name": "exporter",
+      "version": "3.9.5",
+      "status": "current"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

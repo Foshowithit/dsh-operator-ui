@@ -1,0 +1,27 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "8",
+      "length": "76"
+    },
+    {
+      "line": "10",
+      "length": "75"
+    },
+    {
+      "line": "11",
+      "length": "52"
+    },
+    {
+      "line": "12",
+      "length": "67"
+    },
+    {
+      "line": "13",
+      "length": "71"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

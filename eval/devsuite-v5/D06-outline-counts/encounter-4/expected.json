@@ -1,0 +1,23 @@
+{
+  "family": "D06",
+  "sections": [
+    {
+      "section": "brakes",
+      "items": "3"
+    },
+    {
+      "section": "axles",
+      "items": "4"
+    },
+    {
+      "section": "filters",
+      "items": "2"
+    },
+    {
+      "section": "drive",
+      "items": "3"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

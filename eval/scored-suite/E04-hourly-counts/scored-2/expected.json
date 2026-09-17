@@ -1,0 +1,59 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "06",
+      "count": "3"
+    },
+    {
+      "hour": "07",
+      "count": "2"
+    },
+    {
+      "hour": "08",
+      "count": "1"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "2"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "12",
+      "count": "1"
+    },
+    {
+      "hour": "14",
+      "count": "2"
+    },
+    {
+      "hour": "15",
+      "count": "2"
+    },
+    {
+      "hour": "16",
+      "count": "2"
+    },
+    {
+      "hour": "17",
+      "count": "1"
+    },
+    {
+      "hour": "18",
+      "count": "1"
+    },
+    {
+      "hour": "21",
+      "count": "2"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

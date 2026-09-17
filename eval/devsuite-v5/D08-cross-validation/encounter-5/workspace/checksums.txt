@@ -1,0 +1,5 @@
+boot.img:de6c72aa
+grub.cfg:17e2a79f
+hash.txt:50a3fb05
+env.map:479e79b9
+firmware.sig:be3b8ee6

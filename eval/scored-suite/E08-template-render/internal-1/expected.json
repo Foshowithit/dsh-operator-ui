@@ -1,0 +1,19 @@
+{
+  "family": "E08",
+  "lines": [
+    {
+      "line": "1",
+      "text": "Deployment for south"
+    },
+    {
+      "line": "2",
+      "text": "Lead engineer: priya"
+    },
+    {
+      "line": "3",
+      "text": "Unit u69 covers 11 nodes."
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

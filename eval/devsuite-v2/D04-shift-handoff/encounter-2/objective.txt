@@ -1,0 +1,1 @@
+From handoff.txt, report each shift's duration in minutes in file order, one per line, as RESULT shift=<name> minutes=<m>.

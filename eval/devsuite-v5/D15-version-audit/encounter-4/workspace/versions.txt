@@ -1,0 +1,6 @@
+# component versions
+agent: v3.2.2
+broker: v5.7.1
+cli: v1.4.6
+exporter: v3.0.7
+daemon: v1.6.5

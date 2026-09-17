@@ -1,0 +1,6 @@
+# variable values
+
+area=south
+lead=tomek
+unit=u35
+count=4

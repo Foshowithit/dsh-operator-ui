@@ -1,0 +1,13 @@
+{
+  "family": "F07",
+  "duplicates": [
+    {
+      "email": "quartz@test.invalid",
+      "count": 3
+    },
+    {
+      "email": "relay@test.invalid",
+      "count": 2
+    }
+  ]
+}

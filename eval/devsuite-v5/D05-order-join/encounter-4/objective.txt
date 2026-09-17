@@ -1,0 +1,1 @@
+Join orders.csv with prices.csv on the item column and report each order's total (the item's price), in orders-file order, one per line, as RESULT order=<order_id> item=<item> total=<price>. Fields may be quoted.

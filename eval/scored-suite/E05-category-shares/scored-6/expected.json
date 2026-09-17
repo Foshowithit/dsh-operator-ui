@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "echo",
+      "share": "39.9"
+    },
+    {
+      "category": "bravo",
+      "share": "37.2"
+    },
+    {
+      "category": "alpha",
+      "share": "17.6"
+    },
+    {
+      "category": "charlie",
+      "share": "5.4"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

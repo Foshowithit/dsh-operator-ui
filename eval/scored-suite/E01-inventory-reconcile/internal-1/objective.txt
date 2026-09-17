@@ -1,0 +1,1 @@
+Compare system.csv and physical.csv. Report every item whose quantity differs, in system.csv order, one per line, as RESULT item=<item> system=<qty-a> physical=<qty-b>.

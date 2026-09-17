@@ -1,0 +1,6 @@
+# variable values
+
+area=central
+lead=maria
+unit=u68
+count=13

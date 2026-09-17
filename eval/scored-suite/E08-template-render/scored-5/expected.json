@@ -1,0 +1,19 @@
+{
+  "family": "E08",
+  "lines": [
+    {
+      "line": "1",
+      "text": "Deployment for south"
+    },
+    {
+      "line": "2",
+      "text": "Lead engineer: tomek"
+    },
+    {
+      "line": "3",
+      "text": "Unit u93 covers 17 nodes."
+    }
+  ],
+  "role": "contested-b",
+  "fixture_kind": "scored"
+}

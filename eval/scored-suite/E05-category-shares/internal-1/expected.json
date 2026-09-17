@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "alpha",
+      "share": "34.8"
+    },
+    {
+      "category": "echo",
+      "share": "34.0"
+    },
+    {
+      "category": "bravo",
+      "share": "16.3"
+    },
+    {
+      "category": "delta",
+      "share": "14.9"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

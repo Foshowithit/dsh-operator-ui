@@ -1,0 +1,1 @@
+Report the top 2 scores from leaderboard.csv — including EVERY entry tied with the 2th-place score — sorted by score descending then name alphabetically, one per line, as RESULT name=<name> score=<n>.

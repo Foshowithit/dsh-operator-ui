@@ -1,0 +1,35 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "06",
+      "count": "1"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "11",
+      "count": "2"
+    },
+    {
+      "hour": "13",
+      "count": "2"
+    },
+    {
+      "hour": "16",
+      "count": "4"
+    },
+    {
+      "hour": "20",
+      "count": "2"
+    },
+    {
+      "hour": "21",
+      "count": "1"
+    }
+  ],
+  "role": "contested-b",
+  "fixture_kind": "scored"
+}

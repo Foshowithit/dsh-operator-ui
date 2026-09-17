@@ -1,0 +1,409 @@
+{
+  "protocol": "eval-protocol-v1",
+  "seed": 20260916,
+  "generatedAt": "2026-09-16T17:10:33.788Z",
+  "objectives": [
+    {
+      "id": "F01-text-stats-workspace/encounter-1",
+      "family": "F01",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "0319f4a6cf322eadd273f5ca5aec8f5dab28e1131ddf70caeb3b3c4310cf6bde"
+    },
+    {
+      "id": "F01-text-stats-workspace/encounter-2",
+      "family": "F01",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "0f3c29104cb756903bb3eef906eb55a3ae953130c60a61bd4f5c05de7da1ad57"
+    },
+    {
+      "id": "F01-text-stats-workspace/encounter-3",
+      "family": "F01",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "21eaab2191fb40d0df358b4f4b1d8fc86281bb17d56b3a4b5913fdd821ff05de"
+    },
+    {
+      "id": "F01-text-stats-workspace/encounter-4",
+      "family": "F01",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "74c2f5bca25b2dc1c31ea53f664e65d3071dc9abfb1ce6315d5f6057a2fb116d"
+    },
+    {
+      "id": "F01-text-stats-workspace/encounter-5",
+      "family": "F01",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "58f1da195dfca03c04b41c6da05315464110d0f2d2c0a4cd7c5f80e328a73c10"
+    },
+    {
+      "id": "F02-repository-inspection/encounter-1",
+      "family": "F02",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "ed5948d5f20bd32a1b89b08dac86315bf10528fc39403bca54acc945cdd1d900"
+    },
+    {
+      "id": "F02-repository-inspection/encounter-2",
+      "family": "F02",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "efbba5ee82933187e36e07831fd5a300acb22a9cced6d56215c59ed0bd192809"
+    },
+    {
+      "id": "F02-repository-inspection/encounter-3",
+      "family": "F02",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "615fff3bc27f3e0947eb08a9c5e8f6c2a04b42f0dcbf8a716be50bbc20a44642"
+    },
+    {
+      "id": "F02-repository-inspection/encounter-4",
+      "family": "F02",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "479dc1cf7003ceefaf03cd25102bef3e98869a315ec96672ad51f1936ca58468"
+    },
+    {
+      "id": "F02-repository-inspection/encounter-5",
+      "family": "F02",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "a3cebd9d633de22040a0ebfa5b8de30cb656cd06c63f6bde45004cb6621d61db"
+    },
+    {
+      "id": "F03-structured-extraction/encounter-1",
+      "family": "F03",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "0489967ec6927e8695dbf5b928d8c63971c35fcb1f3c86b145e5776380b9b919"
+    },
+    {
+      "id": "F03-structured-extraction/encounter-2",
+      "family": "F03",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "6bb9ad25fdf90f0f45ad2eb73a561d411f92d919512aa7e25bb42317bc1dfc8b"
+    },
+    {
+      "id": "F03-structured-extraction/encounter-3",
+      "family": "F03",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "448975673995af9774c3781a180c110d5adfdacb803a426b16295d29b9799dac"
+    },
+    {
+      "id": "F03-structured-extraction/encounter-4",
+      "family": "F03",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "ae82422720bab5bbd06108510116c573ee6deaff568bf95ef13d193a95f036ec"
+    },
+    {
+      "id": "F03-structured-extraction/encounter-5",
+      "family": "F03",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "92dc8fa823d58bc2faa386906415b8843a86c844c8765f5e3c2d1117a1bc98aa"
+    },
+    {
+      "id": "F04-line-transform/encounter-1",
+      "family": "F04",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "1ae598bd4772e144bcfe6470e2ac6f51f4f7afff21868e832edc09992f20cb99"
+    },
+    {
+      "id": "F04-line-transform/encounter-2",
+      "family": "F04",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "92e9fcd6197fecd92b941f5c76bbc68a75685e1dd2661416106b18b3d2b4921b"
+    },
+    {
+      "id": "F04-line-transform/encounter-3",
+      "family": "F04",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "226a3e24dde1f15eb98b4f99f8e1e284b17a5c9f03104e1ff727147f1ff2c590"
+    },
+    {
+      "id": "F04-line-transform/encounter-4",
+      "family": "F04",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "d8997a11136449eaef04e4d77a98c2e32bd7b4dfbcb417a02b7b12cd1a76cf2a"
+    },
+    {
+      "id": "F04-line-transform/encounter-5",
+      "family": "F04",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "2a55c66b5a18cf757c636ee5ba4994cebb3bcbf0ebb92caa1f3298bf15932232"
+    },
+    {
+      "id": "F05-validation-gate/encounter-1",
+      "family": "F05",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "15b815c3e1d87f533083a152511fa5b71ae09d2df08bcd2b8b2bd6e8f06bb888"
+    },
+    {
+      "id": "F05-validation-gate/encounter-2",
+      "family": "F05",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "18f1bc76b04da13eefbb5b61e5f1da279d2543f06b96e8b56341de3ec6bc0343"
+    },
+    {
+      "id": "F05-validation-gate/encounter-3",
+      "family": "F05",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "ba6786365427f2862f050e39eeb972eef6b5d561be4bca68ac126efa7bb127f7"
+    },
+    {
+      "id": "F05-validation-gate/encounter-4",
+      "family": "F05",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "3ab9e0ea62b656d67913f2d47e80f4d9a730d9af06ca4b8b596e81086418275e"
+    },
+    {
+      "id": "F05-validation-gate/encounter-5",
+      "family": "F05",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "ff3925c7b9d07203a6813afc0758a1dd3185c2022587d7f6e3523d10742202d3"
+    },
+    {
+      "id": "F06-release-prep/encounter-1",
+      "family": "F06",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "e84322966062d3553a53c0624ec479aac537c054817b7cf2c6683b6e28b5719c"
+    },
+    {
+      "id": "F06-release-prep/encounter-2",
+      "family": "F06",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "88cabf29fc52cf1a5f1595da9cc76e4a23e73d6b54b76b1fd2e4c2ae7f31f232"
+    },
+    {
+      "id": "F06-release-prep/encounter-3",
+      "family": "F06",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "529f4d683708da9828a3c39cba5e5a4d7fa212c4384abf40b3963e2262d83a97"
+    },
+    {
+      "id": "F06-release-prep/encounter-4",
+      "family": "F06",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "28390166b057209b2662cdf2f75374b7c7768f7752b390fd8001e35ab91af758"
+    },
+    {
+      "id": "F06-release-prep/encounter-5",
+      "family": "F06",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "38e97b97fccfbbf02e24b817ec9c789f54268bd680ab1a0c3159561acfa91239"
+    },
+    {
+      "id": "F07-duplicate-report/encounter-1",
+      "family": "F07",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "da14839e473ed05f350a2bd23e728578411b1d09a8736fb74b2e33367f4d3353"
+    },
+    {
+      "id": "F07-duplicate-report/encounter-2",
+      "family": "F07",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "253350963bda25e4bf31a33d9752f3c2bddde473de3693ae5e661172bf8cc56c"
+    },
+    {
+      "id": "F07-duplicate-report/encounter-3",
+      "family": "F07",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "4d0b312e02c220d1e2404263ba27049a009458ea259c306a3e3041f0e5c8969e"
+    },
+    {
+      "id": "F07-duplicate-report/encounter-4",
+      "family": "F07",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "e0df09dfa8ffa31f64b94658089626f79cf7ef6dd4094e963cef99460f268484"
+    },
+    {
+      "id": "F07-duplicate-report/encounter-5",
+      "family": "F07",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "3c2e1eefc1308c2dd560372a5fab96f7eae39b679febc8968c70318f8ac7cf5d"
+    },
+    {
+      "id": "F08-format-conversion/encounter-1",
+      "family": "F08",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "a8fa74958b471b920bdd5812b7d71558d38384178bc0debb5a70db87100fd892"
+    },
+    {
+      "id": "F08-format-conversion/encounter-2",
+      "family": "F08",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "aab684fdf500d1461d1c36b162b717fab11b5f4a49577bd9bcccb968698e71e7"
+    },
+    {
+      "id": "F08-format-conversion/encounter-3",
+      "family": "F08",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "5da4a73f3d2e4d2a449e44b537914912cd3528b522c98f5ac6e45dfa75a725d1"
+    },
+    {
+      "id": "F08-format-conversion/encounter-4",
+      "family": "F08",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "0e1bcfe0a2973081c34914911f25bfbd24e3ab38a238ee7fa9af5fbc2f7d23c8"
+    },
+    {
+      "id": "F08-format-conversion/encounter-5",
+      "family": "F08",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "6bed9fc69522b9c9589e440c4f27f96362014f9c9c78aa83d0e960121d52cd4d"
+    },
+    {
+      "id": "F09-log-analysis/encounter-1",
+      "family": "F09",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "3cf15f30469007d5ad2c7f7a36987335b79e4b448c87d867fb4f63264c20f1eb"
+    },
+    {
+      "id": "F09-log-analysis/encounter-2",
+      "family": "F09",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "ec457fce183f209ff62fa8084ed08788c4574d66cf278dae7b47019dee0111f4"
+    },
+    {
+      "id": "F09-log-analysis/encounter-3",
+      "family": "F09",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "1d97db5372d7d506c3c853986b48abf7f2f0e03d8685c175685d7e3bb7d4fa76"
+    },
+    {
+      "id": "F09-log-analysis/encounter-4",
+      "family": "F09",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "9e762c3e313ae6abfe345ef096b2153aaed453588b0266fa1e113f4ad027e21c"
+    },
+    {
+      "id": "F09-log-analysis/encounter-5",
+      "family": "F09",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "f496dedd0aec6ef1ca6e4f8eb6f13bae40be1354834a0eaff5a36a43e584a3b4"
+    },
+    {
+      "id": "F10-dependency-audit/encounter-1",
+      "family": "F10",
+      "encounter": 1,
+      "hidden": false,
+      "sha256": "639341b3b03d321c9fc32afe524448bac831e693a0d6d078e4f8d68aaf7185f9"
+    },
+    {
+      "id": "F10-dependency-audit/encounter-2",
+      "family": "F10",
+      "encounter": 2,
+      "hidden": false,
+      "sha256": "a4c08c05e1261981ff83ad2f83c8cd95b5707f4bae328e356527c317d2b375ec"
+    },
+    {
+      "id": "F10-dependency-audit/encounter-3",
+      "family": "F10",
+      "encounter": 3,
+      "hidden": true,
+      "sha256": "255b0e3a935ee7ff2073618200a73ceb801096d88e5ad884babfdaa1a3150102"
+    },
+    {
+      "id": "F10-dependency-audit/encounter-4",
+      "family": "F10",
+      "encounter": 4,
+      "hidden": true,
+      "sha256": "1d18122be8901ca962be845661618520dbe996df172041617668690c8f784086"
+    },
+    {
+      "id": "F10-dependency-audit/encounter-5",
+      "family": "F10",
+      "encounter": 5,
+      "hidden": true,
+      "sha256": "710d090e34823146c1afd8e0a2a5e620dbf4e414dbe2e39fd92c71c816c96f94"
+    }
+  ],
+  "stream": [
+    "F04-line-transform/encounter-1",
+    "F02-repository-inspection/encounter-1",
+    "F06-release-prep/encounter-1",
+    "F02-repository-inspection/encounter-2",
+    "F10-dependency-audit/encounter-1",
+    "F07-duplicate-report/encounter-1",
+    "F01-text-stats-workspace/encounter-1",
+    "F06-release-prep/encounter-2",
+    "F01-text-stats-workspace/encounter-2",
+    "F08-format-conversion/encounter-1",
+    "F01-text-stats-workspace/encounter-3",
+    "F10-dependency-audit/encounter-2",
+    "F08-format-conversion/encounter-2",
+    "F02-repository-inspection/encounter-3",
+    "F02-repository-inspection/encounter-4",
+    "F04-line-transform/encounter-2",
+    "F08-format-conversion/encounter-3",
+    "F03-structured-extraction/encounter-1",
+    "F08-format-conversion/encounter-4",
+    "F01-text-stats-workspace/encounter-4",
+    "F07-duplicate-report/encounter-2",
+    "F09-log-analysis/encounter-1",
+    "F01-text-stats-workspace/encounter-5",
+    "F04-line-transform/encounter-3",
+    "F09-log-analysis/encounter-2",
+    "F08-format-conversion/encounter-5",
+    "F05-validation-gate/encounter-1",
+    "F10-dependency-audit/encounter-3",
+    "F05-validation-gate/encounter-2",
+    "F10-dependency-audit/encounter-4",
+    "F06-release-prep/encounter-3",
+    "F02-repository-inspection/encounter-5",
+    "F06-release-prep/encounter-4",
+    "F05-validation-gate/encounter-3",
+    "F09-log-analysis/encounter-3",
+    "F03-structured-extraction/encounter-2",
+    "F05-validation-gate/encounter-4",
+    "F07-duplicate-report/encounter-3",
+    "F09-log-analysis/encounter-4",
+    "F05-validation-gate/encounter-5",
+    "F07-duplicate-report/encounter-4",
+    "F07-duplicate-report/encounter-5",
+    "F10-dependency-audit/encounter-5",
+    "F04-line-transform/encounter-4",
+    "F09-log-analysis/encounter-5",
+    "F03-structured-extraction/encounter-3",
+    "F03-structured-extraction/encounter-4",
+    "F06-release-prep/encounter-5",
+    "F03-structured-extraction/encounter-5",
+    "F04-line-transform/encounter-5"
+  ]
+}
