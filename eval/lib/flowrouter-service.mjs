@@ -343,29 +343,33 @@ const server = createServer(async (req, res) => {
       }
       const tuple = { publisher_scheme: 'p2-selfcert-v1', publisher_id, name, version };
       try {
-        const existing = findPub(publisher_id, name, version, 'p2-selfcert-v1');
-        const existingMaterialDigest = existing && existing.material ? materialDigest(existing.material) : null;
-        const plan = await planReplication({
-          source_endpoint, tuple,
-          lookupExisting: async () => existing,
-          existingMaterialDigest,
-        });
-        if (!plan.ok) return json(res, 409, { error: plan.code, reason: plan.reason, tuple, held_D: existing ? existing.D : null, offered_D: plan.requested_D });
-        if (plan.action === 'idempotent') {
-          return json(res, 200, { replicated: true, idempotent: true, tuple, D: plan.requested_D, material_digest: plan.material_digest });
-        }
-        // blob FIRST, binding SECOND: no verified binding may point at bytes
-        // this repository did not successfully persist.
-        await mkdir(BLOBS, { recursive: true });
-        await writeFile(join(BLOBS, plan.requested_D + '.pkg'), plan.wire_bytes);
-        await withPublishLock(async () => {
+        // network + independent verification happen OUTSIDE the lock (never
+        // hold the mutation lock across a remote fetch), but the authoritative
+        // decision + commit happen INSIDE it against the CURRENT binding.
+        const plan = await planReplication({ source_endpoint, tuple });
+        const outcome = await withPublishLock(async () => {
+          const current = findPub(publisher_id, name, version, 'p2-selfcert-v1');
+          const decision = plan.decide(current ? { D: current.D, material_digest: current.material ? materialDigest(current.material) : null } : null);
+          if (decision.action === 'refuse') return { refused: true, decision, held_D: current ? current.D : null };
+          if (decision.action === 'idempotent') return { idempotent: true };
+          // blob FIRST, binding SECOND: no verified binding may point at bytes
+          // this repository did not successfully persist.
+          await mkdir(BLOBS, { recursive: true });
+          await writeFile(join(BLOBS, plan.requested_D + '.pkg'), plan.wire_bytes);
           await commitPublication({
             ...tuple, D: plan.requested_D, published_at: nowIso(),
             publisher_auth: 'VERIFIED',
             material: plan.material,
             custody: { mirrored_from: source_endpoint, replicated_at: nowIso(), custody_hops: 1 },
           });
+          return { committed: true };
         });
+        if (outcome.refused) {
+          return json(res, 409, { error: outcome.decision.code, reason: outcome.decision.reason, tuple, held_D: outcome.held_D, offered_D: plan.requested_D });
+        }
+        if (outcome.idempotent) {
+          return json(res, 200, { replicated: true, idempotent: true, tuple, D: plan.requested_D, material_digest: plan.material_digest });
+        }
         await rebuildIndex();
         const provenance = { tuple, D: plan.requested_D, source_endpoint, replicated_at: nowIso(), material_digest: plan.material_digest };
         await appendFile(MIRROR_META, JSON.stringify(provenance) + '\n', 'utf8');
