@@ -1,0 +1,175 @@
+{
+  "generated_at": "2026-09-17T06:12:42.936Z",
+  "steps": [
+    {
+      "step": "four fresh repositories started on consumer-assigned endpoints",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13111,
+          "r2": 13112,
+          "r3": 13113,
+          "r4": 13114
+        }
+      }
+    },
+    {
+      "step": "P publishes the same authenticated package to R1 and R2",
+      "ok": true,
+      "result": {
+        "r1": "VERIFIED",
+        "r2": "VERIFIED"
+      }
+    },
+    {
+      "step": "positive resolve over two VALID replicas → CONSISTENT with candidate",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "peers": [
+          "r1:VALID",
+          "r2:VALID"
+        ]
+      }
+    },
+    {
+      "step": "third configured peer ABSENT → PARTIAL (not CONSISTENT), candidate + fetch still permitted",
+      "ok": true,
+      "result": {
+        "state": "PARTIAL",
+        "peers": [
+          "r1:VALID",
+          "r2:VALID",
+          "r3:ABSENT"
+        ]
+      }
+    },
+    {
+      "step": "exact-D fetch from a VALID peer; D recomputed on receipt",
+      "ok": true,
+      "result": {
+        "from": "r1",
+        "recomputed": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "federation-resolved capability → sealed local path → SHIP",
+      "ok": true,
+      "result": {
+        "stage": "STAGED",
+        "verify": "VERIFIED",
+        "admit": true,
+        "verdict": "SHIP",
+        "gate": true
+      }
+    },
+    {
+      "step": "F1 same tuple, different D across repositories → CONFLICT (fail-closed, no fetch)",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "reason": "valid P2 observations disagree on D"
+      }
+    },
+    {
+      "step": "F2 forged metadata from one peer → INVALID observation; others stand",
+      "ok": true,
+      "result": {
+        "r3": "INVALID",
+        "state": "PARTIAL"
+      }
+    },
+    {
+      "step": "F3 unavailable peer → UNAVAILABLE; fetch exact-D from the other VALID peer",
+      "ok": true,
+      "result": {
+        "r1": "UNAVAILABLE",
+        "from": "r2"
+      }
+    },
+    {
+      "step": "F4 repository omitting the publication → ABSENT → PARTIAL",
+      "ok": true,
+      "result": {
+        "r4": "ABSENT",
+        "state": "PARTIAL"
+      }
+    },
+    {
+      "step": "F5 duplicate identical mirrors → CONSISTENT, one identical head (no inflation)",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "heads": [
+          "54f3e4a5",
+          "54f3e4a5"
+        ]
+      }
+    },
+    {
+      "step": "F6 identical textual P1 identity on two repos → origin-scoped, never merged",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "reason": "P1 identity is origin-scoped and never merged across repositories"
+      }
+    },
+    {
+      "step": "F7 EMPTY resolution has no fetch path",
+      "ok": true,
+      "result": {
+        "state": "EMPTY",
+        "fetch": "FETCH_NOT_PERMITTED"
+      }
+    },
+    {
+      "step": "F8 duplicate configured repository_id → federation refuses to start",
+      "ok": true,
+      "result": {
+        "ok": false,
+        "error": "PEER_DUPLICATE_ID",
+        "reason": "PEER_DUPLICATE_ID: duplicate configured repository_id \"r1\" — federation refuses to start"
+      }
+    },
+    {
+      "step": "C1 peer-order permutation → identical aggregate + candidate",
+      "ok": true,
+      "result": {
+        "a": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1}}",
+        "b": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1}}"
+      }
+    },
+    {
+      "step": "C2 OBSERVE/RESOLVE leaves B registry/task store/pin byte-identical",
+      "ok": true,
+      "result": {
+        "registry_sha": "5471a81fc6cb6a43",
+        "registry_identical": true,
+        "taskstore_sha": "5d4f28272d3634e0",
+        "taskstore_identical": true,
+        "pin_before": 1,
+        "pin_after": 1,
+        "pin_identical": true
+      }
+    },
+    {
+      "step": "C3a compatible seq4 + seq6 → seq6 regardless of peer order (labeled non-fresh)",
+      "ok": true,
+      "result": {
+        "seqs": [
+          6,
+          6
+        ]
+      }
+    },
+    {
+      "step": "C3b equal-sequence sibling branches → CONFLICT",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "reason": "equal-sequence valid heads differ"
+      }
+    }
+  ],
+  "verdict": "F0 MATRIX GREEN — multi-repository resolution deterministic, zero repository authority"
+}
