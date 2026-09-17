@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T08:31:47.325Z",
+  "generated_at": "2026-09-17T08:37:32.040Z",
   "spec": "d0e935d (D0 — untrusted repository possession index)",
   "steps": [
     {
@@ -47,6 +47,14 @@
       }
     },
     {
+      "step": "0. the canonical validator IS the sealed tuple grammar: a one-character name is legal, a prerelease version is not",
+      "ok": true,
+      "result": {
+        "one_char": 1,
+        "prerelease_candidates": 0
+      }
+    },
+    {
       "step": "3. a false publisher entry yields a candidate that ordinary verification rejects — no pin, no admission",
       "ok": true,
       "result": {
@@ -86,6 +94,16 @@
         "rejected": 2,
         "candidates": 1,
         "stage": "REFUSED"
+      }
+    },
+    {
+      "step": "6b. 10,000 canonical entries for ANOTHER name cannot enter the result or consume bound slots — exactly one candidate, for the requested name",
+      "ok": true,
+      "result": {
+        "candidates": 1,
+        "name": "csv-running-total",
+        "wrong_name": 10000,
+        "unique": 1
       }
     },
     {
@@ -175,7 +193,7 @@
     "learned_from_index": "http://127.0.0.1:13152",
     "candidate": {
       "publisher_scheme": "p2-selfcert-v1",
-      "publisher_id": "f0cffa88ed02829a154bcc19cdf8be697cce3c91a24ca1b5350d85d20b8e1859",
+      "publisher_id": "d81ffb48b0127d99cbed4928cac48c82e9321fe90cd74b8e790a36160e3367bd",
       "name": "csv-running-total",
       "version": "0.1.0"
     },
