@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T07:20:17.454Z",
+  "generated_at": "2026-09-17T07:28:44.676Z",
   "steps": [
     {
       "step": "three fresh repositories started (R1 source, R2 destination, R3 second hop)",
@@ -42,7 +42,7 @@
       "result": {
         "served_auth": "VERIFIED",
         "material_identical": true,
-        "publisher": "4dc80b187d56"
+        "publisher": "d5d2370c0f9d"
       }
     },
     {
@@ -73,7 +73,7 @@
         "r2_custody": 1,
         "r3_custody": 1,
         "D": "f7c6c2bd44e4",
-        "publisher": "4dc80b187d56"
+        "publisher": "d5d2370c0f9d"
       }
     },
     {
@@ -198,6 +198,41 @@
         "binding_created": false,
         "publications_unchanged": true
       }
+    },
+    {
+      "step": "property 15a concurrent same-tuple / different-D replicas → exactly ONE binding, one conflict refusal, one unambiguous lookup",
+      "ok": true,
+      "result": {
+        "bindings": 1,
+        "D": [
+          "f7c6c2bd44"
+        ],
+        "successes": 1,
+        "refusals": 1,
+        "provenance": 1
+      }
+    },
+    {
+      "step": "property 15b concurrent same T+D / different material → exactly ONE material persists, the other refused (immutability holds under concurrency)",
+      "ok": true,
+      "result": {
+        "bindings": 1,
+        "successes": 1,
+        "refusals": 1,
+        "provenance": 1
+      }
+    },
+    {
+      "step": "property 15c concurrent identical requests → exactly one binding, one provenance record, the other idempotent",
+      "ok": true,
+      "result": {
+        "bindings": 1,
+        "outcomes": [
+          "idempotent",
+          "committed"
+        ],
+        "provenance": 1
+      }
     }
   ],
   "_r3_restored": true,
@@ -206,7 +241,7 @@
     "relation": "SAME_SEQUENCE_DIVERGENT"
   },
   "f1_carriage": {
-    "proof_digest": "b93aa4dc50896070",
+    "proof_digest": "fa632f532cdd85e8",
     "mirrored": true,
     "identical": true,
     "verifies": true
