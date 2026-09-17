@@ -215,6 +215,15 @@
         "expectOutput": "example-text-stats:done",
         "terminalStatus": "completed"
       },
+      "objectiveEvaluation": {
+        "kind": "output-lines",
+        "required": [
+          "Path:",
+          "Lines:",
+          "Words:",
+          "Bytes:"
+        ]
+      },
       "admitted_after": [],
       "evals": [],
       "reuse_count": 8,
