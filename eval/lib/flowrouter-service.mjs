@@ -98,8 +98,20 @@ async function loadState() {
   try { index = JSON.parse(await readFile(INDEX, 'utf8')); } catch { index = []; }
 }
 async function commitPublication(rec) {
-  publications.push(rec);
+  // durable FIRST: the in-memory authoritative array only reflects what is
+  // actually on disk (a failed append must never leave memory ahead of disk)
   await appendFile(PUBS, JSON.stringify(rec) + '\n', 'utf8');
+  publications.push(rec);
+}
+
+// publishes are serialized through a lock: the findPub → blob → bind critical
+// section must not interleave across concurrent requests (two different bytes
+// for an unbound package_ref must never both commit)
+let publishChain = Promise.resolve();
+function withPublishLock(fn) {
+  const p = publishChain.then(fn, fn);
+  publishChain = p.then(() => {}, () => {});
+  return p;
 }
 async function writeIndex() {
   await writeFile(INDEX, JSON.stringify(index, null, 2) + '\n', 'utf8');
@@ -170,22 +182,28 @@ const server = createServer(async (req, res) => {
         if (ver && ver !== version) return json(res, 409, { error: 'IDENTITY_VERSION_MISMATCH', reason: `package version ${ver} ≠ ${version}` });
       } catch { return json(res, 400, { error: 'PACKAGE_MALFORMED', reason: 'capability.json unreadable' }); }
 
-      const existing = findPub(publisher_id, name, version);
-      if (existing) {
-        if (existing.D === D) return json(res, 200, { publisher_id, name, version, D, idempotent: true });
-        return json(res, 409, { error: 'PUBLISH_CONFLICT', reason: `package_ref already bound to ${existing.D}` });
-      }
-      // blob FIRST, binding second (crash → orphan blob, never binding-to-absent)
-      await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
-      await commitPublication({ publisher_id, name, version, D, published_at: nowIso() });
-      await rebuildIndex();
-      return json(res, 200, { publisher_id, name, version, D });
+      return await withPublishLock(async () => {
+        const existing = findPub(publisher_id, name, version);
+        if (existing) {
+          if (existing.D === D) return json(res, 200, { publisher_id, name, version, D, idempotent: true });
+          return json(res, 409, { error: 'PUBLISH_CONFLICT', reason: `package_ref already bound to ${existing.D}` });
+        }
+        // blob FIRST, binding second (crash → orphan blob, never binding-to-absent)
+        await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
+        await commitPublication({ publisher_id, name, version, D, published_at: nowIso() });
+        await rebuildIndex();
+        return json(res, 200, { publisher_id, name, version, D });
+      });
     }
 
     // ---------------- GET /publication/:p/:n/:v ----------------
     const pubMatch = url.pathname.match(/^\/publication\/([^/]+)\/([^/]+)\/([^/]+)$/);
     if (req.method === 'GET' && pubMatch) {
-      const rec = findPub(decodeURIComponent(pubMatch[1]), decodeURIComponent(pubMatch[2]), decodeURIComponent(pubMatch[3]));
+      const p1 = decodeURIComponent(pubMatch[1]), n1 = decodeURIComponent(pubMatch[2]), v1 = decodeURIComponent(pubMatch[3]);
+      if (!CANON.test(p1) || !CANON.test(n1) || !VER.test(v1)) {
+        return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'components must be canonical (reject-not-normalize)' });
+      }
+      const rec = findPub(p1, n1, v1);
       if (!rec) return json(res, 404, { error: 'FETCH_UNAVAILABLE', reason: 'no publication record' });
       return json(res, 200, { publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D });
     }
@@ -193,6 +211,11 @@ const server = createServer(async (req, res) => {
     // ---------------- GET /discover ----------------
     if (req.method === 'GET' && url.pathname === '/discover') {
       const q = url.searchParams;
+      // canonical query values only (reject-not-normalize, same as publish)
+      for (const [key, re] of [['publisher', CANON], ['name', CANON], ['version', VER]]) {
+        const v = q.get(key);
+        if (v !== null && !re.test(v)) return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: `${key} must be canonical` });
+      }
       // The index is a DERIVED cache, not authority: read it fresh (a stale
       // or forged cache file must flow through the §3 validation below).
       let cache = index;
@@ -208,11 +231,19 @@ const server = createServer(async (req, res) => {
         if (q.get('has_evidence') === 'true' && !e.evidence_summary) continue;
         // §3 RECORDS AUTHORITATIVE: validate the binding before returning it
         const rec = findPub(e.publisher_id, e.name, e.version);
-        if (!rec) { results.push({ ...e, truth: 'INDEX_METADATA_STALE', reason: 'no publication record' }); continue; }
+        if (!rec) {
+          // ghost: diagnostic only — never expose a fetch-authorizing digest
+          results.push({ ...e, D: null, truth: 'INDEX_METADATA_STALE', diagnostic: true, reason: 'no publication record — entry is not package truth' });
+          continue;
+        }
         if (rec.D !== e.D) { results.push({ ...e, D: rec.D, truth: 'INDEX_METADATA_STALE', reason: 'index digest disagreed with the immutable record — serving record truth' }); continue; }
         results.push({ ...e, truth: 'RECORD' });
       }
-      results.sort((a, b) => (a.publisher_id + a.name + a.version).localeCompare(b.publisher_id + b.name + b.version));
+      // frozen ordering: publisher_id, then name, then version (component-wise)
+      results.sort((a, b) =>
+        a.publisher_id < b.publisher_id ? -1 : a.publisher_id > b.publisher_id ? 1
+        : a.name < b.name ? -1 : a.name > b.name ? 1
+        : a.version < b.version ? -1 : a.version > b.version ? 1 : 0);
       return json(res, 200, { results });
     }
 

@@ -1,0 +1,26 @@
+{
+  "smoke": "production acquisition path, dev lane (:8412), real Archon v0.10.1 executor",
+  "steps": {
+    "gap": {"objective": "E12 running-totals scored-1 objective", "goal": "goal-5b7cee94", "failureCodes": ["no-route"], "nextAction": "Acquire capability"},
+    "acquisition": {
+      "engine": "lib/acquire.js (production port of the sealed program 7b5c9cc)",
+      "candidate": "csv-running-total-v0-1-0",
+      "stages": "compose -> static validate -> execute on real workspace -> marker + independent objective evaluation",
+      "terminal": "CANDIDATE",
+      "revision": 0,
+      "evidence_run": "6c25c645-c84c-4337-8bef-b78ec651ab1e",
+      "envelope": "acq_88e01c78 (tasks.json; no third store)"
+    },
+    "promotion": {"action": "explicit operator click (promoteTaskId)", "capability": "csv-running-total", "registry_status": "promoted", "provenance": "builtBy acquisition-v2 (production port of the sealed program 7b5c9cc); evalSet [{caseId originating-task, runId 6c25c645..., pass true}]"},
+    "reroute": {
+      "goal": "goal-5ebb1d82",
+      "route_selected": "csv-running-total v0.1.0 (lifecycle promoted)",
+      "authority_gate": "ASK_BEFORE_ACTION held dispatch -> awaiting-approval -> operator approve (same-task resume)",
+      "verdict": "SHIP",
+      "checks": [{"id": "terminal-status", "pass": true}, {"id": "declared-expectation", "pass": true}, {"id": "objective-satisfaction", "pass": true}],
+      "trust": "Objective satisfied",
+      "evidence_sample": ["RESULT row=1 total=22", "RESULT row=2 total=53", "...", "learned-csv-running-total-v0-1-0:done"]
+    }
+  },
+  "note": "The mechanism proven in the sealed Eval v2 program is now the production M3 path: gaps in normal work acquire bounded-evaluated capabilities with explicit operator promotion, and routing reuses them. Contract assertions live in scripts/check.js (acquire check)."
+}
