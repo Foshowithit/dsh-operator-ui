@@ -529,6 +529,13 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
     if (!idn.includes(must)) throw new Error('lib/identity.js lost ' + must);
   }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'identity.js')], { stdio: 'pipe' });
+  const fed = readFileSync(join(root, 'lib', 'federation.js'), 'utf8');
+  for (const must of ['CONSISTENT', 'PARTIAL', 'CONFLICT', 'INVALID', 'EMPTY', 'PEER_DUPLICATE_ID', 'FETCH_NOT_PERMITTED', 'readPin', 'globally_fresh: false']) {
+    if (!fed.includes(must)) throw new Error('lib/federation.js lost ' + must);
+  }
+  // federation must be READ-ONLY against local authority state
+  if (/upsertTask|writeFile/.test(fed)) throw new Error('federation resolution must never write local state (pins/registry/tasks)');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'federation.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
