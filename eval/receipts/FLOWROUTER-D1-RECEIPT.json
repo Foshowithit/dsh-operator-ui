@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T08:50:21.109Z",
+  "generated_at": "2026-09-17T08:55:06.300Z",
   "spec": "ac80256 (D1 — untrusted endpoint directory)",
   "steps": [
     {
@@ -42,6 +42,26 @@
         "invalid_locators": 5,
         "http_vs_https_distinct": true,
         "root_dot_collapsed": true
+      }
+    },
+    {
+      "step": "6b. IPv6 literals keep exactly ONE bracket pair: equivalent spellings dedupe, default ports collapse, addresses/ports/schemes stay distinct",
+      "ok": true,
+      "result": {
+        "canonical": [
+          "http://[::1]",
+          "http://[2001:db8::1]:8080"
+        ],
+        "dedupes": true,
+        "single_bracket": true,
+        "default_ports_collapsed": true,
+        "distinct": true,
+        "candidates": [
+          "http://[2001:db8::2]:8080",
+          "http://[::1]",
+          "http://[::1]:8080"
+        ],
+        "collapsed": 2
       }
     },
     {
@@ -147,7 +167,7 @@
     "endpoint": "http://127.0.0.1:13161",
     "candidate": {
       "publisher_scheme": "p2-selfcert-v1",
-      "publisher_id": "570bbf17001f6fae8f8e4bd81784984a7848685d96e903cdab071fdbea7f28db",
+      "publisher_id": "667397522782b55e12412c4a8830c45b9a0d69f2a9578b5ec6047a8c207da1a6",
       "name": "csv-running-total",
       "version": "0.1.0"
     },
