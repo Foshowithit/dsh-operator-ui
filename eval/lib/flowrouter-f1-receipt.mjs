@@ -67,6 +67,35 @@ const restartFreshStore = async (id) => {
   serviceStart(id);
   return waitUp(id);
 };
+// Restart the consumer lane in-process: kill its listener, respawn detached,
+// and poll until it answers. (A shell wrapper dies with its parent here.)
+const DSH_BIN = (() => {
+  if (process.env.DSH_BIN) return process.env.DSH_BIN;
+  try { const p = execFileSync('bash', ['-lc', 'command -v dsh'], { encoding: 'utf8' }).trim(); if (p) return p; } catch {}
+  try {
+    const { readdirSync, statSync } = require('node:fs'); // eslint-disable-line
+    for (const dir of readdirSync(join(process.env.HOME, '.npm', '_npx'))) {
+      const cand = join(process.env.HOME, '.npm', '_npx', dir, 'node_modules', '.bin', 'dsh');
+      try { if (statSync(cand).isFile()) return cand; } catch {}
+    }
+  } catch {}
+  return 'dsh';
+})();
+const restartConsumerLane = async (port, home) => {
+  killListener(port);
+  await new Promise((r) => setTimeout(r, 1200));
+  const child = spawn(DSH_BIN, ['web', '--host', '127.0.0.1', '--port', String(port), '--no-open'], {
+    detached: true, stdio: 'ignore', cwd: home, env: { ...process.env, DSH_HOME: home },
+  });
+  child.unref();
+  const t0 = Date.now();
+  while (Date.now() - t0 < 40000) {
+    try { const s = await get('http://127.0.0.1:' + port, '/plugins/operator-ui/rcos'); if (s.status === 200) return true; } catch {}
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return false;
+};
+
 const receipt = { generated_at: new Date().toISOString(), steps: [] };
 const step = (name, ok, result) => { receipt.steps.push({ step: name, ok, result }); console.log((ok ? 'PASS' : 'FAIL') + '  ' + name + (ok ? '' : '  → ' + JSON.stringify(result).slice(0, 260))); };
 
@@ -110,6 +139,11 @@ await rm(WORK, { recursive: true, force: true });
 await mkdir(WORK, { recursive: true });
 await writeFile(join(B_HOME, 'operator-ui', 'b-registry.json'), JSON.stringify({ registry_version: 'rcos-public-v1', capabilities: [] }, null, 2) + '\n', 'utf8');
 await rm(join(B_HOME, 'operator-ui', 'tasks.json'), { force: true });
+// the consumer lane must be up and running THIS code (restart it ourselves)
+if (!(await restartConsumerLane(8414, B_HOME))) {
+  console.error('consumer lane did not come up on :8414 — refusing to run');
+  process.exit(2);
+}
 for (const id of Object.keys(R_PORTS)) { await restartFreshStore(id); }
 const ep = (id) => `http://127.0.0.1:${R_PORTS[id]}`;
 step('three fresh repositories started (R1, R2 independent; R3 evidence carrier)', (await get(ep('r1'), '/status')).status === 200 && (await get(ep('r3'), '/status')).status === 200, { ports: R_PORTS });
@@ -233,11 +267,35 @@ let forkCore, forkDigest;
   step('case 5b ingest independently verifies before recording — a forged core is refused and records nothing', carrierReject.status === 409 && carrierReject.body.error === 'EQUIVOCATION_PROOF_INVALID' && (await quarantineState(genesis.publisher_id)).body.proofs.length === 0, { status: carrierReject.status, error: carrierReject.body.error });
 }
 
-// Case 6 (carrier can only forward) — R3 stores nothing itself; it is a pure relay
+// Case 6 (carrier can only forward) — the ACTUAL transport path:
+// B verifies a core → submits it to R3 → R3 returns it to a third consumer C
+// → C verifies offline. R3 is deliberately dumb storage: no verification, no
+// ranking, no consequences, no authority.
 {
+  const submitted = await post(ep('r3'), '/evidence', { proof_digest: forkDigest, proof_core: forkCore });
+  const fetched = await fetch(ep('r3') + '/evidence/' + forkDigest);
+  const carrierBytes = Buffer.from(await fetched.arrayBuffer());
+  const expectedBytes = Buffer.from(JSON.stringify(forkCore), 'utf8');
+  // C: an offline verifier process, fed ONLY the carrier's response bytes
+  const cScript = join(WORK, 'carrier-consumer.mjs');
+  await writeFile(cScript, `import { verifyProofCore } from '${join(root, 'lib', 'equivocation.js')}';\nimport { readFileSync } from 'node:fs';\nconst bytes = readFileSync(process.argv[2]);\nconst v = verifyProofCore(JSON.parse(bytes.toString('utf8')));\nconsole.log(JSON.stringify({ digest: v.proof_digest, relation: v.relation, bytes_sha: (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex') }));\n`, 'utf8');
+  const carrierPath = join(WORK, 'carrier-core.json');
+  await writeFile(carrierPath, carrierBytes);
+  const cOut = JSON.parse(execFileSync(process.execPath, [cScript, carrierPath], { encoding: 'utf8', env: { PATH: process.env.PATH } }).trim());
+  step('case 6 B → R3 → C: byte-identical transport, C verifies to the same digest offline', submitted.status === 200 && submitted.body.stored === true && fetched.status === 200 && carrierBytes.equals(expectedBytes) && cOut.digest === forkDigest && cOut.relation === 'SAME_SEQUENCE_DIVERGENT', { stored: submitted.body.stored, bytes_identical: carrierBytes.equals(expectedBytes), c_digest: cOut.digest.slice(0, 16) });
+  // a tampered carrier response simply fails C's verification
+  const tampered = JSON.parse(carrierBytes.toString('utf8'));
+  tampered.branches[0].events[1].key_id = 'f'.repeat(64);
+  await writeFile(carrierPath, JSON.stringify(tampered), 'utf8');
+  let tamperCode = 'VERIFIED';
+  try {
+    JSON.parse(execFileSync(process.execPath, [cScript, carrierPath], { encoding: 'utf8', env: { PATH: process.env.PATH }, stdio: ['ignore', 'pipe', 'pipe'] }).trim());
+  } catch (e) { tamperCode = String(e.stderr || e.message).match(/EQUIVOCATION_PROOF_INVALID|IDENTITY_RECORD_INVALID/)?.[0] || 'FAILED'; }
+  step('case 6b a tampered carrier response fails C\'s offline verification', tamperCode === 'EQUIVOCATION_PROOF_INVALID', { tamper: tamperCode });
+  // the carrier holds evidence but no authority: no publications, and its own
+  // /status cannot make a publisher quarantined anywhere
   const carrierSeen = (await get(ep('r3'), '/status')).body;
-  const forward = await post(B, '/plugins/operator-ui/f1?op=verify', { proof_core: forkCore });
-  step('case 6 the carrier holds no authoritative state; the core a carrier forwards verifies byte-identically at the receiving consumer', carrierSeen.publications === 0 && forward.status === 200 && forward.body.proof_digest === forkDigest && JSON.stringify(forward.body) === JSON.stringify(verifyProofCore(forkCore)), { carrier_publications: carrierSeen.publications, digest_match: forward.body.proof_digest === forkDigest });
+  step('case 6c the carrier still has no authoritative state (no publications, no local quarantine concept)', carrierSeen.publications === 0, { carrier_publications: carrierSeen.publications });
 }
 
 // Case 7 (withholding) — P equivocates but only R1 carries a branch: no proof, ordinary path proceeds
@@ -374,6 +432,35 @@ let forkCore, forkDigest;
   } catch { tamper = { status: 0, body: {} }; }
   step('case 11b an independent machine verifies the transported core to the identical digest (and rejects a tampered copy)', remote.status === 200 && remote.body.digest === proofDigest(forkCore) && remote.body.relation === 'SAME_SEQUENCE_DIVERGENT' && tamper.status === 409, { machine: machineRole, machine_platform: machine.platform || null, digest: remote.body.digest ? remote.body.digest.slice(0, 16) : null, tamper: tamper.body.error || null });
   receipt.cross_machine_verification = { machine_role: machineRole, platform: machine.platform || null, node: machine.node || null, digest: remote.body.digest || null, relation: remote.body.relation || null, tampered_copy: tamper.body.error || null };
+}
+
+// Case 12 (durability under ordinary churn) — evidence is never silently
+// evicted by unrelated task retention.
+{
+  const pinBefore = await bAuthorityState();
+  const stBefore = await quarantineState(genesis.publisher_id);
+  const proofsBefore = stBefore.body.proofs.length;
+  // >MAX ordinary tasks through the REAL store code (a child process sharing
+  // B's home), then restart B so the store is re-read from disk
+  const churnScript = join(WORK, 'churn.mjs');
+  await writeFile(churnScript, `import { upsertTask, taskCount } from '${join(root, 'lib', 'tasks.js')}';\nfor (let i = 0; i < 240; i++) await upsertTask({ taskId: 'noise_' + i, kind: 'goal', status: 'closed', createdAt: new Date(Date.now() + i).toISOString() });\nconsole.log(JSON.stringify({ count: await taskCount() }));\n`, 'utf8');
+  const churnOut = JSON.parse(execFileSync(process.execPath, [churnScript], { encoding: 'utf8', env: { ...process.env, DSH_HOME: B_HOME } }).trim());
+  const bUp1 = await restartConsumerLane(8414, B_HOME);
+  const pinAfter = await bAuthorityState();
+  const stAfter = await quarantineState(genesis.publisher_id);
+  const blocked = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: join(WORK, 'b-incoming'), alias: 'csv-running-total-churn', identityMaterial: { genesis, events: [ev1, ev2], publication: assertAt(chain2) }, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 } });
+  step('case 12 after >200 ordinary tasks: the proof record, the quarantine and the pin witness all survive; the import still refuses', churnOut.count > 200 && bUp1 && stAfter.body.proofs.length === proofsBefore && stAfter.body.quarantined === true && pinAfter.pin_witness_sha === pinBefore.pin_witness_sha && pinAfter.pin.sequence === pinBefore.pin.sequence && blocked.body.import?.refusal?.code === 'PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED', { tasks: churnOut.count, proofs: stAfter.body.proofs.length, quarantined: stAfter.body.quarantined, witness_identical: pinAfter.pin_witness_sha === pinBefore.pin_witness_sha, refusal: blocked.body.import?.refusal?.code || null });
+  // acknowledge BOTH standing proofs, churn again: the evidence must remain
+  // and the quarantine must lift because of the recorded acknowledgment —
+  // never because evidence disappeared
+  const proofsNow = (await quarantineState(genesis.publisher_id)).body.proofs;
+  for (const pr of proofsNow) await post(B, '/plugins/operator-ui/f1?op=acknowledge', { proof_digest: pr.proof_digest, operator: 'operator' });
+  execFileSync(process.execPath, [churnScript], { encoding: 'utf8', env: { ...process.env, DSH_HOME: B_HOME } });
+  const bUp2 = await restartConsumerLane(8414, B_HOME);
+  const stEnd = await quarantineState(genesis.publisher_id);
+  const pinEnd = await bAuthorityState();
+  const allowed = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: join(WORK, 'b-incoming'), alias: 'csv-running-total-churn2', identityMaterial: { genesis, events: [ev1, ev2], publication: assertAt(chain2) }, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 } });
+  step('case 12b acknowledged evidence survives further churn; quarantine lifts by the acknowledgment, not by evidence loss', bUp2 && stEnd.body.proofs.length === proofsBefore && stEnd.body.quarantined === false && stEnd.body.proofs.every((pr) => !!pr.acknowledged) && pinEnd.pin_witness_sha === pinBefore.pin_witness_sha && allowed.body.import?.verdict === 'STAGED', { proofs: stEnd.body.proofs.length, quarantined: stEnd.body.quarantined, acknowledged: stEnd.body.proofs.filter((pr) => !!pr.acknowledged).length, stage: allowed.body.import?.verdict });
 }
 
 const okAll = receipt.steps.every((s) => s.ok);
