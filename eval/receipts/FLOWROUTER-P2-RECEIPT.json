@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T05:11:21.944Z",
+  "generated_at": "2026-09-17T05:44:38.185Z",
   "steps": [
     {
       "step": "actors fresh: R zero publications, B empty home",
@@ -19,7 +19,7 @@
       "step": "P1 genesis: derivation + self-signature verify",
       "ok": true,
       "result": {
-        "publisher_id": "8943b4a444c1cb34e08f"
+        "publisher_id": "8f49c3678144a1cc5f8c"
       }
     },
     {
@@ -31,7 +31,7 @@
       "step": "K1 authorized; chain replays (seq 1, active=1)",
       "ok": true,
       "result": {
-        "head": "bce66302fb25883a"
+        "head": "2acf28465a9b4c6e"
       }
     },
     {
@@ -53,7 +53,7 @@
       "step": "K1 signs the exact publication (name+version+D at identity state 1)",
       "ok": true,
       "result": {
-        "key_id": "7d3f4b4e0c55"
+        "key_id": "0961256e921d"
       }
     },
     {
@@ -73,7 +73,7 @@
       "ok": true,
       "result": {
         "publisher_scheme": "p2-selfcert-v1",
-        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
         "name": "csv-running-total",
         "version": "0.1.0",
         "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
@@ -129,11 +129,35 @@
       }
     },
     {
-      "step": "N7 outer tuple substitution P→Q at R → SIGNED_STATEMENT_MISMATCH",
+      "step": "N7 outer publisher substitution P→Q with an untouched valid P proof → refusal",
       "ok": true,
       "result": {
         "error": "SIGNED_STATEMENT_MISMATCH",
         "reason": "request.publisher_id does not equal assertion.publisher_id (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N13 unknown publisher_scheme refused on publish AND on read",
+      "ok": true,
+      "result": {
+        "publish": "PUBLISH_INVALID",
+        "read": "IDENTITY_NONCANONICAL"
+      }
+    },
+    {
+      "step": "N14 identical textual components coexist across schemes; lookups never shadow",
+      "ok": true,
+      "result": {
+        "p1": {
+          "status": 200,
+          "auth": "UNAUTHENTICATED",
+          "scheme": "p1-configured-v1"
+        },
+        "p2": {
+          "status": 200,
+          "auth": "VERIFIED",
+          "scheme": "p2-selfcert-v1"
+        }
       }
     },
     {
@@ -181,11 +205,11 @@
       "result": {
         "publisher_auth": "VERIFIED",
         "freshness": "FIRST_OBSERVATION_UNPROVEN",
-        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
-        "key_id": "7d3f4b4e0c5526fa99d715be767e39f4ee6511f1d422b8983133643ad0e2d451",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "key_id": "0961256e921d05b11bb2b5d05af465c08ebdd0ab7a6b21577878c82fa1317fd8",
         "identity_sequence": 1,
-        "identity_head_digest": "bce66302fb25883a497a9041da9190059386105faed4b6c5d75889e78599fb45",
-        "genesis_digest": "1abea0cdf601392916b482e336ea0900e3239acb6a7997604f4c4e0ac0e181b6"
+        "identity_head_digest": "2acf28465a9b4c6e069cf329ba05069aeb4f06efcda75c67651bd8fe2d6c1f30",
+        "genesis_digest": "8c1abe18e6c2ed4c5bfe8a4408ba9383061086b6b31f90528267054f97cf6901"
       }
     },
     {
@@ -194,9 +218,9 @@
       "result": {
         "freshness": "MATCHES_LOCAL_PIN",
         "pin": {
-          "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
+          "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
           "sequence": 1,
-          "head_digest": "bce66302fb25883a497a9041da9190059386105faed4b6c5d75889e78599fb45"
+          "head_digest": "2acf28465a9b4c6e069cf329ba05069aeb4f06efcda75c67651bd8fe2d6c1f30"
         }
       }
     },
@@ -205,7 +229,7 @@
       "ok": true,
       "result": {
         "publisher_scheme": "p2-selfcert-v1",
-        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
         "name": "csv-running-total",
         "version": "0.1.1",
         "D": "83f7b74a14e81d2dd7eb63686f71489a3d8d8dbcc52982c6039666cd9c8e8a85",
@@ -218,11 +242,11 @@
       "result": {
         "publisher_auth": "VERIFIED",
         "freshness": "EXTENDS_LOCAL_PIN",
-        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
-        "key_id": "09db050546e4aa128feda9c4633e2c2409ecdebb35ca7a269b4390a0b5521113",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "key_id": "9c883e61afe19529246ad2aa95c073c1421b8241a288a74f8436153d2eaa1c3d",
         "identity_sequence": 2,
-        "identity_head_digest": "c5409075fdae2fd7c0b6da7bb488326e152befa38fc72e69c5378dba5c930105",
-        "genesis_digest": "1abea0cdf601392916b482e336ea0900e3239acb6a7997604f4c4e0ac0e181b6"
+        "identity_head_digest": "8a52cfc732e30ed4a872f22902ec4386a3902083e9949fd9b06f915b9e81982d",
+        "genesis_digest": "8c1abe18e6c2ed4c5bfe8a4408ba9383061086b6b31f90528267054f97cf6901"
       }
     },
     {
@@ -268,7 +292,7 @@
       "ok": true,
       "result": {
         "publisher_auth": "INVALID",
-        "reason": "publisher_id: expected 63f35f84ca42073ad66e but the proof authenticates 8943b4a444c1cb34e08f",
+        "reason": "publisher_id: expected 63c5d67f29d8969af7f3 but the proof authenticates 8f49c3678144a1cc5f8c",
         "failure": "SIGNED_STATEMENT_MISMATCH"
       }
     },
@@ -286,8 +310,8 @@
       "ok": true,
       "result": {
         "pins": [
-          "c007d6912054…(64)",
-          "8943b4a444c1…(64)"
+          "27749f6519f2…(64)",
+          "8f49c3678144…(64)"
         ]
       }
     },
