@@ -1,6 +1,8 @@
 # dsh-operator-ui
 
-An operator panel for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH): seven tabs in the existing web UI — **Runs** (every session at a glance), **Summary** (per-run state, output, context, work), **Git** (read-only status/diff/log with staged-unstaged-untracked chips), **Browser** (a supervised on-screen browser the agent drives while you watch live), **Files** (workspace tree with git badges and text preview), plus a **⌘K command palette**.
+An operator console for the [RCOS](https://github.com/Foshowithit/rcos) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+
+![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
 > **Also in this repository: [FlowRouter](./FLOWROUTER.md)** — a sealed
 > federation layer for capability artifacts that transports *evidence* of trust,
@@ -13,27 +15,55 @@ An operator panel for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek
 It is a side-loaded DSH plugin (a Cordis bundle patch), not a fork:
 
 - **No upstream changes.** One package, installed into a profile; removing it restores stock DSH exactly.
-- **No duplicate state.** Every rendered fact is authoritative Host state, read through the services the web profile already mounts (`ctx.sessions` list + projections + jobs). Nothing is polled from the renderer, nothing is inferred from chat text, and the plugin persists nothing.
-- **Additive seat.** It registers into the `conversation.view` list beside Conversation and Trajectory. It never replaces shipped UI.
-
-## What you see
-
-- **Runs grid** — one row per session: status dot (running / needs-attention / done / idle / blank), title + preset + cwd, last update, context-pressure meter (warns ≥80%, critical ≥95%), session token total, and badges for live background jobs and pending inbox input. Needs-attention and running sessions sort to the top.
-- **Detail pane** (click a row) — session facts, context and token usage, the session's live inbox (queued vs steering placements), running tool calls, background jobs, plus **Open** (jump to the conversation) and **Cancel turn**.
+- **No duplicate state.** Every rendered fact is authoritative Host state, read through the services the web profile already mounts (`ctx.sessions` list + projections + jobs) plus the Archon API and the capability registry. Nothing is polled from the renderer, nothing is inferred from chat text, and the plugin persists nothing of its own.
+- **Additive seats.** It registers into the `conversation.view` list beside Conversation and Trajectory and into the shell's overlay slot. It never replaces shipped UI, and an installation that prefers the old tabs can stay on them.
 
 ## The RCOS control surface
 
-[RCOS](https://github.com/Foshowithit/rcos) — the Recursive Capability Operating System — wires Pi + DSH + Archon into one compounding loop. This plugin is its UI: every RCOS layer has a surface here, all reading authoritative state (never chat text, zero duplication):
+On an installation that has not yet earned its receipt, the whole UI is the gate:
 
-| RCOS layer | Tab |
+![First run: the receipt gate with its nine-item component checklist](docs/gate-first-run.png)
+
+**The gate** checks nine components (DSH, operator-ui, Node, Archon, RCOS, git, Chrome, tools, providers) and offers **Verify RCOS** — which executes a real capability through *your* registry and *your* Archon, then seals the result into `<home>/operator-ui/receipt.json`. The green state is earned, not asserted: the receipt is re-read and re-checked on every load (VALID / STALE / TAMPERED / NONE), so a stale or tampered receipt puts the gate back. **Work ›** unlocks only behind a valid receipt; **Use legacy tabs (debug)** is the escape hatch.
+
+**Work** is the operator loop. Type an objective, hand it to RCOS, and the task is routed through the configured registry, executed on the configured Archon, and verified against the capability's declared expectation:
+
+![The Work list: every dispatched task with its verdict](docs/work-list.png)
+
+Select a task and you get its spine — REQUEST → ROUTE → EXECUTION → EVIDENCE → VERDICT — with the dots (Observed / Executed / Validated / Objective satisfied) as the at-a-glance state, the authority line ("Ask before acting"), and the next step spelled out. From there, **evidence →** opens the drawer a reviewer would ask for:
+
+![The evidence drawer: the claim, what supports it, and the observed outputs](docs/evidence.png)
+
+Nothing is dressed up. A goal the installation cannot route is refused **before** execution — no Archon run, no fabricated evidence, spine columns reading "— (refused before execution)", verdict `FAILED · no-route` — and the surface offers bounded acquisition instead of pretending:
+
+![A refused goal: no capability matched, so nothing ran](docs/work-refusal.png)
+
+**Intelligence** answers "what can this installation actually execute?" Lifecycle is what a capability *is*; routing is what the router may use *right now*, with reasons:
+
+![Intelligence: installed capabilities with lifecycle, routing eligibility and operating history](docs/intelligence.png)
+
+**System** is the receipt and the machine: verification state and age, the receipt hash, the component inventory with versions, **Verify again**, and the switch to the legacy tabs.
+
+![System: verified state, receipt hash, component inventory](docs/system.png)
+
+Every screenshot above comes from a sanitized demo home — one promoted capability (`word-count 1.0.0 → workflow word-count-v1`) executing over a scratch workspace. No real workspace data, paths or session titles.
+
+## The legacy tabs
+
+The older panel set is still registered and unchanged; **System → Legacy tabs** (or the gate's debug button) is the way back to it:
+
+| Tab | What it shows |
 |---|---|
-| Cognitive control (DSH sessions, queue/steer) | **Runs**, **Summary**, ⌘K palette |
-| Durable orchestration (Archon runs, receipts) | **Workflows** — status, step, ship/fix/blocked |
-| Capability registry + promotion gate | **Capabilities** — promoted/candidate/retired, gate progress (x2 ships), reuse counts, eval history |
-| Workspaces | **Git**, **Files** |
-| Visible execution | **Browser** |
+| **Runs** | one row per session: status dot (running / needs-attention / done / idle / blank), title + preset + cwd, last update, context-pressure meter (warns ≥80%, critical ≥95%), session token total, badges for live background jobs and pending inbox input. Click a row for the detail pane — session facts, the live inbox (queued vs steering placements), running tool calls, background jobs, **Open** and **Cancel turn**. |
+| **Summary** | the one-screen answer to "what is this run doing": state, last output, turns/steps/LLM time, context pressure, in-flight work, branch + changes |
+| **Git** | read-only workspace status / diff / log with staged-unstaged-untracked chips |
+| **Browser** | a supervised on-screen browser the agent drives while you watch every action live |
+| **Files** | workspace tree with git M/A/D badges and inline text-file preview |
+| **Workflows** | Archon runs — status, step, ship/fix/blocked |
+| **Capabilities** | registry view — promoted/candidate/retired, gate progress, reuse counts, eval history |
+| **Work**, **Intelligence**, **System** | the same three RCOS control-plane surfaces the gate opens, rendered in-session |
 
-Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (schema: [capability-registry.schema.json](https://github.com/Foshowithit/rcos/blob/main/prototype/capability-registry.schema.json)) — see DEPLOY.md.
+The **⌘K / Ctrl+K command palette** works from anywhere, including inside the composer (jump to any session, new session, toggle sidebar, switch views). Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (schema: [capability-registry.schema.json](https://github.com/Foshowithit/rcos/blob/main/prototype/capability-registry.schema.json)) — see DEPLOY.md.
 
 ## Install
 
@@ -65,14 +95,7 @@ node scripts/check.js                 # must PASS before proceeding
 dsh plugin --profile web add "$PWD"
 ```
 
-No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form). Restart (or live-reload) the web profile and open the UI. You get:
-
-- a **Runs** tab beside Conversation / Trajectory,
-- a **Git** tab (read-only workspace git status / diff / log),
-- a **⌘K / Ctrl+K command palette** (jump to any session, new session, toggle sidebar, switch views),
-- a **Summary** tab — the one-screen answer to "what is this run doing": state, last output, turns/steps/LLM time, context pressure, in-flight work, branch + changes,
-- a **Files** tab — browse the workspace tree with git M/A/D badges and inline text-file preview,
-- a **Browser** tab — a supervised on-screen browser the agent drives through `browser_navigate` / `browser_snapshot` / `browser_click` / `browser_type` tools while you watch every action live. One owned instance with a 10-minute idle auto-stop (never a headless sprawl). Requires Chrome/Chromium on the host (`DSH_OPERATOR_UI_CHROME` env to point at a specific binary).
+No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form). Restart (or live-reload) the web profile and open the UI. On a machine with no valid receipt you land on the gate; verify once and you get the RCOS surfaces above, with the legacy tabs one click away.
 
 ## Uninstall / disable
 
@@ -80,21 +103,20 @@ No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-i
 dsh plugin --profile web remove dsh-operator-ui
 ```
 
-Slot entries, the style tag, and the host-half service are all fiber-owned effects — removing the plugin reverts everything. Sessions and settings are untouched (the plugin never writes either).
+Slot entries, the style tag, and the host-half service are all fiber-owned effects — removing the plugin reverts everything. Sessions, settings and the receipt are untouched (the plugin never writes sessions or settings).
 
 ## Compatibility notes
 
 - Verified against DSH `0.1.0-rc.6` (Cordis 4.x, web profile). The client half targets the `conversation.view` slot contract as served by that version.
 - **COMPAT.md is the tested pin** — RCOS owns the exact known-good DSH + plugin + Archon combination; upgrades move through verification before the pin changes. The `peerDependencies` range in `package.json` stays truthful but is not the support claim.
 - Styling is scoped under `.opui-*` classes and keyed off DSH design tokens (`--dsw-*`) with fallbacks — it does not depend on build-specific CSS-module hashes.
-- Unknown projection fields degrade to blanks, never crashes: the grid guards every field it reads.
+- Unknown projection fields degrade to blanks, never crashes: the surfaces guard every field they read.
 
 ## Layout
 
 ```
-lib/index.js    host half  — intentionally passive today; later phases (workflow
-                            bridges, resource summaries) grow here
-lib/client.js   client half — Runs tab (grid + detail), ModuleLoader format
+lib/index.js    host half  — status route, config, verification, registry + Archon reads
+lib/client.js   client half — gate, Work, Intelligence, System, legacy tabs, palette
 cordis.patch.yml bundle patch — one self-insert row
 ```
 
