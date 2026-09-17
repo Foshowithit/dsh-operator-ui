@@ -196,9 +196,22 @@ const server = createServer(async (req, res) => {
       });
     }
 
+    // ---------------- GET /status ----------------
+    if (req.method === 'GET' && url.pathname === '/status') {
+      let blobs = 0;
+      try { blobs = (await readdir(BLOBS)).filter((f) => f.endsWith('.pkg')).length; } catch {}
+      return json(res, 200, { publications: publications.length, blobs });
+    }
+
     // ---------------- GET /publication/:p/:n/:v ----------------
     const pubMatch = url.pathname.match(/^\/publication\/([^/]+)\/([^/]+)\/([^/]+)$/);
     if (req.method === 'GET' && pubMatch) {
+      // frozen rule: URL aliases/escapes are REJECTED, never normalized —
+      // any percent-encoding in an identity segment is noncanonical input.
+      const rawSegs = [pubMatch[1], pubMatch[2], pubMatch[3]];
+      if (rawSegs.some((seg) => /%[0-9A-Fa-f]{2}/.test(seg))) {
+        return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'percent-encoded identity segments are rejected, never normalized' });
+      }
       const p1 = decodeURIComponent(pubMatch[1]), n1 = decodeURIComponent(pubMatch[2]), v1 = decodeURIComponent(pubMatch[3]);
       if (!CANON.test(p1) || !CANON.test(n1) || !VER.test(v1)) {
         return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'components must be canonical (reject-not-normalize)' });
@@ -211,11 +224,26 @@ const server = createServer(async (req, res) => {
     // ---------------- GET /discover ----------------
     if (req.method === 'GET' && url.pathname === '/discover') {
       const q = url.searchParams;
+      // RAW query check first: percent-encoded canonical params are rejected
+      // before any decoding (reject-not-normalize, same rule as publish).
+      {
+        const raw = url.search || '';
+        for (const key of ['publisher', 'name', 'version']) {
+          const m2 = raw.match(new RegExp('[?&]' + key + '=([^&]*)'));
+          if (m2 && /%[0-9A-Fa-f]{2}/.test(m2[1])) {
+            return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: `${key} is percent-encoded — rejected, never normalized` });
+          }
+        }
+      }
       // canonical query values only (reject-not-normalize, same as publish)
       for (const [key, re] of [['publisher', CANON], ['name', CANON], ['version', VER]]) {
         const v = q.get(key);
         if (v !== null && !re.test(v)) return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: `${key} must be canonical` });
       }
+      // frozen compatibility filter: INTERSECTION between the declared
+      // compatibility list and the query's comma-separated list.
+      const compatQ = q.get('compatibility');
+      const compatList = compatQ ? compatQ.split(',').map((x) => x.trim()).filter(Boolean) : null;
       // The index is a DERIVED cache, not authority: read it fresh (a stale
       // or forged cache file must flow through the §3 validation below).
       let cache = index;
@@ -229,6 +257,7 @@ const server = createServer(async (req, res) => {
         if (q.get('tag') && !(e.tags || []).includes(q.get('tag'))) continue;
         if (q.get('task_signature') && !(e.task_signatures || []).includes(q.get('task_signature'))) continue;
         if (q.get('has_evidence') === 'true' && !e.evidence_summary) continue;
+        if (compatList && !(e.compatibility || []).some((c) => compatList.includes(c))) continue;
         // §3 RECORDS AUTHORITATIVE: validate the binding before returning it
         const rec = findPub(e.publisher_id, e.name, e.version);
         if (!rec) {
