@@ -127,7 +127,7 @@ try {
 await new Promise((r) => setTimeout(r, 1500));
 try { await rm(join(B_HOME, 'operator-ui', 'tasks.json'), { force: true }); } catch {}
 await writeFile(join(B_HOME, 'operator-ui', 'b-registry.json'), JSON.stringify({ registry_version: 'rcos-public-v1', capabilities: [] }, null, 2) + '\n', 'utf8');
-const DSH_BIN = process.env.DSH_BIN || '/Users/adam26/.npm/_npx/6c7f445d1bf61956/node_modules/.bin/dsh';
+const DSH_BIN = (await import('./secrets.mjs')).dshBin(); // env DSH_BIN or PATH — no machine paths in the tree
 spawn(DSH_BIN, ['web', '--host', '127.0.0.1', '--port', '8414', '--no-open'], { env: { ...process.env, DSH_HOME: B_HOME }, detached: true, stdio: 'ignore' }).unref();
 {
   let ok = false;
