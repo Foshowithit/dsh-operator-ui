@@ -92,7 +92,7 @@ step('K1 authorized; chain replays (seq 1, active=1)', chain1.head_sequence === 
 
 // register publisher with R
 const reg = await post(R, '/publisher', { genesis, events: [ev1] });
-step('R registers publisher after verifying the chain', reg.status === 200, reg.body);
+step('R registers publisher; reported head equals the verified chain (no off-by-one)', reg.status === 200 && reg.body.head_sequence === chain1.head_sequence && reg.body.head_digest === chain1.head_digest, { reported: reg.body.head_sequence, verified: chain1.head_sequence });
 
 // ================= A export + package (reuse csv-running-total) =================
 const exp = await post(A, '/plugins/operator-ui/flowrouter?op=export', { capabilityId: 'csv-running-total', outDir: join(WORK, 'export') });
@@ -137,7 +137,11 @@ step('R independently verifies BEFORE the authenticated binding (VERIFIED)', aut
 {
   const bad = signPublication({ privateKey: K1.privateKey, publisherId: genesis.publisher_id, name: 'csv-running-total', version: '0.4.4', D: 'e'.repeat(64), keyId: deriveKeyId(K1.publicKeyRaw), identitySequence: chain1.head_sequence, identityHeadDigest: chain1.head_digest });
   const r3 = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.4.4', artifact: art0.toString('base64'), publication: bad });
-  step('N3 package/D mutation → PUBLISHER_AUTH_INVALID (D mismatch), no binding', r3.status === 409 && r3.body.error === 'PUBLISHER_AUTH_INVALID', r3.body);
+  step('N3 package/D mutation → SIGNED_STATEMENT_MISMATCH (signed D ≠ recomputed), no binding', r3.status === 409 && r3.body.error === 'SIGNED_STATEMENT_MISMATCH', r3.body);
+{
+  const r3b = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.6.0', artifact: art0.toString('base64') });
+  step('N3b p2-selfcert publication missing its assertion → PUBLISHER_AUTH_INVALID', r3b.status === 409 && r3b.body.error === 'PUBLISHER_AUTH_INVALID', r3b.body);
+}
 }
 // negative: unauthorized signer
 {
@@ -167,6 +171,34 @@ step('R independently verifies BEFORE the authenticated binding (VERIFIED)', aut
   step('N6 malformed history (sequence gap / dup key) → IDENTITY_RECORD_INVALID', code === 'IDENTITY_RECORD_INVALID', { gap_code: code, dup_attempt: (() => { try { replayChain(genesis, [ev1, createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 2, prevRecordDigest: recordDigest(ev1), action: 'AUTHORIZE', keyId: deriveKeyId(K1.publicKeyRaw), publicKeyRaw: K1.publicKeyRaw, permissions: ['publish'] })]); return 'accepted'; } catch (e) { return e.code; } })() });
 }
 
+// ================= defects 1/3 negatives =================
+// P->Q outer tuple substitution at R: valid P proof, request claims another publisher_id
+{
+  const Q = generateKeypair();
+  const qGenesis = createGenesis(Q, 'victim-q');
+  const rq = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: qGenesis.publisher_id, name: 'csv-running-total', version: '0.9.0', artifact: art0.toString('base64'), publication: { ...pub0, name: 'csv-running-total', version: '0.9.0' } });
+  step('N7 outer tuple substitution P→Q at R → SIGNED_STATEMENT_MISMATCH', rq.status === 409 && rq.body.error === 'SIGNED_STATEMENT_MISMATCH', rq.body);
+}
+// wrong algorithm + malformed encodings
+{
+  let algCode = null, encCode = null;
+  try { verifyGenesis({ ...genesis, genesis_key: { alg: 'rsa', key: genesis.genesis_key.key } }); } catch (e) { algCode = e.code; }
+  try { verifyGenesis({ ...genesis, genesis_key: { alg: 'ed25519', key: genesis.genesis_key.key + '==' } }); } catch (e) { encCode = e.code; }
+  step('N8 wrong algorithm → ALGORITHM_UNSUPPORTED', algCode === 'ALGORITHM_UNSUPPORTED', { algCode });
+  step('N9 noncanonical key encoding → ENCODING_INVALID', encCode === 'ENCODING_INVALID', { encCode });
+}
+// AUTHORIZE key_id/public_key mismatch + REVOKE unknown key
+{
+  let idMix = null, revUnknown = null;
+  const OTHER = generateKeypair();
+  const badAuth = createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 2, prevRecordDigest: recordDigest(ev1), action: 'AUTHORIZE', keyId: deriveKeyId(K1.publicKeyRaw), publicKeyRaw: OTHER.publicKeyRaw, permissions: ['publish'] });
+  try { replayChain(genesis, [ev1, badAuth]); } catch (e) { idMix = e.code; }
+  const badRevoke = createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 2, prevRecordDigest: recordDigest(ev1), action: 'REVOKE', keyId: deriveKeyId(OTHER.publicKeyRaw) });
+  try { replayChain(genesis, [ev1, badRevoke]); } catch (e) { revUnknown = e.code; }
+  step('N10 AUTHORIZE key_id/public_key mismatch → IDENTITY_RECORD_INVALID', idMix === 'IDENTITY_RECORD_INVALID', { idMix });
+  step('N11 REVOKE unknown/inactive key → IDENTITY_RECORD_INVALID', revUnknown === 'IDENTITY_RECORD_INVALID', { revUnknown });
+}
+
 // ================= B: independent verification + pinning =================
 const before = await bRegState();
 const fetched = Buffer.from(await (await fetch(R + '/fetch/' + D0)).arrayBuffer());
@@ -183,13 +215,14 @@ await rm(incoming, { recursive: true, force: true });
 const material = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.0')).body.material;
 step('R carries full verification material (genesis + events + assertion)', !!material && !!material.genesis && Array.isArray(material.events) && !!material.publication, { keys: material ? Object.keys(material) : null });
 
-const st1 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, identityMaterial: material });
+const EXPECTED0 = { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 };
+const st1 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, identityMaterial: material, expectedTuple: EXPECTED0 });
 step('B independently verifies → VERIFIED / FIRST_OBSERVATION_UNPROVEN', st1.body.import?.publisher?.publisher_auth === 'VERIFIED' && st1.body.import?.publisher?.freshness === 'FIRST_OBSERVATION_UNPROVEN', st1.body.import?.publisher);
 const importId1 = st1.body.import?.taskId;
 
 // repeated delivery of the EXACT pinned state → MATCHES_LOCAL_PIN, pin unchanged
 const pinBefore = (() => { try { return JSON.parse(require('fs').readFileSync(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8')).tasks.find((t) => t.kind === 'pin'); } catch { return null; } })();
-const st1b = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'repeat-alias', identityMaterial: material });
+const st1b = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'repeat-alias', identityMaterial: material, expectedTuple: EXPECTED0 });
 const pinAfter = (() => { try { return JSON.parse(require('fs').readFileSync(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8')).tasks.find((t) => t.kind === 'pin'); } catch { return null; } })();
 step('repeated exact state → MATCHES_LOCAL_PIN, pin NOT mutated', st1b.body.import?.publisher?.freshness === 'MATCHES_LOCAL_PIN' && pinBefore && pinAfter && JSON.stringify(pinBefore.pin) === JSON.stringify(pinAfter.pin), { freshness: st1b.body.import?.publisher?.freshness, pin: pinAfter && pinAfter.pin });
 
@@ -230,14 +263,14 @@ await rm(incoming11, { recursive: true, force: true });
   }
 }
 const material11 = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.1')).body.material;
-const st2 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming11, identityMaterial: material11 });
+const st2 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming11, identityMaterial: material11, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.1', D: D1 } });
 step('legitimate extension → EXTENDS_LOCAL_PIN, pin advanced', st2.body.import?.publisher?.freshness === 'EXTENDS_LOCAL_PIN', st2.body.import?.publisher);
 
 // REVOKE K1 (seq 3) then: old state served after pin → SEQUENCE_ROLLBACK; revoked K1 at current state → KEY_NOT_AUTHORIZED
 const ev3 = createKeyEvent({ genesisKp: P, genesisRecord: genesis, sequence: 3, prevRecordDigest: recordDigest(ev2), action: 'REVOKE', keyId: deriveKeyId(K1.publicKeyRaw) });
 const chain3 = replayChain(genesis, [ev1, ev2, ev3]);
 {
-  const st3 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'rollback-alias', identityMaterial: material });
+  const st3 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'rollback-alias', identityMaterial: material, expectedTuple: EXPECTED0 });
   step('old chain below pinned state → SEQUENCE_ROLLBACK refusal', st3.body.import?.verdict === 'REFUSED' && st3.body.import?.publisher?.failure === 'SEQUENCE_ROLLBACK', st3.body.import?.publisher);
   // K1 revoked at the CURRENT state: assertion claiming state 3 signed by K1
   let code = null;
@@ -257,9 +290,37 @@ const chain3 = replayChain(genesis, [ev1, ev2, ev3]);
 
 // zero-authority: discovery/fetch alone leaves B's registry untouched
 {
-  await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming11, alias: 'noauth-alias', identityMaterial: material11 });
+  await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming11, alias: 'noauth-alias', identityMaterial: material11, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.1', D: D1 } });
   const after = await bRegState();
   step('authenticated staging alone → zero registry authority', after.sha === before.sha && after.caps === 0, { before: before.caps, after: after.caps });
+}
+
+// N12 forged discovery metadata at B: valid P material, expected tuple rewritten P→Q
+{
+  const Q2 = generateKeypair();
+  const q2Genesis = createGenesis(Q2, 'forger');
+  const forged = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'forged-alias', identityMaterial: material, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: q2Genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 } });
+  step('N12 forged discovery metadata at B (outer tuple P→Q) → refusal', forged.body.import?.verdict === 'REFUSED' && forged.body.import?.publisher?.failure === 'SIGNED_STATEMENT_MISMATCH', forged.body.import?.publisher);
+  // missing expected tuple entirely → fail closed
+  const unbound = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'unbound-alias', identityMaterial: material });
+  step('N12b material without an expected tuple → fail closed', unbound.body.import?.verdict === 'REFUSED' && unbound.body.import?.publisher?.failure === 'SIGNED_STATEMENT_MISMATCH', unbound.body.import?.publisher);
+}
+// independent pins for two distinct full-length publisher IDs
+{
+  const P2x = generateKeypair();
+  const g2 = createGenesis(P2x, 'second-publisher');
+  const k2b = generateKeypair();
+  const ev2b = createKeyEvent({ genesisKp: P2x, genesisRecord: g2, sequence: 1, prevRecordDigest: recordDigest(g2), action: 'AUTHORIZE', keyId: deriveKeyId(k2b.publicKeyRaw), publicKeyRaw: k2b.publicKeyRaw, permissions: ['publish'] });
+  const chainB = replayChain(g2, [ev2b]);
+  await post(R, '/publisher', { genesis: g2, events: [ev2b] });
+  const pubB = signPublication({ privateKey: k2b.privateKey, publisherId: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', D: D0, keyId: deriveKeyId(k2b.publicKeyRaw), identitySequence: chainB.head_sequence, identityHeadDigest: chainB.head_digest });
+  const pubBR = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', artifact: art0.toString('base64'), publication: pubB });
+  const matB = (await get(R, '/publication/' + g2.publisher_id + '/csv-running-total/0.2.0')).body.material;
+  const stB = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'second-pub-alias', identityMaterial: matB, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', D: D0 } });
+  const tasksRaw = JSON.parse(await readFile(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8'));
+  const pinTasks = tasksRaw.tasks.filter((t) => t.kind === 'pin');
+  const fullIds = pinTasks.map((t) => t.pin?.publisher_id || '');
+  step('independent pins: two full-length publisher identities hold separate pin records', pubBR.status === 200 && stB.body.import?.publisher?.publisher_auth === 'VERIFIED' && pinTasks.length >= 2 && fullIds.every((x) => x.length === 64) && new Set(fullIds).size === fullIds.length, { pins: fullIds.map((x) => x.slice(0, 12) + '…(' + x.length + ')') });
 }
 
 // authenticated capability still needs the full local path: verify → admit → route → gate → SHIP
