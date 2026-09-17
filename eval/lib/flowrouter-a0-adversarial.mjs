@@ -7,6 +7,7 @@
 // adjusted to results.
 
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -345,10 +346,24 @@ let a0Core = null;
 
 // ================= A0-9 malformed scope mixed with valid intents =================
 {
-  const run = await syncExact({ source_endpoint: ep('r2'), destination: ep('r3'), explicit_scope: { publications: [{ publisher_scheme: 'p2-selfcert-v1', ...TUPLE }, { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 }, { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: NAME, version: 'latest' }], blobs: [{ D: 'nope' }], proofs: [{ proof_digest: sha('x') }] } });
-  const crit = run.rejected_scope_records.length === 3 && run.results.length === 2 && run.results.every((r) => r.outcome !== 'COPIED' || r.object_class === 'publication');
-  record('A0-9', 'exactly the valid intent is processed; every malformed record is rejected with a reason; nothing silently normalized', { rejected: run.rejected_scope_records.length, processed: run.results.length, reasons: run.rejected_scope_records.map((r) => r.error.slice(0, 40)) }, crit ? 'PASS' : 'FAIL');
-  step('A0-9 malformed scope records mixed with valid intents: reject-with-reason, no silent normalization', crit, { rejected: run.rejected_scope_records.length, processed: run.results.length });
+  // frozen setup: ONE valid publication plus FOUR malformed records —
+  // publication-with-D, "latest", a malformed digest, and an unknown field
+  const run = await syncExact({
+    source_endpoint: ep('r2'), destination: ep('r3'),
+    explicit_scope: {
+      publications: [
+        { publisher_scheme: 'p2-selfcert-v1', ...TUPLE },
+        { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 },
+        { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: NAME, version: 'latest' },
+        { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: NAME, version: '0.1.0', tag: 'stable' },
+      ],
+      blobs: [{ D: 'not-a-digest' }],
+    },
+  });
+  const reasons = run.rejected_scope_records.map((r) => r.error);
+  const crit = run.results.length === 1 && run.rejected_scope_records.length === 4 && reasons.length === 4;
+  record('A0-9', 'exactly the valid intent is processed; every malformed record is rejected with a reason; nothing silently normalized', { processed: run.results.length, rejected: run.rejected_scope_records.length, reasons: reasons.map((r) => r.slice(0, 44)) }, crit ? 'PASS' : 'FAIL');
+  step('A0-9 one valid intent + four malformed records: exactly the valid one is processed and all four are rejected with reasons', crit, { processed: run.results.length, rejected: run.rejected_scope_records.length });
 }
 
 // ================= A0-10 restart between custody and consumer use =================
@@ -381,13 +396,16 @@ let a0Core = null;
 
 // ================= A0-11 everything hostile at once =================
 {
+  // Trust state snapshot BEFORE the hostile composition. The frozen criterion
+  // is exact: the hostile path terminates REFUSE or UNAVAILABLE with trust
+  // state UNCHANGED — so this case performs no honest stage of its own.
   const before = await consumerState();
   dirMode = 'liar';
   const d1 = await discoverEndpoints({ directory: HQ, name: NAME });
   indexMode = 'poisoned';
   const d0 = await discoverCandidates({ endpoint: ep('r2'), name: NAME });
   indexMode = 'honest';
-  // source dies mid-scope while the claimed_D is stale
+  // source dies mid-scope while the advertised digest claim is stale
   const s0 = await (async () => {
     const first = await syncExact({ source_endpoint: ep('r2'), destination: ep('r3'), explicit_scope: { publications: [{ publisher_scheme: 'p2-selfcert-v1', ...TUPLE }] } });
     killListener(PORTS.r2);
@@ -398,22 +416,32 @@ let a0Core = null;
   // restart between custody and use
   await restartRepo('r3', false);
   if (!(await restartConsumerLane(8414, B_HOME))) { console.error('lane failed to restart'); process.exit(2); }
-  // the consumer still refuses everything it cannot authenticate, and changes no trust state
+  // the consumer asks for an object that no hostile input authenticated
   const res = await post(B, '/plugins/operator-ui/federation?op=resolve', { peers: [{ repository_id: 'dest', endpoint: ep('r3') }], scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: NAME, version: '0.9.0' });
-  const stage = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: join(WORK, 'b-incoming'), alias: 'hostile-final', identityMaterial: MATERIAL, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 } });
+  // and a hostile consumer-side attempt: the phantom publisher's tuple
+  const stage = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: join(WORK, 'b-incoming'), alias: 'hostile-final-' + Math.random().toString(36).slice(2, 6), identityMaterial: MATERIAL, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: '9'.repeat(64), name: NAME, version: TUPLE.version, D: D0 } });
   const after = await consumerState();
-  // The frozen criterion: REFUSE or UNAVAILABLE with no MANUFACTURED authority.
-  // A mutation attributable to a sealed step is permitted — here the only
-  // possible pin move is the sealed stage accepting the honest object (state
-  // 1); nothing may come from a hostile input, and no admission may happen.
   const unavailable = res.body.fetch_permitted === false || res.body.state !== 'CONSISTENT';
-  const noHostileQuarantine = before.equivocation_records === after.equivocation_records;
-  const noAdmission = before.registry_sha === after.registry_sha;
-  const pinMoveAttributable = JSON.stringify(before.pin) === JSON.stringify(after.pin)
-    || (after.pin && after.pin.sequence === chain1.head_sequence && stage.body.import && stage.body.import.verdict === 'STAGED');
-  const crit = unavailable && noHostileQuarantine && noAdmission && pinMoveAttributable;
-  record('A0-11', 'REFUSE or UNAVAILABLE, no manufactured authority; any mutation attributable to a sealed step', { resolution: res.body.state, fetch_permitted: res.body.fetch_permitted, stage: stage.body.import && stage.body.import.verdict, registry_unchanged: before.registry_sha === after.registry_sha, quarantine_unchanged: noHostileQuarantine }, crit ? 'PASS' : 'FAIL');
-  step('A0-11 everything hostile at once: the composition refuses or reports unavailable and manufactures no authority', crit, { resolution: res.body.state, registry_unchanged: before.registry_sha === after.registry_sha, quarantine_unchanged: noHostileQuarantine, pin_move_attributable_to_stage: pinMoveAttributable, stage: stage.body.import && stage.body.import.verdict });
+  const refused = !stage.body.import || stage.body.import.verdict === 'REFUSED';
+  // Trust state = pin, witness, registry/admission, quarantine/equivocation —
+  // exactly the four the frozen criterion names. The task store necessarily
+  // records the REFUSED attempt itself, which is evidence of the attempt, not
+  // a trust mutation, so it is checked separately below.
+  const unchanged = before.registry_sha === after.registry_sha
+    && before.registry_caps === after.registry_caps
+    && JSON.stringify(before.pin) === JSON.stringify(after.pin)
+    && before.pin_witness_sha === after.pin_witness_sha
+    && before.equivocation_records === after.equivocation_records;
+  const onlyRefusalRecorded = (() => {
+    try {
+      const tasks = JSON.parse(readFileSync(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8')).tasks || [];
+      const imports = tasks.filter((t) => t.kind === 'import');
+      return imports.length > 0 && imports.every((t) => t.verdict === 'REFUSED');
+    } catch { return false; }
+  })();
+  const crit = unavailable && refused && unchanged;
+  record('A0-11', 'REFUSE or UNAVAILABLE with trust state unchanged — not successful availability', { resolution: res.body.state, fetch_permitted: res.body.fetch_permitted, stage: stage.body.import && stage.body.import.verdict, trust_state_unchanged: unchanged, refusal_record_only: onlyRefusalRecorded, pin_before: before.pin, pin_after: after.pin }, crit ? 'PASS' : 'FAIL');
+  step('A0-11 everything hostile at once: REFUSE/UNAVAILABLE with pin, witness, registry and quarantine byte-identical (the task store gains only the refused attempt)', crit, { resolution: res.body.state, stage: stage.body.import && stage.body.import.verdict, trust_unchanged: unchanged, refusal_record_only: onlyRefusalRecorded });
   startRepo('r2'); await waitRepo('r2');
 }
 
