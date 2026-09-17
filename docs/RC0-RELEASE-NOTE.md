@@ -73,4 +73,5 @@ path itself gained no special cases.
 - `79d84df` — CONFIGURABLE
 - `f1667e9` — VERIFIABLE
 - `4af0907` — RC0 real-stack contract fixes
-- Branch `rc0-real-stack`; nothing pushed or merged.
+- Branch `rc0-real-stack`; merged into `main` as `08a265e` (2026-09-17) and
+  pushed — the branch is kept as the release line of record.
