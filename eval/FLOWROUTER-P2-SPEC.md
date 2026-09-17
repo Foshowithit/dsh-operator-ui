@@ -1,9 +1,26 @@
-# FlowRouter P2 — Publisher Identity / Ownership — SPEC v2 (amended per the rubric)
+# FlowRouter P2 — Publisher Identity / Ownership — SPEC v3 (final amendments)
 
-v1 (e1b5c73) was REFUSED with four protocol holes. This v2 incorporates
-every amendment; spec-only until P2-SPEC-FROZEN. Invariant, permanently:
+v1 (e1b5c73) was REFUSED with four protocol holes (all closed in v2);
+v2 (76e7921) was REFUSED with three narrow definition gaps — the lost
+genesis schema, the unfrozen key-state transition rules, and a missing
+freshness state. v3 adds exactly those and nothing else. Spec-only until
+P2-SPEC-FROZEN. Invariant, permanently:
 
 > **content integrity ≠ publisher authenticity ≠ local capability trust**
+
+## 0a. Change log vs v2 (this revision)
+
+- **Genesis record object restored** (§2a) with its exact field schema and
+  literal ID-derivation bytes; `created_at`/`issued_at` declared as signed
+  METADATA only — sequence/history, never wall-clock, decides authorization
+  and freshness.
+- **Key-state transition validity frozen** (§3a): legal AUTHORIZE/REVOKE
+  transitions and every malformed-history condition, so conforming
+  implementations derive identical active-key sets.
+- **Freshness gains MATCHES_LOCAL_PIN** (§8); a receipt case added for
+  repeated delivery of the exact pinned state.
+- **Publication identity is a structured TUPLE** `(publisher_scheme,
+  publisher_id, name, version)` — never textual concatenation (§7).
 
 ## 0. Change log vs v1
 
@@ -60,6 +77,28 @@ record_digest = SHA256( UTF8("flowrouter.p2.record-digest.v1\n") || JCS(full sig
 
 - The P0 package digest and its (separate) canonicalization are UNTOUCHED.
 
+## 2a. Genesis record (frozen object — restored verbatim from v1's schema)
+
+```
+record_type       "flowrouter.p2.genesis.v1"
+publisher_scheme  "p2-selfcert-v1"
+publisher_id      <derived>
+genesis_key       { alg: "ed25519", key: <canonical unpadded base64url> }
+display_name      <optional METADATA>
+created_at        <ISO — signed METADATA>
+self_signature    Ed25519 over  UTF8("flowrouter.p2.genesis\n") || JCS(record minus self_signature)
+```
+
+**Exact ID derivation bytes (literal):**
+
+```
+publisher_id = hex( SHA256( UTF8("flowrouter.p2.publisher-id.v1") || genesis_key_raw ) )
+key_id       = hex( SHA256( UTF8("flowrouter.p2.key-id.v1")       || public_key_raw ) )
+```
+
+`created_at` / `issued_at` are explicitly SIGNED METADATA ONLY: sequence and
+history — never wall-clock time — determine authorization and freshness.
+
 ## 3. Identity state: the key-state event chain
 
 ```
@@ -115,6 +154,29 @@ Precise old-key semantics:
 - a fresh consumer receiving the genuinely old state CAN authenticate the
   chain — freshness remains explicitly unproven (§6, §8).
 
+## 3a. Key-state transition validity (frozen — identical replay everywhere)
+
+Legal transitions on the chain (genesis → events, contiguous from sequence 1):
+
+```
+AUTHORIZE   public_key REQUIRED; permissions exactly ["publish"];
+            key_id MUST equal the derivation from that public_key (§2a);
+            authorizing an ALREADY-ACTIVE key           → IDENTITY_RECORD_INVALID;
+            a previously revoked key MAY be authorized again only via a
+            new valid AUTHORIZE event.
+
+REVOKE      public_key and permissions MUST be ABSENT;
+            the referenced key_id MUST currently be ACTIVE;
+            revoking an unknown or already-inactive key → IDENTITY_RECORD_INVALID.
+
+ANY event   wrong publisher_id · sequence gap · wrong prev_record_digest ·
+            malformed fields · bad event signature        → IDENTITY_RECORD_INVALID
+ANY record  malformed genesis signature                     → IDENTITY_RECORD_INVALID
+```
+
+Consequence: every conforming implementation derives the SAME active-key
+set from the same history — replay is a function, not an interpretation.
+
 ## 5. Repository (R) behavior
 
 - R may retain any raw blob. The P2 publication BINDING
@@ -152,8 +214,9 @@ Precise old-key semantics:
 ## 7. Namespace separation (P1 legacy vs P2 authenticated)
 
 - `publisher_scheme` ∈ {`"p1-configured-v1"`, `"p2-selfcert-v1"`}.
-  Effective publication identity is
-  `publisher_scheme + publisher_id + name + version`.
+  Publication identity is the STRUCTURED TUPLE
+  `(publisher_scheme, publisher_id, name, version)` — never a textual
+  concatenation; implementations must compare tuples fieldwise.
 - The P1 conflict rule (same ref + different D → `PUBLISH_CONFLICT`) is
   unchanged WITHIN a scheme; schemes cannot collide with each other,
   closing the unsigned-first-writer occupancy hole.
@@ -166,8 +229,21 @@ Precise old-key semantics:
 
 ```
 publisher_auth = VERIFIED | UNAUTHENTICATED | INVALID
-freshness      = FIRST_OBSERVATION_UNPROVEN | EXTENDS_LOCAL_PIN
+freshness      = FIRST_OBSERVATION_UNPROVEN | MATCHES_LOCAL_PIN | EXTENDS_LOCAL_PIN
 ```
+
+Frozen freshness semantics (no pin → first; equal state → match;
+extension → advance):
+
+- no existing pin + valid chain  → `FIRST_OBSERVATION_UNPROVEN`; pin set
+  after successful verification;
+- served_sequence == pinned_sequence AND served_head == pinned_head →
+  `MATCHES_LOCAL_PIN`; the pin is NOT mutated;
+- greater sequence extending the exact pinned head → `EXTENDS_LOCAL_PIN`;
+  pin advances after successful verification;
+- lower sequence → `SEQUENCE_ROLLBACK`;
+- same sequence/different head, or non-extending higher state →
+  `IDENTITY_HISTORY_FORK`.
 
 Neither label means "globally current". `publisher_auth` reports
 cryptographic validity only; `freshness` reports only the relationship to
@@ -213,6 +289,8 @@ Adversarial (all fail closed):
 8. stale identity state to a fresh consumer → accepted as first
    observation with freshness `FIRST_OBSERVATION_UNPROVEN` (never claimed
    globally fresh);
+8b. repeated delivery of the EXACT pinned state → freshness
+   `MATCHES_LOCAL_PIN` and the pin is NOT mutated (dedicated receipt case);
 9. authenticated discovery/fetch alone leaves B's registry untouched;
 10. authenticated publication still cannot bypass local verification or
     admission.
