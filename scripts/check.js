@@ -530,11 +530,19 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'identity.js')], { stdio: 'pipe' });
   const fed = readFileSync(join(root, 'lib', 'federation.js'), 'utf8');
-  for (const must of ['CONSISTENT', 'PARTIAL', 'CONFLICT', 'INVALID', 'EMPTY', 'PEER_DUPLICATE_ID', 'FETCH_NOT_PERMITTED', 'readPin', 'globally_fresh: false']) {
+  for (const must of ['CONSISTENT', 'PARTIAL', 'CONFLICT', 'INVALID', 'EMPTY', 'PEER_DUPLICATE_ID', 'FETCH_NOT_PERMITTED', 'readPin', 'globally_fresh: false', 'resolution_handle', 'bytesFrom', 'material_source']) {
     if (!fed.includes(must)) throw new Error('lib/federation.js lost ' + must);
   }
   // federation must be READ-ONLY against local authority state
   if (/upsertTask|writeFile/.test(fed)) throw new Error('federation resolution must never write local state (pins/registry/tasks)');
+  // fetch must consume a B-authored resolution handle, never a caller claim
+  const hostSrc = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (hostSrc.includes('p.resolveResult')) throw new Error('fetch must never trust a caller-replayed resolution result');
+  if (!hostSrc.includes('resolutionHandle: p.resolution_handle')) throw new Error('fetch must consume the B-authored resolution handle');
+  if (!hostSrc.includes('bytesFrom: p.bytes_from')) throw new Error('the byte-source steering input must reach the resolver');
+  if (!/const order = \(bytesFrom \? \[bytesFrom\] : \[\]\)/.test(fed)) throw new Error('federation lost deterministic byte-source ordering');
+  // the fetch/stage handoff carries the canonical F0-selected proof material
+  if (!/material = cand\.material/.test(fed)) throw new Error('fetch must hand off the resolution\u2019s canonical proof material');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'federation.js')], { stdio: 'pipe' });
 });
 
