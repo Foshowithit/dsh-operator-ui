@@ -18,6 +18,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createStagedAcquirer } from './acquire-staged.mjs';
 import { D01, D02, D03, D04 } from './devsuite-graders.mjs';
+import { GRADERS_V2 } from './graders-v2.mjs';
 import { record } from './record.mjs';
 import { runContext, writeRunManifest } from './experiment.mjs';
 
@@ -28,7 +29,9 @@ const SUITE = argOf('--suite', 'devsuite-v4');
 const DEV = join(root, 'eval', SUITE);
 const WS = '/private/tmp/opui-rc0-folder';
 const WF_DIR = '/tmp/opui-rc0-archon/workflows';
-const FAMILIES = (argOf('--families', 'D01-threshold-inventory,D02-config-diff,D03-domain-tally,D04-shift-handoff')).split(',').map((s) => s.trim()).filter(Boolean);
+const FAMILIES = argOf('--families', null)
+  ? argOf('--families').split(',').map((s) => s.trim()).filter(Boolean)
+  : (await readdir(DEV)).filter((d) => /^D\d+/.test(d)).sort();
 
 const baseline = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8'));
 const { museEvalKey } = await import('./secrets.mjs');
@@ -65,9 +68,10 @@ const stageWorkspace = async (fromDir) => {
   execFileSync('cp', ['-R', fromDir + '/.', WS + '/']);
 };
 
-const GRADERS = { D01, D02, D03, D04 };
+const GRADERS = { D01, D02, D03, D04, ...GRADERS_V2 };
 const acquirer = createStagedAcquirer({
   think, workflowsDir: WF_DIR, executionWorkspace: WS, stageWorkspace,
+  archon: argOf('--archon', 'http://127.0.0.1:13091'),
   evidenceDir: recordsDir,
   log: (l) => console.log('  ', l),
 });
