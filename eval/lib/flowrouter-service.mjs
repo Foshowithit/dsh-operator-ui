@@ -206,7 +206,12 @@ const server = createServer(async (req, res) => {
       // p2-selfcert-v1 the package's P0 identity.id is exporter metadata —
       // the authenticated identity comes from the SIGNED assertion (§7),
       // which is checked (incl. name/version) further below.
-      const reqScheme = parsed.publisher_scheme || 'p1-configured-v1';
+      // frozen namespace: absent = legacy p1; present must be one of exactly two
+      const rawScheme = parsed.publisher_scheme;
+      if (rawScheme !== undefined && rawScheme !== 'p1-configured-v1' && rawScheme !== 'p2-selfcert-v1') {
+        return json(res, 400, { error: 'PUBLISH_INVALID', reason: `publisher_scheme "${String(rawScheme).slice(0, 40)}" is not one of the two frozen schemes (p1-configured-v1 | p2-selfcert-v1)` });
+      }
+      const reqScheme = rawScheme || 'p1-configured-v1';
       if (reqScheme === 'p1-configured-v1') {
         try {
           const m = JSON.parse(files.find((f) => f.path === 'capability.json').bytes.toString('utf8'));
@@ -298,8 +303,14 @@ const server = createServer(async (req, res) => {
       if (!CANON.test(p1) || !CANON.test(n1) || !VER.test(v1)) {
         return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'components must be canonical (reject-not-normalize)' });
       }
-      const schemeQ = url.searchParams.get('scheme') || null;
-      const rec = findPub(p1, n1, v1, schemeQ);
+      const schemeQ = url.searchParams.get('scheme');
+      if (schemeQ !== null && schemeQ !== 'p1-configured-v1' && schemeQ !== 'p2-selfcert-v1') {
+        return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'scheme must be one of the two frozen schemes' });
+      }
+      // backward compatibility: the OLD surface resolves P1 ONLY when scheme
+      // is omitted — never "whichever scheme matches first"; P2 exact lookup
+      // must name its scheme.
+      const rec = findPub(p1, n1, v1, schemeQ === null ? 'p1-configured-v1' : schemeQ);
       if (!rec) return json(res, 404, { error: 'FETCH_UNAVAILABLE', reason: 'no publication record' });
       return json(res, 200, { publisher_scheme: rec.publisher_scheme || 'p1-configured-v1', publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D, publisher_auth: rec.publisher_auth || 'UNAUTHENTICATED', material: rec.material || null });
     }
@@ -323,6 +334,10 @@ const server = createServer(async (req, res) => {
         const v = q.get(key);
         if (v !== null && !re.test(v)) return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: `${key} must be canonical` });
       }
+      const schemeQ2 = q.get('scheme');
+      if (schemeQ2 !== null && schemeQ2 !== 'p1-configured-v1' && schemeQ2 !== 'p2-selfcert-v1') {
+        return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'scheme must be one of the two frozen schemes' });
+      }
       // frozen compatibility filter: INTERSECTION between the declared
       // compatibility list and the query's comma-separated list.
       const compatQ = q.get('compatibility');
@@ -340,6 +355,7 @@ const server = createServer(async (req, res) => {
         if (q.get('tag') && !(e.tags || []).includes(q.get('tag'))) continue;
         if (q.get('task_signature') && !(e.task_signatures || []).includes(q.get('task_signature'))) continue;
         if (q.get('has_evidence') === 'true' && !e.evidence_summary) continue;
+        if (schemeQ2 !== null && (e.publisher_scheme || 'p1-configured-v1') !== schemeQ2) continue;
         if (compatList && !(e.compatibility || []).some((c) => compatList.includes(c))) continue;
         // §3 RECORDS AUTHORITATIVE: validate the binding before returning it
         const rec = findPub(e.publisher_id, e.name, e.version, e.publisher_scheme);

@@ -176,8 +176,49 @@ step('R independently verifies BEFORE the authenticated binding (VERIFIED)', aut
 {
   const Q = generateKeypair();
   const qGenesis = createGenesis(Q, 'victim-q');
-  const rq = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: qGenesis.publisher_id, name: 'csv-running-total', version: '0.9.0', artifact: art0.toString('base64'), publication: { ...pub0, name: 'csv-running-total', version: '0.9.0' } });
-  step('N7 outer tuple substitution P→Q at R → SIGNED_STATEMENT_MISMATCH', rq.status === 409 && rq.body.error === 'SIGNED_STATEMENT_MISMATCH', rq.body);
+  // EXACT attack: byte-for-byte the untouched valid P proof; only the OUTER
+  // request publisher is rewritten P→Q.
+  const rq = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: qGenesis.publisher_id, name: pub0.name, version: pub0.version, artifact: art0.toString('base64'), publication: pub0 });
+  step('N7 outer publisher substitution P→Q with an untouched valid P proof → refusal', rq.status === 409 && rq.body.error === 'SIGNED_STATEMENT_MISMATCH', rq.body);
+}
+// N13 unknown scheme cannot create a publication
+{
+  const bad = await post(R, '/publish', { publisher_scheme: 'whatever-v9', publisher_id: 'someone', name: 'csv-running-total', version: '0.8.0', artifact: art0.toString('base64') });
+  const badLookup = await get(R, '/publication/mac-a/csv-running-total/0.1.0?scheme=whatever-v9');
+  step('N13 unknown publisher_scheme refused on publish AND on read', bad.status === 400 && bad.body.error === 'PUBLISH_INVALID' && badLookup.status === 400, { publish: bad.body.error, read: badLookup.body.error });
+}
+// N14 cross-scheme textual coexistence: a P1 record with the SAME textual
+// publisher_id/name/version as the existing P2 record
+{
+  // craft a legit P1 package whose identity.id equals the P2 publisher_id
+  const twinDir = join(WORK, 'pkg-p1-twin');
+  execFileSync('rm', ['-rf', twinDir]); execFileSync('cp', ['-R', A_PKG, twinDir]);
+  {
+    const capPath = join(twinDir, 'capability.json');
+    const cap = JSON.parse(await readFile(capPath, 'utf8'));
+    cap.identity.id = genesis.publisher_id + '/csv-running-total';
+    const wfPath = join(twinDir, cap.implementation.entrypoint);
+    const wfBytes = await readFile(wfPath);
+    cap.implementation.bundle = { algorithm: 'sha256' };
+    const capBytes = Buffer.from(canonicalJson(cap), 'utf8');
+    cap.implementation.bundle.package_digest = packageDigest([{ path: 'capability.json', bytes: capBytes }, { path: cap.implementation.entrypoint, bytes: wfBytes }]);
+    cap.implementation.bundle.digest = sha(wfBytes);
+    await writeFile(capPath, canonicalJson(cap), 'utf8');
+  }
+  const twinFiles = [];
+  {
+    const { readdir } = await import('node:fs/promises');
+    const w2 = async (d, rel) => { for (const e of await readdir(d, { withFileTypes: true })) { const pp = join(d, e.name); const rr = rel ? rel + '/' + e.name : e.name; if (e.isDirectory()) await w2(pp, rr); else twinFiles.push({ path: rr, bytes: await readFile(pp) }); } };
+    await w2(twinDir, '');
+  }
+  const twinArt = Buffer.from(JSON.stringify({ files: twinFiles.sort((a, b) => a.path.localeCompare(b.path)).map((f) => ({ path: f.path, b64: f.bytes.toString('base64') })) }), 'utf8');
+  const p1Twin = await post(R, '/publish', { publisher_scheme: 'p1-configured-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', artifact: twinArt.toString('base64') });
+  const p1Lookup = await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.0'); // omitted scheme → P1 only
+  const p2Lookup = await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.0?scheme=p2-selfcert-v1');
+  const coexist = p1Twin.status === 200
+    && p1Lookup.status === 200 && p1Lookup.body.publisher_auth === 'UNAUTHENTICATED' && !p1Lookup.body.material
+    && p2Lookup.status === 200 && p2Lookup.body.publisher_auth === 'VERIFIED' && !!p2Lookup.body.material;
+  step('N14 identical textual components coexist across schemes; lookups never shadow', coexist, { p1: { status: p1Lookup.status, auth: p1Lookup.body.publisher_auth, scheme: p1Lookup.body.publisher_scheme }, p2: { status: p2Lookup.status, auth: p2Lookup.body.publisher_auth, scheme: p2Lookup.body.publisher_scheme } });
 }
 // wrong algorithm + malformed encodings
 {
@@ -212,7 +253,7 @@ await rm(incoming, { recursive: true, force: true });
     await writeFile(dest, Buffer.from(f.b64, 'base64'));
   }
 }
-const material = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.0')).body.material;
+const material = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.0?scheme=p2-selfcert-v1')).body.material;
 step('R carries full verification material (genesis + events + assertion)', !!material && !!material.genesis && Array.isArray(material.events) && !!material.publication, { keys: material ? Object.keys(material) : null });
 
 const EXPECTED0 = { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0 };
@@ -262,7 +303,7 @@ await rm(incoming11, { recursive: true, force: true });
     await writeFile(dest, Buffer.from(f.b64, 'base64'));
   }
 }
-const material11 = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.1')).body.material;
+const material11 = (await get(R, '/publication/' + genesis.publisher_id + '/csv-running-total/0.1.1?scheme=p2-selfcert-v1')).body.material;
 const st2 = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming11, identityMaterial: material11, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: 'csv-running-total', version: '0.1.1', D: D1 } });
 step('legitimate extension → EXTENDS_LOCAL_PIN, pin advanced', st2.body.import?.publisher?.freshness === 'EXTENDS_LOCAL_PIN', st2.body.import?.publisher);
 
@@ -315,7 +356,7 @@ const chain3 = replayChain(genesis, [ev1, ev2, ev3]);
   await post(R, '/publisher', { genesis: g2, events: [ev2b] });
   const pubB = signPublication({ privateKey: k2b.privateKey, publisherId: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', D: D0, keyId: deriveKeyId(k2b.publicKeyRaw), identitySequence: chainB.head_sequence, identityHeadDigest: chainB.head_digest });
   const pubBR = await post(R, '/publish', { publisher_scheme: 'p2-selfcert-v1', publisher_id: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', artifact: art0.toString('base64'), publication: pubB });
-  const matB = (await get(R, '/publication/' + g2.publisher_id + '/csv-running-total/0.2.0')).body.material;
+  const matB = (await get(R, '/publication/' + g2.publisher_id + '/csv-running-total/0.2.0?scheme=p2-selfcert-v1')).body.material;
   const stB = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: incoming, alias: 'second-pub-alias', identityMaterial: matB, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', publisher_id: g2.publisher_id, name: 'csv-running-total', version: '0.2.0', D: D0 } });
   const tasksRaw = JSON.parse(await readFile(join(B_HOME, 'operator-ui', 'tasks.json'), 'utf8'));
   const pinTasks = tasksRaw.tasks.filter((t) => t.kind === 'pin');
