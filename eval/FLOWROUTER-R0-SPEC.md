@@ -1,6 +1,13 @@
-# FlowRouter R0 — Authenticated Mirror Replication (spec v1, for adjudication)
+# FlowRouter R0 — Authenticated Mirror Replication (spec v2, for adjudication)
 
 Status: spec-only. No code until frozen.
+
+v2 folds in the two amendments from the v1 adjudication: R0 claims no
+cross-repository discovery (the positive case is exact lookup plus exact-D
+fetch), and the material-conflict rule is restated as immutability / no silent
+replacement — NEVER as an equivocation judgment, because non-identical valid
+material can be an assertion reissue or a compatible extension just as easily
+as a fork. The v1 index-surface decision was approved and is unchanged.
 Sealed predecessors: P0 (canonical digest), P1 (publish/index/discover/fetch),
 P1-X (independent machine), P2 (publisher identity), F0 (multi-repository
 discovery/resolution — spec 6093ce5, impl 3fb5ccd, receipt 93c29d8), F1
@@ -120,14 +127,27 @@ Frozen rules:
 - **Conflict fails closed**: if the destination already holds the same P2 tuple
   with a DIFFERENT `D`, replication MUST fail without touching the existing
   binding — never overwrite, never pick one, never majority-resolve.
-- **Material conflict fails closed**: if the destination already holds the same
-  tuple and `D` but a NON-identical authenticated material (the fork case), the
-  stored material is NOT overwritten and replication refuses. The mirror makes
-  no truth choice between two publisher-signed states; the contradiction stays
-  discoverable exactly as F0/F1 describe (each repository serves what it
-  committed, and a consumer resolving across both sees the fork).
+- **Material conflict fails closed — as immutability, not as adjudication.**
+  If the destination already holds the same tuple and `D` with BYTE-IDENTICAL
+  material, the request is idempotent. If the material differs, replication
+  refuses (`REPLICATION_MATERIAL_CONFLICT`) and the stored object remains
+  byte-identical. The reason is immutability and the prohibition on silent
+  replacement — **not** an equivocation finding. Non-identical valid material
+  can equally be a newly issued assertion, or the same tuple/D authenticated
+  against a later COMPATIBLE extension of the identity history. R0 draws no
+  conclusion from the difference alone about equivocation, freshness, or which
+  state is preferable:
+  - if the two histories are compatible, ordinary P2/F0 semantics say they are
+    compatible;
+  - if they are non-comparable, ordinary F0/F1 semantics establish the fork
+    when both observations are actually observed.
+  **Replication never becomes a history adjudicator.**
 - **No version fallback**: a request for `name@1.2.3` must never silently yield
   1.2.4, 1.2.2, or "latest". Exact match or refuse.
+- **`requested_D` means**: the `D` obtained from — and authenticated by — the
+  exact tuple lookup, and then used as the target of the subsequent exact-D
+  fetch. The operator requests a tuple, never a digest; R0 does not require the
+  operator to know `D` in advance.
 
 ## 6. Evidence carriage
 
@@ -149,8 +169,9 @@ evidence path (`POST`/`GET` by `proof_digest`), byte-identically.
    (`recomputed_D == signed_D == requested_D`) are all re-established locally.
 3. Possession grants no authority: no ranking, freshness, recommendation,
    eligibility, admission, or routing effect — at the mirror or anywhere else.
-4. Replication is idempotent per exact `(T, D, material)` and fail-closed on any
-   conflict, with no fallback and no overwrite.
+4. Replication is idempotent per exact `(T, D, byte-identical material)` and
+   fail-closed on any conflict, with no fallback and no overwrite; a material
+   difference is treated as immutability, never as an equivocation finding.
 5. Consumer-local trust state (pins, witnesses, quarantine, acknowledgments,
    admissions, registry, routing, authority) is untouched by replication —
    storage changing is not trust-state change.
@@ -174,9 +195,13 @@ Consumer B knows only R2 (and then R3)
 ```
 
 1. **Positive mirror**: P publishes an authenticated capability to R1 only. R2
-   never communicates with P. R2 replicates from R1. B discovers and fetches
-   ONLY from R2, independently verifies the ORIGINAL publisher P, stages,
-   verifies locally, admits, routes, and SHIPs.
+   never communicates with P. R2 replicates from R1. B knows the exact P2 tuple
+   and has ONLY R2 configured/reachable for that publication: B performs an
+   exact lookup against R2, exact-D fetches from R2, independently authenticates
+   the ORIGINAL publisher P, then follows the sealed local
+   stage → verify → admit → route → SHIP path. **R0 provides no cross-repository
+   discovery** — the tuple is known to B in advance (an F0 resolve against an
+   explicit peer set is the consumer's own business and is not R0's claim).
 2. **No mirror authorship**: the publisher remains P everywhere; nothing in
    R2's identity appears in the signed publication.
 3. **Byte substitution**: R1 advertises valid signed `T`/`D` but serves altered
@@ -190,9 +215,17 @@ Consumer B knows only R2 (and then R3)
 6. **Destination conflict**: R2 already holds the same exact tuple at a
    different `D` → replication refuses and the existing binding is byte-identical
    afterwards.
-7. **Material conflict (fork)**: R2 holds tuple+D with material A; a source
-   offers tuple+D with non-identical material B → refuse, keep A unchanged, no
-   overwrite.
+7. **Material conflict — immutability, not adjudication**: R2 holds T+D with
+   material A; a source offers T+D with material B.
+   - R0 refuses the replacement and keeps A byte-identical
+     (`REPLICATION_MATERIAL_CONFLICT`), and repeats of the exact B do not
+     accumulate extra copies or trust;
+   - a COMPATIBLE B must NOT generate an F1 equivocation claim merely because
+     its bytes differ (the mirror would be adjudicating if it did);
+   - a genuinely NON-COMPARABLE B remains independently detectable as a fork
+     when A and B are observed across repositories under the sealed F0/F1
+     rules — the mirror neither creates nor suppresses that evidence.
+   - byte-identical material is idempotent, never a conflict.
 8. **Idempotence**: exact repeat replication adds no second object and no extra
    trust.
 9. **Consumer-local-state invariant**: replication changes none of R2-as-
@@ -234,8 +267,9 @@ Confirm or amend: (a) the three transport objects and the never-replicated list
 (§2); (b) the pull/permissionless-trust/local-storage model and the
 provenance-metadata rule (§3); (c) the index-surface decision — mirrors serve
 exact lookups but do not list mirrored bindings in their own discovery index
-(§4); (d) the transaction, its commit order, idempotence, and the three
-fail-closed conflict rules, including the fork case (material conflict, §5);
+(§4); (d) the transaction, its commit order, idempotence, the `requested_D`
+interpretation, and the three fail-closed conflict rules — with the material
+conflict stated as immutability rather than adjudication (§5);
 (e) the evidence-carriage rule that storing a proof quarantines nobody (§6);
 (f) the acceptance properties, especially the multi-hop custody case (§8). On
 freeze, R0 implementation and a raw receipt follow the sealed pattern:
