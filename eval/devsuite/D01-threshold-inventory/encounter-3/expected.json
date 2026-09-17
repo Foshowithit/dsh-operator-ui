@@ -1,0 +1,23 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "bearing",
+      "qty": 2
+    },
+    {
+      "item": "damper",
+      "qty": 3
+    },
+    {
+      "item": "gasket",
+      "qty": 7
+    },
+    {
+      "item": "nut",
+      "qty": 15
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

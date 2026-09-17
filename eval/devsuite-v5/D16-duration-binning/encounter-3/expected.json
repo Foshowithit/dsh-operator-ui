@@ -1,0 +1,23 @@
+{
+  "family": "D16",
+  "buckets": [
+    {
+      "bucket": "0-59s",
+      "count": "4"
+    },
+    {
+      "bucket": "60-119s",
+      "count": "1"
+    },
+    {
+      "bucket": "120-239s",
+      "count": "6"
+    },
+    {
+      "bucket": "240s+",
+      "count": "3"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

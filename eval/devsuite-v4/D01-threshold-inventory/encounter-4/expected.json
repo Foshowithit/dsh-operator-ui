@@ -1,0 +1,31 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "collar",
+      "qty": 28
+    },
+    {
+      "item": "insert",
+      "qty": 5
+    },
+    {
+      "item": "keyway",
+      "qty": 13
+    },
+    {
+      "item": "nut",
+      "qty": 27
+    },
+    {
+      "item": "retainer",
+      "qty": 16
+    },
+    {
+      "item": "spacer",
+      "qty": 20
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion"
+}

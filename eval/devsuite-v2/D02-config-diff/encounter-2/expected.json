@@ -1,0 +1,37 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "grpc_port",
+      "old": "900",
+      "new": "v2"
+    },
+    {
+      "key": "cache_ttl",
+      "old": "jsonl",
+      "new": "on"
+    },
+    {
+      "key": "batch_size",
+      "old": "info",
+      "new": "0.25"
+    },
+    {
+      "key": "idle_timeout",
+      "old": "300",
+      "new": "900"
+    },
+    {
+      "key": "log_level",
+      "old": "128",
+      "new": "us-east-1"
+    },
+    {
+      "key": "region",
+      "old": "4",
+      "new": "900"
+    }
+  ],
+  "encounter": 2,
+  "role": "reuse-variation"
+}

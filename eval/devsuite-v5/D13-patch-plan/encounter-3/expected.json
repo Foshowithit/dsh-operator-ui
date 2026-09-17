@@ -1,0 +1,27 @@
+{
+  "family": "D13",
+  "applied": [
+    {
+      "key": "cache_mb",
+      "from": "64",
+      "to": "on"
+    },
+    {
+      "key": "heap",
+      "from": "512m",
+      "to": "64"
+    },
+    {
+      "key": "keepalive",
+      "from": "info",
+      "to": "4"
+    },
+    {
+      "key": "interval_s",
+      "from": "30",
+      "to": "512m"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

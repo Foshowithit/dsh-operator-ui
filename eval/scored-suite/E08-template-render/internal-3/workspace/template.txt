@@ -1,0 +1,5 @@
+# deployment template
+
+Deployment for {{area}}
+Lead engineer: {{lead}}
+Unit {{unit}} covers {{count}} nodes.

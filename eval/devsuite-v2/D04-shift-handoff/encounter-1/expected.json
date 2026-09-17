@@ -1,0 +1,31 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "anne",
+      "minutes": 175
+    },
+    {
+      "name": "dev",
+      "minutes": 350
+    },
+    {
+      "name": "ellie",
+      "minutes": 201
+    },
+    {
+      "name": "boris",
+      "minutes": 347
+    },
+    {
+      "name": "farid",
+      "minutes": 114
+    },
+    {
+      "name": "cleo",
+      "minutes": 248
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

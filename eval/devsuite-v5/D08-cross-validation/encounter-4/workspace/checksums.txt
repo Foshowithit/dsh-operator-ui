@@ -1,0 +1,6 @@
+boot.img:c19e2d52
+grub.cfg:04c33d74
+diag.bin:662cf5d5
+env.map:150ac7c9
+core.pkg:a46b70c9
+initrd.gz:c0fdb239

@@ -1,0 +1,37 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "metrics_path",
+      "old": "512m?env=4",
+      "new": "512m"
+    },
+    {
+      "key": "idle_timeout",
+      "old": "bearer://60",
+      "new": "60"
+    },
+    {
+      "key": "sample_rate",
+      "old": "0.25",
+      "new": "300"
+    },
+    {
+      "key": "tls_verify",
+      "old": "https://relay.internal",
+      "new": "0.25"
+    },
+    {
+      "key": "region",
+      "old": "128",
+      "new": "info"
+    },
+    {
+      "key": "cache_ttl",
+      "old": "on",
+      "new": "0.25"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion"
+}

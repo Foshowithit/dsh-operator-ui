@@ -1,0 +1,8 @@
+host: relay-5.example.test
+port: 3491
+
+host: xenon-6.example.test
+port: 3921
+
+host: willow-9.example.test
+port: 1848

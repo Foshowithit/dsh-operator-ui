@@ -1,0 +1,6 @@
+# variable values
+
+area=south
+lead=priya
+unit=u48
+count=12

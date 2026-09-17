@@ -1,0 +1,27 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "3",
+      "length": "54"
+    },
+    {
+      "line": "4",
+      "length": "63"
+    },
+    {
+      "line": "6",
+      "length": "51"
+    },
+    {
+      "line": "7",
+      "length": "60"
+    },
+    {
+      "line": "8",
+      "length": "76"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

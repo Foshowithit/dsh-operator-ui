@@ -1,0 +1,32 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "metrics_path",
+      "old": "strict",
+      "new": "info"
+    },
+    {
+      "key": "log_level",
+      "old": "strict",
+      "new": "512m"
+    },
+    {
+      "key": "max_retries",
+      "old": "900",
+      "new": "128"
+    },
+    {
+      "key": "grpc_port",
+      "old": "us-east-1",
+      "new": "0.25"
+    },
+    {
+      "key": "batch_size",
+      "old": "https://relay.internal",
+      "new": "900"
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

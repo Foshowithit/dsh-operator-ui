@@ -1,0 +1,23 @@
+{
+  "family": "D11",
+  "contacts": [
+    {
+      "name": "cleo-brooks",
+      "phone": "7474435557"
+    },
+    {
+      "name": "ava-archer",
+      "phone": "2436145510"
+    },
+    {
+      "name": "ben-ellery",
+      "phone": "4937222442"
+    },
+    {
+      "name": "dmitri-dune",
+      "phone": "2389664995"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

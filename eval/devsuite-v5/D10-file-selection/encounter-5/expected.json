@@ -1,0 +1,23 @@
+{
+  "family": "D10",
+  "files": [
+    {
+      "file": "charlie.cfg",
+      "size": "2073"
+    },
+    {
+      "file": "delta.dat",
+      "size": "2198"
+    },
+    {
+      "file": "echo.log",
+      "size": "1929"
+    },
+    {
+      "file": "fox.cfg",
+      "size": "1922"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "foxtrot",
+      "share": "41.4"
+    },
+    {
+      "category": "alpha",
+      "share": "40.4"
+    },
+    {
+      "category": "echo",
+      "share": "11.1"
+    },
+    {
+      "category": "delta",
+      "share": "7.1"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

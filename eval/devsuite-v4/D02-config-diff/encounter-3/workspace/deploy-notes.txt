@@ -1,0 +1,1 @@
+Both env files are structurally valid; only shared keys with differing values matter for the release report.

@@ -1,0 +1,6 @@
+core.pkg
+diag.bin
+env.map
+firmware.sig
+grub.cfg
+hash.txt

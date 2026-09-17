@@ -1,0 +1,11 @@
+# coverage plan
+
+name start end
+eli 16:30 17:17
+di 08:30 09:07
+gus 11:00 12:36
+hal 09:30 11:11
+cy 13:15 13:46
+fay 07:30 08:17
+
+# shifts listed chronologically by start

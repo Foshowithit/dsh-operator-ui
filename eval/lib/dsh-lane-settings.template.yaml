@@ -1,0 +1,21 @@
+# DSH lane settings for the eval lane home (NO SECRETS — apiKeyEnv names an
+# env var the runner injects at spawn time from the local credential store).
+# The shakedown/scored runner copies this to $DSH_HOME/settings.yaml after
+# recreating the clean lane home.
+llm-pi-ai:
+  providers:
+    muse-eval:
+      apiKeyEnv: MUSE_EVAL_KEY
+      api: openai-responses
+      baseURL: https://opencode.ai/zen/go/v1
+      headers:
+        x-opencode-session: rcos-eval-lane
+      defaultInput:
+        - text
+      models:
+        - id: muse-spark-1.3-contributor
+agent-default-model:
+  provider: muse-eval
+  model: muse-spark-1.3-contributor
+agent-loop:
+  maxParallelToolCalls: 1

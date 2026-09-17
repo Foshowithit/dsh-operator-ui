@@ -1,0 +1,23 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "ellie",
+      "minutes": 398
+    },
+    {
+      "name": "cleo",
+      "minutes": 63
+    },
+    {
+      "name": "farid",
+      "minutes": 164
+    },
+    {
+      "name": "boris",
+      "minutes": 94
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

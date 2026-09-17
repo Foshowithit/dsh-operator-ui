@@ -1,0 +1,28 @@
+{
+  "family": "D12",
+  "counts": [
+    {
+      "component": "auth",
+      "deps": "2"
+    },
+    {
+      "component": "build",
+      "deps": "0"
+    },
+    {
+      "component": "daemon",
+      "deps": "2"
+    },
+    {
+      "component": "export",
+      "deps": "1"
+    },
+    {
+      "component": "frontend",
+      "deps": "1"
+    }
+  ],
+  "heaviest": "auth",
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

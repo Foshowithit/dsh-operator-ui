@@ -1,0 +1,1 @@
+Count the events per hour in events.txt and report every hour that has at least one event, sorted by hour ascending, one per line, as RESULT hour=<HH> count=<n> (two-digit hour). Comment lines starting with # must be ignored. Ignore non-feed files.

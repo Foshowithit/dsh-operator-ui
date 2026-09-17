@@ -1,0 +1,39 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "B2",
+      "label": "pro"
+    },
+    {
+      "code": "E5",
+      "label": "edu"
+    },
+    {
+      "code": "B2",
+      "label": "pro"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "E5",
+      "label": "edu"
+    },
+    {
+      "code": "X3",
+      "label": "UNKNOWN"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

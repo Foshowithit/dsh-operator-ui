@@ -1,0 +1,6 @@
+grub.cfg:94802ecd
+boot.img:b9e74664
+initrd.gz:d9265f90
+diag.bin:e7c9e759
+firmware.sig:ed13d903
+env.map:c905f7dd

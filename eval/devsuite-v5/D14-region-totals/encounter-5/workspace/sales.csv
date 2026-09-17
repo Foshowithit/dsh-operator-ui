@@ -1,0 +1,21 @@
+# regional sales
+region,amount
+east,360
+gulf,382
+north,334
+west,369
+# void north 327
+north,327
+# void west 372
+west,372
+north,314
+north,316
+north,78
+# void west 280
+west,280
+# void west 175
+west,175
+gulf,380
+gulf,269
+
+# void internal 999

@@ -1,0 +1,32 @@
+{
+  "family": "D15",
+  "rows": [
+    {
+      "name": "daemon",
+      "version": "5.6.6",
+      "status": "ahead"
+    },
+    {
+      "name": "cli",
+      "version": "2.9.3",
+      "status": "stale"
+    },
+    {
+      "name": "exporter",
+      "version": "4.0.8",
+      "status": "current"
+    },
+    {
+      "name": "broker",
+      "version": "1.1.5",
+      "status": "stale"
+    },
+    {
+      "name": "agent",
+      "version": "3.2.4",
+      "status": "stale"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

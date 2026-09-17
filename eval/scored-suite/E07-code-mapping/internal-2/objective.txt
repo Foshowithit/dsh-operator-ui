@@ -1,0 +1,1 @@
+Map every code in licenses-used.txt using the lookup in plans.csv, in licenses-used.txt order, one per line, as RESULT code=<code> label=<label>. Codes missing from the lookup must be reported with label UNKNOWN.

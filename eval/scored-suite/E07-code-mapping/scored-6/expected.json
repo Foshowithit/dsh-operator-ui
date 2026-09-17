@@ -1,0 +1,31 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "B2",
+      "label": "pro"
+    },
+    {
+      "code": "X4",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "X4",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,4 @@
+jobs: 512m
+retries: 90
+cache_mb: 200
+log_level: 512m

@@ -1,0 +1,31 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "18"
+    },
+    {
+      "row": "2",
+      "total": "62"
+    },
+    {
+      "row": "3",
+      "total": "76"
+    },
+    {
+      "row": "4",
+      "total": "128"
+    },
+    {
+      "row": "5",
+      "total": "144"
+    },
+    {
+      "row": "6",
+      "total": "212"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

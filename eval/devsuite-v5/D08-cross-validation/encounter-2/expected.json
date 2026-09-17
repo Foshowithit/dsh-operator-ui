@@ -1,0 +1,35 @@
+{
+  "family": "D08",
+  "statuses": [
+    {
+      "file": "boot.img",
+      "status": "unexpected"
+    },
+    {
+      "file": "core.pkg",
+      "status": "ok"
+    },
+    {
+      "file": "diag.bin",
+      "status": "mismatch"
+    },
+    {
+      "file": "env.map",
+      "status": "ok"
+    },
+    {
+      "file": "firmware.sig",
+      "status": "ok"
+    },
+    {
+      "file": "grub.cfg",
+      "status": "ok"
+    },
+    {
+      "file": "hash.txt",
+      "status": "ok"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

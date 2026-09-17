@@ -1,0 +1,13 @@
+# daily export
+
+order_id,item
+o100,expansion-shell
+o101,flat-washer
+o102,coupler
+o103,gib-key
+o104,bracket
+o105,bracket
+o106,hex-nut
+o107,hex-nut
+
+# fulfilled orders only

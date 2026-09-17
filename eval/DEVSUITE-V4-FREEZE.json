@@ -1,0 +1,15 @@
+{
+  "suite": "devsuite-v4 (staged-gate revision experiment: E1 admission / E2 diagnostic / E3 regression / E4 sacred terminal)",
+  "seed": 14142136,
+  "generator_version": "2.0.0",
+  "generator_source_sha256": "sha256:716f4b5c773518dbd92987794a7e46c175ca5a9000e5a092c54cff8a3b54b556",
+  "manifest_sha256": "sha256:1798ea42f6e418f22fc37370691879f9e72a6c1937f72842ac2317629e00c50c",
+  "graders_v2_sha256": "sha256:d3b81d5aafe34ac8b6a9983903adf2d7bed6b8f17be0a380370bebd991cd96e5",
+  "grader_controls_sha256": "sha256:f950a5e7d1d5cdf0d1a423b02db1c42fa90c20bc8d2cb67a23eed0f13efb7274",
+  "static_checks_sha256": "sha256:221d4d44ce5386c9bd2d65666b1affd706531abdf33f4d50e635558c3a8fd966",
+  "controls_result": "306/306 PASS (102 fixtures x golden/subtle-wrong/empty)",
+  "fixture_consistency": "all 16 v4 fixtures recomputed from workspace under family contract \u2014 consistent (checker-caught D02 E4 expected-mismatch generator defect fixed pre-freeze)",
+  "isolation_result": "clean",
+  "generated_at": "2026-09-16T22:33:30.749Z",
+  "freeze_note": "Per GPT ruling: generator v2.0.0 adds the fourth (terminal-promotion) encounter role; graders/validator/contracts/promotion criteria unchanged. Devsuites v1-v3 remain frozen at their recorded hashes."
+}

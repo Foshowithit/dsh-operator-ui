@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" width="1240" height="860" role="img" aria-labelledby="title desc">
+  <title id="title">FlowRouter trust boundaries</title>
+  <desc id="desc">Three layers — untrusted claims, cryptographic evidence, and consumer-local trust — showing that verification only ever flows upward and that only three sealed operations may write consumer-local state.</desc>
+  <style>
+    .bg { fill: #fbfaf8; }
+    .h1 { font: 700 26px/1.2 ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1a1a1c; }
+    .sub { font: 400 14px ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #5b5b63; }
+    .layerlabel { font: 700 13px ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+    .box { font: 600 14px ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #1a1a1c; }
+    .small { font: 400 11.5px ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: #5b5b63; }
+    .mono { font: 500 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #3d3d44; }
+    .claim { fill: #fff7ed; stroke: #e7c9a8; }
+    .evidence { fill: #eef4ff; stroke: #b9cdf0; }
+    .local { fill: #f1f7f1; stroke: #b6d3b6; }
+    .path { fill: #ffffff; stroke: #d8d6d1; }
+    .flow { stroke: #9a9aa2; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .flowup { stroke: #4a6fa5; stroke-width: 2.5; fill: none; marker-end: url(#arrowblue); }
+    .flowwrite { stroke: #3f7a44; stroke-width: 2.5; fill: none; marker-end: url(#arrowgreen); }
+    .rule { stroke: #e2e0da; stroke-width: 1.5; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9a9aa2"/>
+    </marker>
+    <marker id="arrowblue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a6fa5"/>
+    </marker>
+    <marker id="arrowgreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3f7a44"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1240" height="860"/>
+
+  <text class="h1" x="48" y="56">FlowRouter — trust boundaries</text>
+  <text class="sub" x="48" y="80">A federation layer for capability artifacts that transports evidence of trust, never trust itself.</text>
+
+  <!-- LAYER 3: consumer-local (top) -->
+  <rect class="local" x="48" y="104" width="1144" height="150" rx="12"/>
+  <text class="layerlabel" x="68" y="132" fill="#3f7a44">Consumer-local trust</text>
+  <text class="small" x="68" y="152">Never transported. Never inferred. Written ONLY by three sealed operations — nothing else in the system may touch these surfaces.</text>
+
+  <rect class="path" x="68" y="166" width="352" height="70" rx="8"/>
+  <text class="box" x="84" y="192">pins · pin witness</text>
+  <text class="small" x="84" y="212">which publisher identity state this consumer</text>
+  <text class="small" x="84" y="227">has already accepted — written by the P2 stage</text>
+
+  <rect class="path" x="444" y="166" width="352" height="70" rx="8"/>
+  <text class="box" x="460" y="192">registry · admission · routing</text>
+  <text class="small" x="460" y="212">what this machine is willing to execute —</text>
+  <text class="small" x="460" y="227">written only by an explicit admission</text>
+
+  <rect class="path" x="820" y="166" width="352" height="70" rx="8"/>
+  <text class="box" x="836" y="192">quarantine · acknowledgment</text>
+  <text class="small" x="836" y="212">a publisher this consumer distrusts — written</text>
+  <text class="small" x="836" y="227">only by an explicit ingest of equivocation evidence</text>
+
+  <!-- arrows up -->
+  <path class="flowwrite" d="M 244 306 L 244 240"/>
+  <path class="flowwrite" d="M 620 306 L 620 240"/>
+  <path class="flowwrite" d="M 996 306 L 996 240"/>
+  <text class="mono" x="256" y="278">P2 stage → pin</text>
+  <text class="mono" x="632" y="278">explicit admission → routable</text>
+  <text class="mono" x="1008" y="278">explicit ingest → quarantine</text>
+
+  <!-- LAYER 2: evidence -->
+  <rect class="evidence" x="48" y="306" width="1144" height="176" rx="12"/>
+  <text class="layerlabel" x="68" y="334" fill="#3f6fae">Cryptographic evidence</text>
+  <text class="small" x="68" y="354">Re-established locally at every hop, from bytes and signatures alone. A source's verdict is never an input.</text>
+
+  <rect class="path" x="68" y="368" width="352" height="98" rx="8"/>
+  <text class="box" x="84" y="394">P0 — artifact integrity</text>
+  <text class="small" x="84" y="414">the artifact's fingerprint is recomputed from the</text>
+  <text class="small" x="84" y="429">bytes actually received; a substituted file cannot</text>
+  <text class="small" x="84" y="444">produce the requested fingerprint</text>
+
+  <rect class="path" x="444" y="368" width="352" height="98" rx="8"/>
+  <text class="box" x="460" y="394">P2 — publisher identity</text>
+  <text class="small" x="460" y="414">self-certifying identity, key-state chain, revocation,</text>
+  <text class="small" x="460" y="429">assertions bound to identity state, consumer pinning</text>
+  <text class="small" x="460" y="444">with rollback and fork detection</text>
+
+  <rect class="path" x="820" y="368" width="352" height="98" rx="8"/>
+  <text class="box" x="836" y="394">F1 — equivocation evidence</text>
+  <text class="small" x="836" y="414">two publisher-signed contradictory states become a</text>
+  <text class="small" x="836" y="429">self-contained proof that verifies offline — and</text>
+  <text class="small" x="836" y="444">proves what a key did, not who held it</text>
+
+  <!-- arrows up from claims -->
+  <path class="flowup" d="M 244 552 L 244 486"/>
+  <path class="flowup" d="M 620 552 L 620 486"/>
+  <path class="flowup" d="M 996 552 L 996 486"/>
+  <text class="mono" x="256" y="524">verify, never trust</text>
+  <text class="mono" x="632" y="524">verify, never trust</text>
+  <text class="mono" x="1008" y="524">verify, never trust</text>
+
+  <!-- LAYER 1: untrusted claims -->
+  <rect class="claim" x="48" y="552" width="1144" height="164" rx="12"/>
+  <text class="layerlabel" x="68" y="580" fill="#b5762f">Untrusted claims</text>
+  <text class="small" x="68" y="600">Every one of these may lie, omit, reorder, duplicate or disappear. Safety comes from the lie having no authority: a false claim costs a query and nothing else.</text>
+
+  <rect class="path" x="68" y="614" width="266" height="86" rx="8"/>
+  <text class="box" x="84" y="640">D1 — endpoint directory</text>
+  <text class="small" x="84" y="660">“endpoint E may be worth asking”</text>
+  <text class="small" x="84" y="675">a locator — never a tuple, digest, rank</text>
+  <text class="small" x="84" y="690">or repository identity</text>
+
+  <rect class="path" x="350" y="614" width="266" height="86" rx="8"/>
+  <text class="box" x="366" y="640">D0 — possession index</text>
+  <text class="small" x="366" y="660">“E claims it holds this exact tuple”</text>
+  <text class="small" x="366" y="675">the claimed digest is never trusted;</text>
+  <text class="small" x="366" y="690">resolution decides the real one</text>
+
+  <rect class="path" x="632" y="614" width="266" height="86" rx="8"/>
+  <text class="box" x="648" y="640">R0 / S0 — custody</text>
+  <text class="small" x="648" y="660">mirrors and backfill scheduling</text>
+  <text class="small" x="648" y="675">holding a copy earns nothing; custody</text>
+  <text class="small" x="648" y="690">provenance is not authentication</text>
+
+  <rect class="path" x="914" y="614" width="258" height="86" rx="8"/>
+  <text class="box" x="930" y="640">any carrier at all</text>
+  <text class="small" x="930" y="660">evidence itself travels through</text>
+  <text class="small" x="930" y="675">untrusted repositories; it verifies</text>
+  <text class="small" x="930" y="690">offline or it does not count</text>
+
+  <line class="rule" x1="48" y1="742" x2="1192" y2="742"/>
+
+  <!-- PATH STRIP -->
+  <text class="layerlabel" x="48" y="770" fill="#5b5b63">The path</text>
+  <text class="mono" x="48" y="796">name + directory  →  D1  →  D0  →  the caller picks one exact tuple  →  S0 backfill  →  F0 resolve  →  P2 authenticate  →  P0 recompute</text>
+  <text class="mono" x="48" y="816">→  stage  →  local verification  →  explicit admission  →  route  →  SHIP</text>
+
+  <text class="sub" x="48" y="846" font-style="italic">No global freshness exists here. Withholding is undetectable. First contact cannot be proven honest. Custody is never authority.</text>
+</svg>

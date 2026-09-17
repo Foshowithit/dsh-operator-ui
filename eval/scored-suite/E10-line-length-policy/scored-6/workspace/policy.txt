@@ -1,0 +1,1 @@
+Lines longer than 48 characters violate the policy.

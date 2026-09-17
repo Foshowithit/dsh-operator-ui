@@ -1,0 +1,47 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "47"
+    },
+    {
+      "row": "2",
+      "total": "57"
+    },
+    {
+      "row": "3",
+      "total": "97"
+    },
+    {
+      "row": "4",
+      "total": "139"
+    },
+    {
+      "row": "5",
+      "total": "162"
+    },
+    {
+      "row": "6",
+      "total": "186"
+    },
+    {
+      "row": "7",
+      "total": "245"
+    },
+    {
+      "row": "8",
+      "total": "289"
+    },
+    {
+      "row": "9",
+      "total": "342"
+    },
+    {
+      "row": "10",
+      "total": "383"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

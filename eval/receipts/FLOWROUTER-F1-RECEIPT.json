@@ -1,0 +1,244 @@
+{
+  "generated_at": "2026-09-17T06:58:12.146Z",
+  "steps": [
+    {
+      "step": "three fresh repositories started (R1, R2 independent; R3 evidence carrier)",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13121,
+          "r2": 13122,
+          "r3": 13123
+        }
+      }
+    },
+    {
+      "step": "case 1 honest extension (seq1 + seq2) → CONSISTENT at seq2, NO proof emitted",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "head": 2,
+        "proof": null
+      }
+    },
+    {
+      "step": "case 1b pin created at seq2 AND retains the exact identity witness; admission intact",
+      "ok": true,
+      "result": {
+        "stage": "STAGED",
+        "verify": "VERIFIED",
+        "pin": 2,
+        "witness": "d9266e779d8a"
+      }
+    },
+    {
+      "step": "case 2 same-sequence divergence across repositories → CONFLICT + verified proof core; resolve still byte-identical read-only",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "peers": [
+          "r1:VALID",
+          "r2:VALID"
+        ],
+        "relation": "SAME_SEQUENCE_DIVERGENT",
+        "digest": "7643f6267d1cde3d",
+        "read_only": true,
+        "publish": [
+          "f7c6c2bd",
+          "f7c6c2bd"
+        ]
+      }
+    },
+    {
+      "step": "case 2b the core verifies offline: canonical pair, declared heads, derived relation, content address",
+      "ok": true,
+      "result": {
+        "digest_match": true,
+        "relation": "SAME_SEQUENCE_DIVERGENT"
+      }
+    },
+    {
+      "step": "case 3 non-extending branching at different sequences → NONEXTENDING_FORK; ancestor and strict-extension pairs never yield a proof",
+      "ok": true,
+      "result": {
+        "relation": "NONEXTENDING_FORK",
+        "ancestor": "no proof (correct)",
+        "strict_extension": "no proof (correct)"
+      }
+    },
+    {
+      "step": "case 4 local-history fork proven from the RETAINED pin witness (no peer); extension is no proof and a witness-less pin refuses honestly",
+      "ok": true,
+      "result": {
+        "witness": true,
+        "extension": "NO_CONTRADICTION",
+        "legacy": "NO_PINNED_WITNESS"
+      }
+    },
+    {
+      "step": "case 5 carrier-authored tampering (7 independent corruptions) → every one INVALID offline",
+      "ok": true,
+      "result": {
+        "tampered_branch": "EQUIVOCATION_PROOF_INVALID",
+        "foreign_genesis": "EQUIVOCATION_PROOF_INVALID",
+        "duplicated_branch": "EQUIVOCATION_PROOF_INVALID",
+        "wrong_relation": "EQUIVOCATION_PROOF_INVALID",
+        "ancestor_pair": "EQUIVOCATION_PROOF_INVALID",
+        "unknown_core_field": "EQUIVOCATION_PROOF_INVALID",
+        "unknown_branch_field": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 5b ingest independently verifies before recording — a forged core is refused and records nothing",
+      "ok": true,
+      "result": {
+        "status": 409,
+        "error": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 6 B → R3 → C: byte-identical transport, C verifies to the same digest offline",
+      "ok": true,
+      "result": {
+        "stored": true,
+        "bytes_identical": true,
+        "c_digest": "7643f6267d1cde3d"
+      }
+    },
+    {
+      "step": "case 6b a tampered carrier response fails C's offline verification",
+      "ok": true,
+      "result": {
+        "tamper": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 6c the carrier still has no authoritative state (no publications, no local quarantine concept)",
+      "ok": true,
+      "result": {
+        "carrier_publications": 0
+      }
+    },
+    {
+      "step": "case 7 withholding: one branch only → PARTIAL with no proof (limitation demonstrated, not hidden)",
+      "ok": true,
+      "result": {
+        "state": "PARTIAL",
+        "proof": null
+      }
+    },
+    {
+      "step": "case 8 D disagreement with comparable histories → content CONFLICT, no F1 proof",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "proof": null
+      }
+    },
+    {
+      "step": "case 8b D conflict AND a genuine history fork → the identity proof is emitted regardless of the D conflict",
+      "ok": true,
+      "result": {
+        "state": "CONFLICT",
+        "peers": [
+          "r1:VALID",
+          "r2:VALID"
+        ],
+        "relation": "SAME_SEQUENCE_DIVERGENT",
+        "reason": "valid P2 observations disagree on D"
+      }
+    },
+    {
+      "step": "case 9 three conflicting branches in different order → identical canonical pair, core bytes and digest; annotations never bind",
+      "ok": true,
+      "result": {
+        "digest": "a1a0886378bd4b82",
+        "pair": [
+          "1f8176ff",
+          "acb3ebc0"
+        ]
+      }
+    },
+    {
+      "step": "case 10 ingest quarantines; a new P2 import refuses with the dedicated code BEFORE any pin mutation",
+      "ok": true,
+      "result": {
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED",
+        "pin_before": 2,
+        "pin_after": 2,
+        "registry_unchanged": true
+      }
+    },
+    {
+      "step": "case 10b acknowledgment keeps the evidence, alters neither pin nor branch selection, and lifts quarantine",
+      "ok": true,
+      "result": {
+        "ack": true,
+        "still_quarantined": false,
+        "pin": 2
+      }
+    },
+    {
+      "step": "case 10c a second unacknowledged proof re-quarantines and blocks imports again",
+      "ok": true,
+      "result": {
+        "proofs": 2,
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED"
+      }
+    },
+    {
+      "step": "case 11 an offline process with no peers/config computes the identical digest and verdict",
+      "ok": true,
+      "result": {
+        "digest": "7643f6267d1cde3d",
+        "relation": "SAME_SEQUENCE_DIVERGENT"
+      }
+    },
+    {
+      "step": "case 11b an independent machine verifies the transported core to the identical digest (and rejects a tampered copy)",
+      "ok": true,
+      "result": {
+        "machine": "independent machine B",
+        "machine_platform": "linux",
+        "digest": "7643f6267d1cde3d",
+        "tamper": "EQUIVOCATION_PROOF_INVALID"
+      }
+    },
+    {
+      "step": "case 12 after >200 ordinary tasks: the proof record, the quarantine and the pin witness all survive; the import still refuses",
+      "ok": true,
+      "result": {
+        "tasks": 203,
+        "proofs": 2,
+        "quarantined": true,
+        "witness_identical": true,
+        "refusal": "PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED"
+      }
+    },
+    {
+      "step": "case 12b acknowledged evidence survives further churn; quarantine lifts by the acknowledgment, not by evidence loss",
+      "ok": true,
+      "result": {
+        "proofs": 2,
+        "quarantined": false,
+        "acknowledged": 2,
+        "stage": "STAGED"
+      }
+    }
+  ],
+  "_pinWitnessSha": "d9266e779d8abde708672e8f7eb566c96dd9d3c1cc172447cc3bd72b12088f22",
+  "cross_machine": {
+    "digest": "7643f6267d1cde3dc18757c68478ee5b3d55bf4fe5bc58b031e2d8e672e98ce7",
+    "relation": "SAME_SEQUENCE_DIVERGENT",
+    "publisher_id": "88c0fcb6df36057a70c46f0381dbe4157f070f33bec58895c696a9e2f7621c6e"
+  },
+  "cross_machine_verification": {
+    "machine_role": "independent machine B",
+    "platform": "linux",
+    "node": "v22.23.2",
+    "digest": "7643f6267d1cde3dc18757c68478ee5b3d55bf4fe5bc58b031e2d8e672e98ce7",
+    "relation": "SAME_SEQUENCE_DIVERGENT",
+    "tampered_copy": "EQUIVOCATION_PROOF_INVALID"
+  },
+  "verdict": "F1 MATRIX GREEN — equivocation evidence is portable, offline-verifiable, and locally actionable; carriers add zero authority"
+}

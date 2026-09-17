@@ -1,0 +1,27 @@
+{
+  "family": "D11",
+  "contacts": [
+    {
+      "name": "ava-archer",
+      "phone": "5084941425"
+    },
+    {
+      "name": "esme-ellery",
+      "phone": "9071777696"
+    },
+    {
+      "name": "esme-calder",
+      "phone": "2385348461"
+    },
+    {
+      "name": "cleo-calder",
+      "phone": "5238117234"
+    },
+    {
+      "name": "esme-calder",
+      "phone": "3539577502"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

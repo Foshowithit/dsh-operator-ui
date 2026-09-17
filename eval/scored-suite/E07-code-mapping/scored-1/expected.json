@@ -1,0 +1,35 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "C3",
+      "label": "trial"
+    },
+    {
+      "code": "B2",
+      "label": "pro"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "H8",
+      "label": "beta"
+    },
+    {
+      "code": "B2",
+      "label": "pro"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "X3",
+      "label": "UNKNOWN"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

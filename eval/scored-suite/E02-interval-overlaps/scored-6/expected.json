@@ -1,0 +1,11 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "ada",
+      "second": "eli"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

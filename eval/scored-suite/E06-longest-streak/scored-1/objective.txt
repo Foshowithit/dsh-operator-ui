@@ -1,0 +1,1 @@
+In checks.txt, each line is one check result (pass or fail). Report the LONGEST run of identical consecutive results as RESULT longest=<n> kind=<pass|fail> (if two runs are equally long, report the one of kind pass).

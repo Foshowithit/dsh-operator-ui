@@ -1,0 +1,8 @@
+# floor handoff — times may include seconds; ignore them
+
+SHIFT FARID  START 15:00  END 19:16:56
+SHIFT ELLIE  START 13:30  END 16:27
+SHIFT GUS  START 17:00  END 19:01:13
+SHIFT DEV  START 14:45  END 15:34:20
+
+note: swing coverage handled offline

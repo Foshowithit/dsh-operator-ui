@@ -1,0 +1,9 @@
+{
+  "family": "F06",
+  "version": "1.9.5",
+  "entries": [
+    "- nova: removed relay",
+    "- quartz: added bravo",
+    "- relay: removed alpha"
+  ]
+}

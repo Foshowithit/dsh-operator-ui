@@ -1,0 +1,1 @@
+In outline.txt, count the sub-entries under each top-level section (top-level lines have no leading whitespace) and report each section with its count, in file order, one per line, as RESULT section=<name> items=<count>.

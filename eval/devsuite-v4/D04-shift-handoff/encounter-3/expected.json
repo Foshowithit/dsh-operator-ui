@@ -1,0 +1,23 @@
+{
+  "family": "D04",
+  "shifts": [
+    {
+      "name": "ellie",
+      "minutes": 189
+    },
+    {
+      "name": "cleo",
+      "minutes": 196
+    },
+    {
+      "name": "farid",
+      "minutes": 151
+    },
+    {
+      "name": "hana",
+      "minutes": 132
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

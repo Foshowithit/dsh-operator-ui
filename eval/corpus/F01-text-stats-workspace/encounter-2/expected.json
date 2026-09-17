@@ -1,0 +1,30 @@
+{
+  "family": "F01",
+  "files": {
+    "README.txt": {
+      "lines": 5,
+      "words": 20,
+      "bytes": 118
+    },
+    "catalog-24.txt": {
+      "lines": 5,
+      "words": 28,
+      "bytes": 170
+    },
+    "index-75.txt": {
+      "lines": 4,
+      "words": 20,
+      "bytes": 119
+    },
+    "summary-83.txt": {
+      "lines": 4,
+      "words": 8,
+      "bytes": 46
+    }
+  },
+  "total": {
+    "lines": 18,
+    "words": 76,
+    "bytes": 453
+  }
+}

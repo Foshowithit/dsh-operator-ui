@@ -1,0 +1,7 @@
+diag.bin:76ab579b
+env.map:36734e8d
+hash.txt:a89dfd4d
+firmware.sig:feced234
+grub.cfg:02ea05bb
+core.pkg:a472a35a
+boot.img:186608cd

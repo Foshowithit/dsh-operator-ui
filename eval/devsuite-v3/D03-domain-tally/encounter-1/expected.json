@@ -1,0 +1,51 @@
+{
+  "family": "D03",
+  "tally": [
+    {
+      "domain": "eastfield.org",
+      "count": 2
+    },
+    {
+      "domain": "acmetools.com",
+      "count": 1
+    },
+    {
+      "domain": "acmetools.io",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.io",
+      "count": 1
+    },
+    {
+      "domain": "brightworks.org",
+      "count": 1
+    },
+    {
+      "domain": "cedarsupply.com",
+      "count": 1
+    },
+    {
+      "domain": "eastfield.com",
+      "count": 1
+    },
+    {
+      "domain": "graniteco.io",
+      "count": 1
+    },
+    {
+      "domain": "harborline.org",
+      "count": 1
+    },
+    {
+      "domain": "ironwood.com",
+      "count": 1
+    },
+    {
+      "domain": "juniperlabs.com",
+      "count": 1
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

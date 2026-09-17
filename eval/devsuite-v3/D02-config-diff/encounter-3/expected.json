@@ -1,0 +1,22 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "worker_count",
+      "old": "900",
+      "new": "jsonl"
+    },
+    {
+      "key": "cache_ttl",
+      "old": "https://relay.internal",
+      "new": "512m"
+    },
+    {
+      "key": "endpoint",
+      "old": "900",
+      "new": "info"
+    }
+  ],
+  "encounter": 3,
+  "role": "perturbation"
+}

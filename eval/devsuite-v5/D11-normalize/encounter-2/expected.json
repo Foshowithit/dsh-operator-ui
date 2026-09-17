@@ -1,0 +1,27 @@
+{
+  "family": "D11",
+  "contacts": [
+    {
+      "name": "ben-archer",
+      "phone": "3902281576"
+    },
+    {
+      "name": "ava-calder",
+      "phone": "2058282077"
+    },
+    {
+      "name": "esme-fox",
+      "phone": "8101326153"
+    },
+    {
+      "name": "farrow-calder",
+      "phone": "4265016646"
+    },
+    {
+      "name": "esme-brooks",
+      "phone": "7407601332"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

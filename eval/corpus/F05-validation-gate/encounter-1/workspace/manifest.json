@@ -1,0 +1,7 @@
+{
+  "name": "pkg-pixel",
+  "files": [
+    "a.txt",
+    "b.txt"
+  ]
+}

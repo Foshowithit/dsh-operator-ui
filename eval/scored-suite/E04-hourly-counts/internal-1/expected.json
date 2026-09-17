@@ -1,0 +1,35 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "09",
+      "count": "2"
+    },
+    {
+      "hour": "10",
+      "count": "2"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "15",
+      "count": "1"
+    },
+    {
+      "hour": "17",
+      "count": "2"
+    },
+    {
+      "hour": "18",
+      "count": "3"
+    },
+    {
+      "hour": "19",
+      "count": "1"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

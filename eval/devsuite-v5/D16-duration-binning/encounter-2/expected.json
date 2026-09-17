@@ -1,0 +1,23 @@
+{
+  "family": "D16",
+  "buckets": [
+    {
+      "bucket": "0-59s",
+      "count": "1"
+    },
+    {
+      "bucket": "60-119s",
+      "count": "3"
+    },
+    {
+      "bucket": "120-239s",
+      "count": "6"
+    },
+    {
+      "bucket": "240s+",
+      "count": "1"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

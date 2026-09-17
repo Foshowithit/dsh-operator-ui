@@ -1,0 +1,23 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "foxtrot",
+      "share": "33.8"
+    },
+    {
+      "category": "alpha",
+      "share": "25.6"
+    },
+    {
+      "category": "echo",
+      "share": "25.0"
+    },
+    {
+      "category": "bravo",
+      "share": "15.6"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

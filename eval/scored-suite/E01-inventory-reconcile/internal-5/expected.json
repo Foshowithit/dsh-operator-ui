@@ -1,0 +1,27 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "flange",
+      "system": "4",
+      "physical": "35"
+    },
+    {
+      "item": "dowel",
+      "system": "56",
+      "physical": "29"
+    },
+    {
+      "item": "jig",
+      "system": "57",
+      "physical": "6"
+    },
+    {
+      "item": "grommet",
+      "system": "3",
+      "physical": "24"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

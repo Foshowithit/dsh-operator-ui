@@ -1,0 +1,307 @@
+{
+  "generated_at": "2026-09-17T04:05:10.022Z",
+  "steps": [
+    {
+      "step": "R is a FRESH actor (zero publication records before anything)",
+      "ok": true,
+      "result": {
+        "publications": 0,
+        "blobs": 0
+      }
+    },
+    {
+      "step": "A.export",
+      "ok": true,
+      "result": {
+        "identity": "mac-a/csv-running-total",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "PUBLISH 0.1.0",
+      "ok": true,
+      "result": {
+        "publisher_id": "mac-a",
+        "name": "csv-running-total",
+        "version": "0.1.0",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "PUBLISH 0.1.1 (D1 ≠ D0)",
+      "ok": true,
+      "result": {
+        "D0": "f7c6c2bd44e4a766",
+        "D1": "d8220879fe6ebdae"
+      }
+    },
+    {
+      "step": "B is a FRESH consumer (registry 0, import tasks 0) before discovery",
+      "ok": true,
+      "result": {
+        "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+        "registry_caps": 0,
+        "taskstore_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "import_tasks": 0
+      }
+    },
+    {
+      "step": "DISCOVER returns 0.1.0 with D0 (record truth)",
+      "ok": true,
+      "result": {
+        "entry": {
+          "publisher_id": "mac-a",
+          "name": "csv-running-total",
+          "version": "0.1.0",
+          "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+          "published_at": "2026-09-17T04:05:14.203Z",
+          "kind": "workflow",
+          "task_signatures": [
+            "process",
+            "values.csv",
+            "order",
+            "report",
+            "running",
+            "total",
+            "row",
+            "result",
+            "cumulative",
+            "sum",
+            "csv",
+            "accumulate",
+            "addition"
+          ],
+          "tags": [
+            "process",
+            "values.csv",
+            "order",
+            "report",
+            "running",
+            "total",
+            "row",
+            "result",
+            "cumulative",
+            "sum",
+            "csv",
+            "accumulate",
+            "addition"
+          ],
+          "compatibility": [
+            "rcos"
+          ],
+          "publisher": "mac-a",
+          "evidence_summary": {
+            "verdicts": 1,
+            "reported": true
+          },
+          "truth": "RECORD"
+        }
+      }
+    },
+    {
+      "step": "N5a registry+task store unchanged after discovery",
+      "ok": true,
+      "result": {
+        "before": {
+          "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "registry_caps": 0,
+          "taskstore_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "import_tasks": 0
+        },
+        "afterDiscover": {
+          "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "registry_caps": 0,
+          "taskstore_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "import_tasks": 0
+        }
+      }
+    },
+    {
+      "step": "B fetch(D0) → recompute equals D0",
+      "ok": true,
+      "result": {
+        "recomputed": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "N5b registry+task store unchanged after fetch",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "P0 STAGE on fetched bytes",
+      "ok": true,
+      "result": {
+        "checks": [
+          "schema:true",
+          "integrity:implementation:true",
+          "integrity:package:true",
+          "compatibility:true",
+          "collision:true",
+          "staging:true"
+        ],
+        "local": {
+          "import": "STAGED",
+          "verification": "UNVERIFIED",
+          "routing": "INELIGIBLE",
+          "alias": "csv-running-total"
+        }
+      }
+    },
+    {
+      "step": "N5c registry unchanged after stage (only the expected staging record may appear)",
+      "ok": true,
+      "result": {
+        "before": {
+          "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "registry_caps": 0,
+          "taskstore_sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "import_tasks": 0
+        },
+        "afterStage": {
+          "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "registry_caps": 0,
+          "taskstore_sha": "96ce635897d45a1a8f080e08fd6d6824e624c62be5dd9f69da2ff4a916a992b2",
+          "import_tasks": 1
+        }
+      }
+    },
+    {
+      "step": "B-local verification (fixture hash recorded BEFORE execution)",
+      "ok": true,
+      "result": {
+        "recorded": "0e5eb75aed7aeb213eb9029f1d674fdb8749da5534665abac58084677befe3c6",
+        "verify_saw": "0e5eb75aed7aeb213eb9029f1d674fdb8749da5534665abac58084677befe3c6"
+      }
+    },
+    {
+      "step": "N5b registry unchanged after B-local verification",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "N5d after verification: exactly the same single staged record, now verified; registry unchanged",
+      "ok": true,
+      "result": {
+        "import_tasks": 1,
+        "registry_caps": 0
+      }
+    },
+    {
+      "step": "operator admission mutates the registry (the ONLY mutation)",
+      "ok": true,
+      "result": {
+        "caps": 1
+      }
+    },
+    {
+      "step": "B normal route → selected imported capability → authority gate intervened → 3/3 checks → SHIP",
+      "ok": true,
+      "result": {
+        "route": "csv-running-total",
+        "gate_observed": true,
+        "approvals": 1,
+        "checks": {
+          "terminal-status": true,
+          "declared-expectation": true,
+          "objective-satisfaction": true
+        },
+        "verdict": "SHIP",
+        "trust": "Objective satisfied"
+      }
+    },
+    {
+      "step": "N1 republish conflict; original D0 intact",
+      "ok": true,
+      "result": {
+        "error": "PUBLISH_CONFLICT",
+        "reason": "package_ref already bound to f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "N2 corrupt fetch → client recomputation refuses (FETCH_DIGEST_MISMATCH) BEFORE stage",
+      "ok": true,
+      "result": {
+        "fetched_from": "R /fetch/D0",
+        "recomputed": "217c610c4c54bdb3",
+        "expected": "f7c6c2bd44e4a766",
+        "refusal": "FETCH_DIGEST_MISMATCH",
+        "stage_calls_delta": 0
+      }
+    },
+    {
+      "step": "N1b concurrent publish race → exactly one binding",
+      "ok": true,
+      "result": {
+        "outcomes": [
+          "OK",
+          "PUBLISH_CONFLICT"
+        ],
+        "bound_D": "477598a24d29cca2",
+        "served_D": "477598a24d29cca2"
+      }
+    },
+    {
+      "step": "N3 valid-object substitution refused (record authority)",
+      "ok": true,
+      "result": {
+        "served_D": "f7c6c2bd44e4a766",
+        "truth": "INDEX_METADATA_STALE",
+        "reason": "index digest disagreed with the immutable record — serving record truth"
+      }
+    },
+    {
+      "step": "N3 companion: forged nonexistent D never served",
+      "ok": true,
+      "result": {
+        "served_D": "f7c6c2bd44e4a766",
+        "truth": "INDEX_METADATA_STALE"
+      }
+    },
+    {
+      "step": "N4 missing blob → honest FETCH_UNAVAILABLE",
+      "ok": true,
+      "result": {
+        "error": "FETCH_UNAVAILABLE",
+        "reason": "no blob for f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c"
+      }
+    },
+    {
+      "step": "N6 exact versions: 0.1.0→D0, 0.1.1→D1, no latest",
+      "ok": true,
+      "result": {
+        "p10": "f7c6c2bd44e4a766",
+        "p11": "d8220879fe6ebdae"
+      }
+    },
+    {
+      "step": "N7 percent-encoded identity aliases rejected, never normalized",
+      "ok": true,
+      "result": {
+        "version_encoded": "IDENTITY_NONCANONICAL",
+        "discover_encoded": "IDENTITY_NONCANONICAL",
+        "publisher_encoded": "IDENTITY_NONCANONICAL"
+      }
+    },
+    {
+      "step": "N8 compatibility= intersection filter (positive rcos / negative nodejs)",
+      "ok": true,
+      "result": {
+        "positive_hits": 2,
+        "negative_hits": 0
+      }
+    }
+  ],
+  "verdict": "P1 MATRIX GREEN — transport proven, trust boundary unmoved",
+  "fixture": {
+    "authored_b_locally": true,
+    "hash": "0e5eb75aed7aeb213eb9029f1d674fdb8749da5534665abac58084677befe3c6",
+    "frozen_before_execution": true
+  },
+  "actor_isolation": {
+    "A_home": "/tmp/opui-m1-home",
+    "R_store": "/tmp/flowrouter-R",
+    "B_home": "/tmp/opui-b-home",
+    "transport": "HTTP only (B fetched via /fetch, never read R blob store or A export dir)"
+  }
+}

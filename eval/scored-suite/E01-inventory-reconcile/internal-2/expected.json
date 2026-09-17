@@ -1,0 +1,37 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "clamp",
+      "system": "46",
+      "physical": "53"
+    },
+    {
+      "item": "base",
+      "system": "41",
+      "physical": "19"
+    },
+    {
+      "item": "hinge",
+      "system": "19",
+      "physical": "9"
+    },
+    {
+      "item": "dowel",
+      "system": "25",
+      "physical": "47"
+    },
+    {
+      "item": "endcap",
+      "system": "59",
+      "physical": "49"
+    },
+    {
+      "item": "grommet",
+      "system": "2",
+      "physical": "21"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

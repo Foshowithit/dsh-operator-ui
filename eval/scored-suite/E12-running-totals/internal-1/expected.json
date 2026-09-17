@@ -1,0 +1,43 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "54"
+    },
+    {
+      "row": "2",
+      "total": "104"
+    },
+    {
+      "row": "3",
+      "total": "149"
+    },
+    {
+      "row": "4",
+      "total": "187"
+    },
+    {
+      "row": "5",
+      "total": "206"
+    },
+    {
+      "row": "6",
+      "total": "248"
+    },
+    {
+      "row": "7",
+      "total": "307"
+    },
+    {
+      "row": "8",
+      "total": "371"
+    },
+    {
+      "row": "9",
+      "total": "395"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

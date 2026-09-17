@@ -1,0 +1,1 @@
+Sum each month column in grid.csv and report every column with its total, in header order, one per line, as RESULT column=<name> sum=<total>. Comment lines starting with # must be ignored.

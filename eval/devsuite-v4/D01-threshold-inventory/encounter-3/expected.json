@@ -1,0 +1,23 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "bearing",
+      "qty": 17
+    },
+    {
+      "item": "liner",
+      "qty": 14
+    },
+    {
+      "item": "plate",
+      "qty": 16
+    },
+    {
+      "item": "washer",
+      "qty": 14
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

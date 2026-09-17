@@ -1,0 +1,11 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "gus",
+      "second": "hal"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

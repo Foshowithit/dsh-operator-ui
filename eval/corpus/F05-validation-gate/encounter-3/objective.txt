@@ -1,0 +1,1 @@
+Validate this release against manifest.json: check that every file the manifest lists actually exists in the workspace. Report PASS if all present, otherwise FAIL with the missing file names.

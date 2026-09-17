@@ -1,0 +1,6 @@
+credit 99
+debit 19
+debit 19
+credit 82
+credit 14
+credit 22

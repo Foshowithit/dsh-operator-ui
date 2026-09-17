@@ -1,0 +1,19 @@
+{
+  "family": "E08",
+  "lines": [
+    {
+      "line": "1",
+      "text": "Deployment for north"
+    },
+    {
+      "line": "2",
+      "text": "Lead engineer: maria"
+    },
+    {
+      "line": "3",
+      "text": "Unit u63 covers 17 nodes."
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

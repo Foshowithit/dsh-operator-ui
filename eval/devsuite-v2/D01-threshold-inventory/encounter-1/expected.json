@@ -1,0 +1,15 @@
+{
+  "family": "D01",
+  "below": [
+    {
+      "item": "keyway",
+      "qty": 3
+    },
+    {
+      "item": "liner",
+      "qty": 1
+    }
+  ],
+  "encounter": 1,
+  "role": "acquisition"
+}

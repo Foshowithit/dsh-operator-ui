@@ -1,0 +1,11 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "cy",
+      "second": "hal"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

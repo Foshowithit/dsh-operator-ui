@@ -1,0 +1,15 @@
+# access events
+
+15:45 scan
+09:45 sync
+08:05 open
+11:35 scan
+21:20 close
+17:10 open
+21:05 scan
+13:45 close
+17:20 close
+10:55 close
+21:20 open
+12:45 sync
+# end

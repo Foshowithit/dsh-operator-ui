@@ -1,0 +1,27 @@
+{
+  "family": "E05",
+  "shares": [
+    {
+      "category": "delta",
+      "share": "38.1"
+    },
+    {
+      "category": "bravo",
+      "share": "23.9"
+    },
+    {
+      "category": "echo",
+      "share": "22.6"
+    },
+    {
+      "category": "alpha",
+      "share": "9.7"
+    },
+    {
+      "category": "charlie",
+      "share": "5.8"
+    }
+  ],
+  "role": "reuse",
+  "fixture_kind": "scored"
+}

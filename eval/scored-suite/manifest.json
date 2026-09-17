@@ -1,0 +1,1723 @@
+{
+  "protocol": "eval-v2-scored-suite",
+  "seed": 41803398,
+  "generatorVersion": "4.0.0",
+  "generatedAt": "2026-09-17T02:27:26.471Z",
+  "families": [
+    {
+      "code": "E01",
+      "name": "E01-inventory-reconcile"
+    },
+    {
+      "code": "E02",
+      "name": "E02-interval-overlaps"
+    },
+    {
+      "code": "E03",
+      "name": "E03-column-sums"
+    },
+    {
+      "code": "E04",
+      "name": "E04-hourly-counts"
+    },
+    {
+      "code": "E05",
+      "name": "E05-category-shares"
+    },
+    {
+      "code": "E06",
+      "name": "E06-longest-streak"
+    },
+    {
+      "code": "E07",
+      "name": "E07-code-mapping"
+    },
+    {
+      "code": "E08",
+      "name": "E08-template-render"
+    },
+    {
+      "code": "E09",
+      "name": "E09-top-n-ties"
+    },
+    {
+      "code": "E10",
+      "name": "E10-line-length-policy"
+    },
+    {
+      "code": "E11",
+      "name": "E11-radius-count"
+    },
+    {
+      "code": "E12",
+      "name": "E12-running-totals"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "E01-inventory-reconcile/internal-1",
+      "family": "E01",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "physical.csv": "5b2c2da62bfb45dc5e020190397cadb816ae6affb68e535288bd8d0c3e3a1fed",
+        "system.csv": "db5f7d252a44ce5a1b6ea93d30947bfea2a85c5d436ac9753852881f952e4a8e"
+      },
+      "objective_sha256": "4d539267da3b0cf19ccbaf54f6ddbca9c81bbfb54102f46a572961f05472f2f9",
+      "expected_sha256": "cedc1b3c062bf3ecaf53de153372b56199752e556dbb283b628dcd79c918559e"
+    },
+    {
+      "id": "E01-inventory-reconcile/internal-2",
+      "family": "E01",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "counted.csv": "e81b645c434b3bcd74d34fa45ea01b9409a426e02ba0ee56da1f460ffb32d0f8",
+        "records.csv": "3e27ca7ab27ac808076b5b3348dae21c2d1550196d0f9078e793cdee11ec8c85"
+      },
+      "objective_sha256": "6820413fd67d70d776269f7eb8c281d8348760bbc04bf4a1fbe6168980032371",
+      "expected_sha256": "885765ebd43a6ef537349be456199cef2fafd2d18e398bc12e7c8259bae38246"
+    },
+    {
+      "id": "E01-inventory-reconcile/internal-3",
+      "family": "E01",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "physical.csv": "1b0e3b02de06ca6295c3e0e28046ed6c013fae8569c74de626f1849ec2448bdb",
+        "system.csv": "41df48fdce1bc619cbb2ec316eaf441f788a0824d38ffe19a275778b0d30a78d"
+      },
+      "objective_sha256": "d581134eb176336a731686d103baf37d3f9494d06d73e5f1bb03b224fe8bf839",
+      "expected_sha256": "dd1aa720b8517af0ccd31bba5c207d9397aa513deff7918c9ec69193dd6f6264"
+    },
+    {
+      "id": "E01-inventory-reconcile/internal-4",
+      "family": "E01",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "physical.csv": "e750f18c1d255c11df93231d6a4652c333cfeffb21eade4b6c4c94f920e2f1c0",
+        "system.csv": "c840da3b8da905d26376014992ae6e367579999dd0a4ac644c47f45148a985e6"
+      },
+      "objective_sha256": "cb1b0128cab2218077fdd79d35f34beacf9b31bb12fde24ef833d095d2ee1f99",
+      "expected_sha256": "4aa01eb86035983274f924f0de9f61c16948318a9affcbd9728c4b3c80c5a4b4"
+    },
+    {
+      "id": "E01-inventory-reconcile/internal-5",
+      "family": "E01",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "count-notes.txt": "c80ee72eab90db788d74f19a48b798e96e698b2e327e87bd5baa9e0deed593fd",
+        "physical.csv": "f5fd501ec9ecd4b8bbdd4112acd497e47f206bec9542f7a2e10e76ea4750eb90",
+        "system.csv": "fb77aeb9cf787ce66b02b30c0653a0d6947f9be45cd22ab36c09ac5bcf8df437"
+      },
+      "objective_sha256": "5ed8786960aaac82b67cfe9baee69af7814210d34778317235f7932e7408ccaf",
+      "expected_sha256": "3088435135a66c2e6ba0d332e78d40b65a680a854f56f8ab15a39e4c4e647bee"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-1",
+      "family": "E01",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "physical.csv": "b3f7aec11a0049469432fce097ce30e6dc4339201cabaa3c97ec5dffb1d12279",
+        "system.csv": "2b1e863995505337ba6e20c2eeddef838f3422460cc71236509848f4100ff796"
+      },
+      "objective_sha256": "a353745e69320c0543af117700b1454b19b676941f71f1ca8ef49b65c4a4633b",
+      "expected_sha256": "fc69898e6eb6c80421ab656d76652a386b3eceb1f92e14161c7cad1936693565"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-2",
+      "family": "E01",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "count-notes.txt": "c80ee72eab90db788d74f19a48b798e96e698b2e327e87bd5baa9e0deed593fd",
+        "physical.csv": "8465ff4b114a2540d5688fb2e3177a21aa3fef0d65b9811632848d248bf9e281",
+        "system.csv": "9e64a2f52b073642a670a5bd3139105bf40e089ec36ebb1c215b6680ec005fcd"
+      },
+      "objective_sha256": "5ed8786960aaac82b67cfe9baee69af7814210d34778317235f7932e7408ccaf",
+      "expected_sha256": "91ef7e7429e2672e5e74befdb25197d8aeb1af598d2016c0cb9b6086447750c4"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-3",
+      "family": "E01",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "physical.csv": "d570b9a748c272a6a3ccc2bcdec64aa4f10c29a9f31abc6730e8670e451a370c",
+        "system.csv": "39293158d04fc3dbf950af3ec8e5657c4d10d4306e3754496e06fb40ef49008e"
+      },
+      "objective_sha256": "cb1b0128cab2218077fdd79d35f34beacf9b31bb12fde24ef833d095d2ee1f99",
+      "expected_sha256": "211c2aa26fa0a830ec75d3566b1a86a479367abe1898adc5bf032f84dba11f3f"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-4",
+      "family": "E01",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "count-notes.txt": "c80ee72eab90db788d74f19a48b798e96e698b2e327e87bd5baa9e0deed593fd",
+        "physical.csv": "5dea41ae48ab918bbf926a5756bb6728bc1761a5e74e52259b78614a7722edf0",
+        "system.csv": "bdd45e95926975784cd2632217dd19a0a38d73af64b4b8f2c4425f8e8f54a7c6"
+      },
+      "objective_sha256": "5ed8786960aaac82b67cfe9baee69af7814210d34778317235f7932e7408ccaf",
+      "expected_sha256": "1c3ea7aa8f0634d07aed8086150225d8f8784debc752a607f69302434e9c60af"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-5",
+      "family": "E01",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "physical.csv": "637cf278d7c00a772c86d5e372babe99a32ed5bdc88f070b76a596bb601b5054",
+        "system.csv": "50f1a4688741e9aadddf818ba5e47fbfaff9e3c7ab850706d11f31beb99aa127"
+      },
+      "objective_sha256": "cb1b0128cab2218077fdd79d35f34beacf9b31bb12fde24ef833d095d2ee1f99",
+      "expected_sha256": "b09c147a9aee1b48ac43cf6a31b3b76aae00e70adbd78adf86dd0da3b36c8243"
+    },
+    {
+      "id": "E01-inventory-reconcile/scored-6",
+      "family": "E01",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "count-notes.txt": "c80ee72eab90db788d74f19a48b798e96e698b2e327e87bd5baa9e0deed593fd",
+        "physical.csv": "5e5ab6ff0cb8ac0b783f4fa500c896678c5e2679608481b4dd325bbc1fc96570",
+        "system.csv": "dbce728bdb0eb7f7199f846662050a2195df4e78e03808fb9b34a8940d029fa1"
+      },
+      "objective_sha256": "5ed8786960aaac82b67cfe9baee69af7814210d34778317235f7932e7408ccaf",
+      "expected_sha256": "8de47da96c8188a4cdab3cf0a0e425a84f7c7905a6de83b63131b158f28a1d72"
+    },
+    {
+      "id": "E02-interval-overlaps/internal-1",
+      "family": "E02",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "schedule.txt": "e8ebfcefd3a584be98349e3893937736a64d7580f227bbc2f263436f55d91bfc"
+      },
+      "objective_sha256": "d11ba4637e400ee59c363dd4281d61869dfd0a999a32486f432396c5155bd2ae",
+      "expected_sha256": "45e3242fd8ac0b15d935ad2207459b9a2fd267355a27bdff3bd5b29181c0c60b"
+    },
+    {
+      "id": "E02-interval-overlaps/internal-2",
+      "family": "E02",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "cover-plan.txt": "bb05003fde3cbeb2d7bc498ac38b8b5768c8fe39dcaa47eea275556adf9106f4"
+      },
+      "objective_sha256": "f99d8483fca37ff75d46e3be18b6634e48f8b8998f4add0596b6547d08f50e8b",
+      "expected_sha256": "bd0f74711fb5c654471d8890de69755320573e4dc8d9c64e388609838f6a78eb"
+    },
+    {
+      "id": "E02-interval-overlaps/internal-3",
+      "family": "E02",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "schedule.txt": "fc5e34ee9ca1bfc174f6d611f116dc33415b57befe8cddecb70f92d8cf5b9dc0"
+      },
+      "objective_sha256": "2c77cf598c5214fd34571fa2c9a298d85a09257cd0ccbad4ded811d5a649822a",
+      "expected_sha256": "d8039cf271a7ce8ab3297d0d496b2ea6af3ecf22df0902b767f2f7cc0a2130d7"
+    },
+    {
+      "id": "E02-interval-overlaps/internal-4",
+      "family": "E02",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "schedule.txt": "9b2564855dfcc60243625708b6f00faaddeeaf6b0ac5a8866b25f4bf275b770a"
+      },
+      "objective_sha256": "ede9c620dd23fa175e4a1687e0929a010927bf645384b0006eb7aa1dc89916cd",
+      "expected_sha256": "0f97b35b8df02656b9f7293ad98d117877e7f1e2b58ec284e6794d2770e461a8"
+    },
+    {
+      "id": "E02-interval-overlaps/internal-5",
+      "family": "E02",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "policy.txt": "49cc17e3571795f873bdafc172cebafe2ffc4e02f00a793a3451e86e364e8e16",
+        "schedule.txt": "7f5a73286e3f0516938994f4eafa13d374ac497b039e17d34cfa9935f38268c1"
+      },
+      "objective_sha256": "b453a7f6251f179149ab450e5d40cf7603411bfc42159f7fa8ec2297586f566f",
+      "expected_sha256": "0bde6003beb5372250873de22e29bf28984dc0743f96b7c3753fef574fb90a40"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-1",
+      "family": "E02",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "schedule.txt": "b55c30e3bc527b3465779846c75b820eb3b7ad82c932210b3dc8496302e775e5"
+      },
+      "objective_sha256": "d11ba4637e400ee59c363dd4281d61869dfd0a999a32486f432396c5155bd2ae",
+      "expected_sha256": "4168f5802405a1f74f2deac69c9077157b4bf679467677642fc0bd25b4461883"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-2",
+      "family": "E02",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "policy.txt": "49cc17e3571795f873bdafc172cebafe2ffc4e02f00a793a3451e86e364e8e16",
+        "schedule.txt": "4ba0f3a6974f56220501975fe3210d4b80786712bb5880bbf3ec9deee8836708"
+      },
+      "objective_sha256": "b453a7f6251f179149ab450e5d40cf7603411bfc42159f7fa8ec2297586f566f",
+      "expected_sha256": "ac8ccaa805679dda5b2ba25f3b3222a897b35323d82c45987512b9f77d62e7b4"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-3",
+      "family": "E02",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "schedule.txt": "0901f14dd6d13e77df5eda6f8ef8f6b4c4075efcaca4fee28b73004d45199ace"
+      },
+      "objective_sha256": "2c77cf598c5214fd34571fa2c9a298d85a09257cd0ccbad4ded811d5a649822a",
+      "expected_sha256": "26514fc580910ab1d1bfcf77e29be57174f9ab7e18bc8852cdfa666eab2e7abd"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-4",
+      "family": "E02",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "policy.txt": "49cc17e3571795f873bdafc172cebafe2ffc4e02f00a793a3451e86e364e8e16",
+        "schedule.txt": "1c307d68208a04ce7d72913d2c9d2cfc2386dbabec465133a6b0b6260a36596b"
+      },
+      "objective_sha256": "b453a7f6251f179149ab450e5d40cf7603411bfc42159f7fa8ec2297586f566f",
+      "expected_sha256": "2f06a2f3a3468e645979b1c1f68e35f8a0d68096d6328cda7ff25bd0368a4a4f"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-5",
+      "family": "E02",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "schedule.txt": "0351edab08c1d443cbf6b5c95ece17b8d9b109c3d85956f05f7c1332bf543194"
+      },
+      "objective_sha256": "2c77cf598c5214fd34571fa2c9a298d85a09257cd0ccbad4ded811d5a649822a",
+      "expected_sha256": "0e3c8b8c7f059c9778f721baa21fc8d571eb0988ad27b18056cf807f65b8ced8"
+    },
+    {
+      "id": "E02-interval-overlaps/scored-6",
+      "family": "E02",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "policy.txt": "49cc17e3571795f873bdafc172cebafe2ffc4e02f00a793a3451e86e364e8e16",
+        "schedule.txt": "a289ff7f6a5d3eeb6ae733f676d30b5c9e1365179eb1fcbcc7a15b53c3ee9a89"
+      },
+      "objective_sha256": "b453a7f6251f179149ab450e5d40cf7603411bfc42159f7fa8ec2297586f566f",
+      "expected_sha256": "837ee7158d09558bba1c7b89f96dc17ebe65f6ef7a975a337aca9dcde7ffe6f3"
+    },
+    {
+      "id": "E03-column-sums/internal-1",
+      "family": "E03",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "grid.csv": "ee3ec86a4903f768931f77b5c520f2dd4ec59b2dc866bfa24ec7bd28f1960a65"
+      },
+      "objective_sha256": "3b306312453f6e35b8c615669e56d58d9034f08ea83c38fa27d7d4dda69900b7",
+      "expected_sha256": "563dd6d813e181dbc35fec860d36e3d825b3fd4e070edf2c04bcba75bea73584"
+    },
+    {
+      "id": "E03-column-sums/internal-2",
+      "family": "E03",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "quarter-grid.csv": "5ea872e4de2d776862b075542b1723f0ec42246107cb9ec98a269300ff826734"
+      },
+      "objective_sha256": "5ea0c40f2114ca6eed8be8730f2863b09c50510a115331c4629503b412e9f2b1",
+      "expected_sha256": "148a3bb452f491bf92f4db3b24a7e39f957b77824e2069a1aa33b98ad44dde85"
+    },
+    {
+      "id": "E03-column-sums/internal-3",
+      "family": "E03",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "grid.csv": "48d49bc9c72bec2f42c40f4131cabfc1f64250a083713efdf2da197f1c2aa5eb"
+      },
+      "objective_sha256": "5ecb083fe48a85bb977e581d91146ddcaa4c065203fd9f75198297b9fc313eed",
+      "expected_sha256": "7207e82751b4b65b7eaf2f2b45ab252444cc74e6e32620c168c33325c66c8e1a"
+    },
+    {
+      "id": "E03-column-sums/internal-4",
+      "family": "E03",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "grid.csv": "a7dc7afac0b2bd67a1f5b7ff06007d2a6cdaff198cb872b81c1ad539a5a38c02"
+      },
+      "objective_sha256": "5ecb083fe48a85bb977e581d91146ddcaa4c065203fd9f75198297b9fc313eed",
+      "expected_sha256": "b05166a03037ee64429457d727609cf9b7495a8d510825b653614a99f96f82af"
+    },
+    {
+      "id": "E03-column-sums/internal-5",
+      "family": "E03",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "grid.csv": "8408decee57e4e8a9a4dd676906b9d353dc8940be6ab592931d44d4ee777ed93",
+        "legend.txt": "34b00689cf8c60723360842c7c7fc5d204fbea500b50546228d3ce0a8a82c222"
+      },
+      "objective_sha256": "1b88fb5693fdae8ea04e9928f716822ea9a869f37c49c1ec26bf85a2d841deed",
+      "expected_sha256": "c647d803d14e1447c301486ee3104380e95ca4da8cca170343573f281611ff88"
+    },
+    {
+      "id": "E03-column-sums/scored-1",
+      "family": "E03",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "grid.csv": "8ddae231d0935b65379ccf9e6c1196dd5bccefafa3bc129ac9891b1a83235509"
+      },
+      "objective_sha256": "3b306312453f6e35b8c615669e56d58d9034f08ea83c38fa27d7d4dda69900b7",
+      "expected_sha256": "6b0286cff1d0e5670f5e559c27afcf0f93f731965d54fde7f724df8e7d3f0c23"
+    },
+    {
+      "id": "E03-column-sums/scored-2",
+      "family": "E03",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "grid.csv": "dcb16aa8652757a9f1bbeed9fa8f5458fbc63a9de0c2709c636e9df49483760d",
+        "legend.txt": "34b00689cf8c60723360842c7c7fc5d204fbea500b50546228d3ce0a8a82c222"
+      },
+      "objective_sha256": "1b88fb5693fdae8ea04e9928f716822ea9a869f37c49c1ec26bf85a2d841deed",
+      "expected_sha256": "283231af45c1a3258ef9ab44a20260b2d8533adc3a500eb25b84088bf69ed73a"
+    },
+    {
+      "id": "E03-column-sums/scored-3",
+      "family": "E03",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "grid.csv": "e25e27e46713045435c0607e69ac93d76f216bbcfe8c7251329f67ee09290015"
+      },
+      "objective_sha256": "5ecb083fe48a85bb977e581d91146ddcaa4c065203fd9f75198297b9fc313eed",
+      "expected_sha256": "7a68fba3b988c098d67eb3a189981151e794f5b9ee452fc61963654401bfd11c"
+    },
+    {
+      "id": "E03-column-sums/scored-4",
+      "family": "E03",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "grid.csv": "82f2f3e4596d380b7b5cc5de3ba87aa27da81b543f38df96ecd16ebfe265eaee",
+        "legend.txt": "34b00689cf8c60723360842c7c7fc5d204fbea500b50546228d3ce0a8a82c222"
+      },
+      "objective_sha256": "1b88fb5693fdae8ea04e9928f716822ea9a869f37c49c1ec26bf85a2d841deed",
+      "expected_sha256": "e59f2f77fa0e63767d9356e03fe82f9b968e16b7b63e1e41e6e189c8ad33795c"
+    },
+    {
+      "id": "E03-column-sums/scored-5",
+      "family": "E03",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "grid.csv": "3f23279ddfe01cf6e23c37ec2c2806685f084ed691b47560d22de3656449fd10"
+      },
+      "objective_sha256": "5ecb083fe48a85bb977e581d91146ddcaa4c065203fd9f75198297b9fc313eed",
+      "expected_sha256": "1a51ea1941b2d5bdbd459fca4d02fe90dee3b037aea143f09ac10805286c3c4a"
+    },
+    {
+      "id": "E03-column-sums/scored-6",
+      "family": "E03",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "grid.csv": "a7edae1d61e8df51a999acfb8b3d96f7ffba3feda3e6dbc537fc7fa14e0918a5",
+        "legend.txt": "34b00689cf8c60723360842c7c7fc5d204fbea500b50546228d3ce0a8a82c222"
+      },
+      "objective_sha256": "1b88fb5693fdae8ea04e9928f716822ea9a869f37c49c1ec26bf85a2d841deed",
+      "expected_sha256": "463932de4d151c7efa726e043e8b064eddf7f61c7649643ceb80d311cc90237c"
+    },
+    {
+      "id": "E04-hourly-counts/internal-1",
+      "family": "E04",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "events.txt": "28cc700b5368c73a68fc45f004dbb5fa5b26f6efc921c4c01f35c1548ea14728"
+      },
+      "objective_sha256": "3d13d091422a652df0a5600a1dad2f89894792438611bb5526bf8d6a27b3199b",
+      "expected_sha256": "aae2cf23a4d6d3394316e215e2fbb695401388fac7e49163a559d79f971db649"
+    },
+    {
+      "id": "E04-hourly-counts/internal-2",
+      "family": "E04",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "access-feed.txt": "5a393537685bce651af2ae864d1ee06fae56109fca8d4384486d081837c440e9"
+      },
+      "objective_sha256": "aba121b9fe7f77e6f35a00016698a2431e961090ae8510a3094fc95d52480b4b",
+      "expected_sha256": "45e01f6449d8280d7c21c7d162dc3b9586294e06f919ece7a7f2e3cf9e1641fb"
+    },
+    {
+      "id": "E04-hourly-counts/internal-3",
+      "family": "E04",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "events.txt": "4f4ab827449e28063b9eb6ee07fb0c080c0c3effe1c7ef2bd0084e0e453093c3"
+      },
+      "objective_sha256": "4af57c5874609e20a936f02d24d2fd740aadc2072d785fcf158840f80a37f87e",
+      "expected_sha256": "ef942c3ba9016eee752ccd7cf0fa92c6054f9f96fc35b0aee3f2bdd51f9a68fd"
+    },
+    {
+      "id": "E04-hourly-counts/internal-4",
+      "family": "E04",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "events.txt": "36965bf2775e791a1ff2c46bc8094595837dfa130ebf1c8de78bc52fd5d449dc"
+      },
+      "objective_sha256": "4af57c5874609e20a936f02d24d2fd740aadc2072d785fcf158840f80a37f87e",
+      "expected_sha256": "835322985c2bb1f4956fb5414f21648604b4b18256dec9be519ca89fd70ffb51"
+    },
+    {
+      "id": "E04-hourly-counts/internal-5",
+      "family": "E04",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "events.txt": "9539a1202a7723a13f7736f1813e4f1e4f447756854b20e3ac05c7d492012de9",
+        "note.txt": "25f6b8c9ee36fb6396875e8e70cf05999664328210f6b666fe9e2ed150b825dd"
+      },
+      "objective_sha256": "dc9b483ef9dd04042fcd34a39ae6ef14cf7da1ec7d8f77fa54b863cea873f007",
+      "expected_sha256": "fe89412de0752e715eb49bfa6abcb9d860dca5ea67a901a389597c52b5fe6cb1"
+    },
+    {
+      "id": "E04-hourly-counts/scored-1",
+      "family": "E04",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "events.txt": "4fe7d9b2f7e0f0111a747ab3ceda439de13fafa214c5ca3eeece72a7b9d19e3b"
+      },
+      "objective_sha256": "3d13d091422a652df0a5600a1dad2f89894792438611bb5526bf8d6a27b3199b",
+      "expected_sha256": "9bf1798ae81675d955abb8b7628b82dea3a79b2df823adefcb020f9df72fb604"
+    },
+    {
+      "id": "E04-hourly-counts/scored-2",
+      "family": "E04",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "events.txt": "646b352b5bbc3dc216d9fffb4cc364f21e09140bb6f0baa46ffa0564362a6f11",
+        "note.txt": "25f6b8c9ee36fb6396875e8e70cf05999664328210f6b666fe9e2ed150b825dd"
+      },
+      "objective_sha256": "dc9b483ef9dd04042fcd34a39ae6ef14cf7da1ec7d8f77fa54b863cea873f007",
+      "expected_sha256": "83957e59656603c4f5474925d95bc3750d7951abbc970911fe07047e205ee569"
+    },
+    {
+      "id": "E04-hourly-counts/scored-3",
+      "family": "E04",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "events.txt": "5dbdb3aaa4e5f0b686c6fa6cbff42bbcdc7bf776e9c4f1dc56dcaa17be2f281b"
+      },
+      "objective_sha256": "4af57c5874609e20a936f02d24d2fd740aadc2072d785fcf158840f80a37f87e",
+      "expected_sha256": "9865f99d32d826e3b0e418fd4f9e99816b6ed0e7e6954e95454f2b0df145856b"
+    },
+    {
+      "id": "E04-hourly-counts/scored-4",
+      "family": "E04",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "events.txt": "26ebaa44896edecaa64cad271f600b71bb523774c5bb32fd128027066e5346f2",
+        "note.txt": "25f6b8c9ee36fb6396875e8e70cf05999664328210f6b666fe9e2ed150b825dd"
+      },
+      "objective_sha256": "dc9b483ef9dd04042fcd34a39ae6ef14cf7da1ec7d8f77fa54b863cea873f007",
+      "expected_sha256": "865dbd5058cbef3cbe2f150c9c0421ee72ac6be8dc049f4c1cac0bbcc5c43cc9"
+    },
+    {
+      "id": "E04-hourly-counts/scored-5",
+      "family": "E04",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "events.txt": "fcdc35f8ad38c64d35647abecc5e4be3ad768b62f252b6d9223cf001351dc973"
+      },
+      "objective_sha256": "4af57c5874609e20a936f02d24d2fd740aadc2072d785fcf158840f80a37f87e",
+      "expected_sha256": "6620aeb269b517bd91202dc6d3f1a9aa6fb46b26085391ee012b7983a9818f45"
+    },
+    {
+      "id": "E04-hourly-counts/scored-6",
+      "family": "E04",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "events.txt": "fb2edde0c4ed028a943a7807b148758b558381531fb547f02aaae0c090932374",
+        "note.txt": "25f6b8c9ee36fb6396875e8e70cf05999664328210f6b666fe9e2ed150b825dd"
+      },
+      "objective_sha256": "dc9b483ef9dd04042fcd34a39ae6ef14cf7da1ec7d8f77fa54b863cea873f007",
+      "expected_sha256": "02e0755eb793e41ac40fedacb2cd094312fec441c6472b13f60be00ab53644b4"
+    },
+    {
+      "id": "E05-category-shares/internal-1",
+      "family": "E05",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "visits.csv": "cf5affeac357bd972af0c90b61a79c279556ece1a09bc36208959b2249e26547"
+      },
+      "objective_sha256": "163f9a6d84ddbd7ca869f7cd7558727ffa4d3b57d226156389e547921dc05a91",
+      "expected_sha256": "fd3c47b4a0f0be919bb9ef9c578eae5bec96888ab10ba9487e8d08bb5d436fab"
+    },
+    {
+      "id": "E05-category-shares/internal-2",
+      "family": "E05",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "visits-by-channel.csv": "5fbfc6ff46874c16caf8f16f101f972890843873abec4c0bebd360720406d882"
+      },
+      "objective_sha256": "89443f79bf1057d6c4676599aee858e8ab39d7b1b3a50e0a883bf77fa3e12ace",
+      "expected_sha256": "487890911983c76d009899824d556ffffd83b4199d7b8ca9c638b768d2481b8a"
+    },
+    {
+      "id": "E05-category-shares/internal-3",
+      "family": "E05",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "visits.csv": "a5a5998208cbb876f7548b6237788e606bbc714bb718727f585bca920ee5c4d9"
+      },
+      "objective_sha256": "fda492166bfc25f2c8a4cf7dbbc19286a8ea6db65d6a45fb41c5132c7ecf8c4f",
+      "expected_sha256": "39107c4d5073a8f6bea36d29274a98d5ac95c216ee4497b5067c40d63fcb7039"
+    },
+    {
+      "id": "E05-category-shares/internal-4",
+      "family": "E05",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "visits.csv": "801d90df4cf71faa9a6491b4f26838d340ebe3e4a11f1a1d8cfbc8bd71931de5"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "007c37b1b7f48c9be949a3c9e05b57e4c8feef7aef63409ba6f11bd8efa473ae"
+    },
+    {
+      "id": "E05-category-shares/internal-5",
+      "family": "E05",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "readme.txt": "15d119839bae0c7370ae950438b2a997c252cf1c669fba148e96c3079957f473",
+        "visits.csv": "58a98881286750f99ff4b690fd788137d2b83f599203a94aa6dabd62b9b919d0"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "7a71ae1d1d9e3c2db359aa02bcab053df6d9cbeb537e70a0334d58c06185746f"
+    },
+    {
+      "id": "E05-category-shares/scored-1",
+      "family": "E05",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "visits.csv": "5f320c970d6ebd5afec0279d011b08fd65c254ae7349f9a5d672449ad9b1a34d"
+      },
+      "objective_sha256": "c5d500ffcfe78abe628b9a6810a27a3c971b24a6d2f7b45ad524d80cfdf00fd4",
+      "expected_sha256": "9a74ada886c9acc3586005deeb0cd849a789f1024645bf5c25cf77b4b665a8ef"
+    },
+    {
+      "id": "E05-category-shares/scored-2",
+      "family": "E05",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "readme.txt": "15d119839bae0c7370ae950438b2a997c252cf1c669fba148e96c3079957f473",
+        "visits.csv": "9fc5e3257bd26c6ceac30087c6611d388b3659222e978ac5e0a790d2e1d36044"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "a310606a80f851bf54a0719b92ca9fd09f77bd52c73554093fabc0410c63cc97"
+    },
+    {
+      "id": "E05-category-shares/scored-3",
+      "family": "E05",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "visits.csv": "b3d3ad10fd2678bac3cac211e2f2441739afdb4cd3787a678314cd917c8f4760"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "c5468c718740d37984526e164b9e84005675d02dc5fe38135eba905e874df211"
+    },
+    {
+      "id": "E05-category-shares/scored-4",
+      "family": "E05",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "readme.txt": "15d119839bae0c7370ae950438b2a997c252cf1c669fba148e96c3079957f473",
+        "visits.csv": "d71cef6922dcc04e1ca45341ee0f404f912c6eea11c34fffbcc7441a0e8dd46c"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "d3486b67ff93b37bd35bb2f61eb3f87adca354f80d9a09ef362b35021ac46967"
+    },
+    {
+      "id": "E05-category-shares/scored-5",
+      "family": "E05",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "visits.csv": "9e9268215381f61fd3d4f5c17bceb048a65f931e54f2c318fe0286a81bd24ad6"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "0aae5e107d9d48118ac051a098990f4f39a36f1ed210f58b9f79f247fc61a17f"
+    },
+    {
+      "id": "E05-category-shares/scored-6",
+      "family": "E05",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "readme.txt": "15d119839bae0c7370ae950438b2a997c252cf1c669fba148e96c3079957f473",
+        "visits.csv": "d0c0fda8dbb56b4ba99412ba7e18c483384020a2563e9cc32eafb92b902578cb"
+      },
+      "objective_sha256": "32406a563f30480266d30f0c3f3293dfd3781bc6fcfb42aaaa5db584f98483bf",
+      "expected_sha256": "f82786f7509ef1d6cb0d0e75a3d21cb2c5919be2e2e399d43f495cf63f66162c"
+    },
+    {
+      "id": "E06-longest-streak/internal-1",
+      "family": "E06",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "checks.txt": "8a847c35b7fdca22eee5e5e0fc0d0400b7aa9b474fed1999a8c3087bbbd5377f"
+      },
+      "objective_sha256": "4d5f02bcab402717f49024b0ab0c001fdab13ae10066331e2ab8bf169ca806cf",
+      "expected_sha256": "b0d13b581e967467f22ad1c8f326b7643beacb2fd654ec09394b3d7d3583c4e2"
+    },
+    {
+      "id": "E06-longest-streak/internal-2",
+      "family": "E06",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "build-results.txt": "28fa73bfaea447a407a6e7a773f4586fbde7f71fd9724e2a413a72320e984cb8"
+      },
+      "objective_sha256": "be3f598a8dab2161f44c17878211540f15649cdda421858cc894cf07274d87d7",
+      "expected_sha256": "a66c0e4cd4417a0d156649df063d7773ae97e14f4f235ba2d0543039027bc81c"
+    },
+    {
+      "id": "E06-longest-streak/internal-3",
+      "family": "E06",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "checks.txt": "001cf5c37518e29896a09335c40cb76cd1e25112eeb52af2ca63736328638719"
+      },
+      "objective_sha256": "b278587532ed99a342958e853b26e5e3369b8af000e917297d6fb9aaf95db253",
+      "expected_sha256": "261c039213bf2fbedb34d1c76b5ef1d3154f1f135988f67a7c3add30f30483af"
+    },
+    {
+      "id": "E06-longest-streak/internal-4",
+      "family": "E06",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "checks.txt": "996f6a0ba4a2d5789d95238690aa5f4c0bb95ce978f83d739fad710eede8c1f6"
+      },
+      "objective_sha256": "5dc8c6cca69c30f603ea040a9e7c658545956f1931458ec2d8f3329468e5fb9a",
+      "expected_sha256": "9c1f9a17455910e527177da7175512aeceacae3dda3964e519d0c314b4b0fc62"
+    },
+    {
+      "id": "E06-longest-streak/internal-5",
+      "family": "E06",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "checks.txt": "90bb9fe95a81927adb6dc8c0f57ab7e7b19d7bef03e1bc2a3dc188439d6bea1f",
+        "summary.txt": "5ae64dec260857568bafa80b2e6208667357901dce9727dc6821c48a632e63ca"
+      },
+      "objective_sha256": "44d7ddfb2670737278a5e84d18bfffbbebf77974b2dee5b3c51f349c1202a1c0",
+      "expected_sha256": "608d2df442a0e8fea7765cf996fd43671c825f3b5bef48cd879e91850fc587fc"
+    },
+    {
+      "id": "E06-longest-streak/scored-1",
+      "family": "E06",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "checks.txt": "850863613141add7207d76b99e1d9e48920d66ad2b35ae452244d61977b140b2"
+      },
+      "objective_sha256": "4d5f02bcab402717f49024b0ab0c001fdab13ae10066331e2ab8bf169ca806cf",
+      "expected_sha256": "8855efd280ea04635a0cc6e6db9984367716c139a252bf598ee99d7a3b87a447"
+    },
+    {
+      "id": "E06-longest-streak/scored-2",
+      "family": "E06",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "checks.txt": "27e8f7183cd02f538431321206b713c6abcdd10adcd6c8acabf17927c1eea259",
+        "summary.txt": "5ae64dec260857568bafa80b2e6208667357901dce9727dc6821c48a632e63ca"
+      },
+      "objective_sha256": "44d7ddfb2670737278a5e84d18bfffbbebf77974b2dee5b3c51f349c1202a1c0",
+      "expected_sha256": "e408a878367a298fb56c9adc9addb786fc0db0a6dcb7699e1c262560d34716c0"
+    },
+    {
+      "id": "E06-longest-streak/scored-3",
+      "family": "E06",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "checks.txt": "792053b76a26d5c7fdaf0bf486be42713c440ae8f8d51f3dad518dfa84413627"
+      },
+      "objective_sha256": "b278587532ed99a342958e853b26e5e3369b8af000e917297d6fb9aaf95db253",
+      "expected_sha256": "df5d67eb6aaa9bf4ce99879a2e2ea5398187379e3ca62c88ebd4808d06301359"
+    },
+    {
+      "id": "E06-longest-streak/scored-4",
+      "family": "E06",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "checks.txt": "9c0599ab3be405e2ded2c1c42af189d878acee66d249da2b189b86f86c049dff",
+        "summary.txt": "5ae64dec260857568bafa80b2e6208667357901dce9727dc6821c48a632e63ca"
+      },
+      "objective_sha256": "44d7ddfb2670737278a5e84d18bfffbbebf77974b2dee5b3c51f349c1202a1c0",
+      "expected_sha256": "d45b500c227b1ee1f8d47058d55b8b16a3fba3917c926e5ed1d013400bb45c90"
+    },
+    {
+      "id": "E06-longest-streak/scored-5",
+      "family": "E06",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "checks.txt": "c7a1de85e63b813ca78fa850ed54831f0978e7a512db11b4751f69fc435c670a"
+      },
+      "objective_sha256": "b278587532ed99a342958e853b26e5e3369b8af000e917297d6fb9aaf95db253",
+      "expected_sha256": "7688399ea10735576f7d45d0d8bdc0e07a4e98c7f139e48d0d7fbc49888ee95a"
+    },
+    {
+      "id": "E06-longest-streak/scored-6",
+      "family": "E06",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "checks.txt": "adbb5b4d157343c16250882bb0b34b0c22503e43f958eaf3c6021a6c9d44adb0",
+        "summary.txt": "5ae64dec260857568bafa80b2e6208667357901dce9727dc6821c48a632e63ca"
+      },
+      "objective_sha256": "44d7ddfb2670737278a5e84d18bfffbbebf77974b2dee5b3c51f349c1202a1c0",
+      "expected_sha256": "b6a9f737e2b0a7785ea8e2ad1315e9e3349c87424ca18325f00de1051a83b0fe"
+    },
+    {
+      "id": "E07-code-mapping/internal-1",
+      "family": "E07",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "codes.csv": "6120e37c5845172eb818e8b2467b6f63b27fde8d0ede4806eda26f0f37949e39",
+        "used.txt": "2acc4a70db1ed90b93c78ff784ffcfa2baa30c750aeddd1c6f0de2d6f5ecad64"
+      },
+      "objective_sha256": "11bdef54889bbe42849ecaa4c5eb98693ae7d92ae608bbde2dcdf5d0fbdef236",
+      "expected_sha256": "bc90c59462b87036c990b2bc8c89be9541f17be5916309962fdcbaa9fe52e75e"
+    },
+    {
+      "id": "E07-code-mapping/internal-2",
+      "family": "E07",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "licenses-used.txt": "d9e5e7cfd0478d5092157b8f0fc771172e630eb7ecf3b6d4895e05198ca2130c",
+        "plans.csv": "e62104c01e414df66d535e829edb702ab2e87158c553d9ac73b2a8595a23b244"
+      },
+      "objective_sha256": "6941e341669d855665c821e5e95364928423e9b9ba9c3b22451ac86ea5dde0fc",
+      "expected_sha256": "4dbd940f8169e4353fd6ffca3cbdd11357191b3cd21fae1a1b498f7ad08a863f"
+    },
+    {
+      "id": "E07-code-mapping/internal-3",
+      "family": "E07",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "codes.csv": "56a173e21b8cbff08f22e4fef4baedc20f270754673d4c0711769e25a2a7d642",
+        "used.txt": "b929cbed5f94e4de45c40086b2e5820b52b38c04c9f28a7e96b755d1b1c4e878"
+      },
+      "objective_sha256": "c924763b5281abde332df42a2bf6f3e5d26e99e7764026a9cc544b2c9c31c544",
+      "expected_sha256": "6f1823430cf13acc5fe6b34c9e4e3ef22fcc7663500d832e60157b47049a6732"
+    },
+    {
+      "id": "E07-code-mapping/internal-4",
+      "family": "E07",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "codes.csv": "1b13ebab8afd5fbea85a5ab14977992fc1db2cb8a08675116d989db48972d1a0",
+        "used.txt": "189b0761239f44fb0f3d61288b92af8e5f547ca4a47594ac9b6e350335b02cdd"
+      },
+      "objective_sha256": "be707012fb435902931d7252f37cb798782cbb377412cc460f805ec1e3e02dae",
+      "expected_sha256": "195e6e10565371d49aba96bd2b4ba1550fbd91467178611408b865971351ca76"
+    },
+    {
+      "id": "E07-code-mapping/internal-5",
+      "family": "E07",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "codes.csv": "f664f7539c99b58690755a3aa86cf230f0f6dbacb9bbe1ba984b7a2f43387d73",
+        "handbook.txt": "ef5bf8fb76ced7f5843cdbbfa1abe8cd61ca8134eed422fc0a211979d648b4b3",
+        "used.txt": "ace7f2eeb4998a6914c1fd2dea588a980dcf2090dd571bb4ada946d1d8cc2b62"
+      },
+      "objective_sha256": "4d1929ac04c0d00644ecdcca573c0120e6ebdd7a0f24577010d67f70eb6bd77f",
+      "expected_sha256": "1b9785f282ee0722b86ac31d1c72275eb2ef3ef7d657e003b26aec322f1e8e2b"
+    },
+    {
+      "id": "E07-code-mapping/scored-1",
+      "family": "E07",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "codes.csv": "fa170fce0669af7bc49a03fb4e51927e328851dd49470b2de7a3508426b5180b",
+        "used.txt": "3d125b153bb2ea39441e60ab1b2b27ba69fee42efb76a0c69e88e9f3e0a9b5ff"
+      },
+      "objective_sha256": "4f4f449b836f7480228004e33345acb1de7406ee73e528142b78012db84471a2",
+      "expected_sha256": "355be4bfa798ea12ce85a9c128b4d01e97a456123735b8600ed20d25f940c93a"
+    },
+    {
+      "id": "E07-code-mapping/scored-2",
+      "family": "E07",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "codes.csv": "1b00844230bd0e726cca4b1e8cb11f1b7079b892697719465c1ff42958b7d583",
+        "handbook.txt": "ef5bf8fb76ced7f5843cdbbfa1abe8cd61ca8134eed422fc0a211979d648b4b3",
+        "used.txt": "d1fcaf59ffa84963993dcc7c9176dee9458979fc60d257edd7243b0810a9c093"
+      },
+      "objective_sha256": "4d1929ac04c0d00644ecdcca573c0120e6ebdd7a0f24577010d67f70eb6bd77f",
+      "expected_sha256": "ec91e201c989b76e12ba982e5bc1007b9fde23e8f8ca94b199df9618eb219fcd"
+    },
+    {
+      "id": "E07-code-mapping/scored-3",
+      "family": "E07",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "codes.csv": "75bb44364c4d63897b5950e61a7b8e54a6c6ea7f5ad3b5eda48902734584b4f4",
+        "used.txt": "461e86930b15b7a4fa0f0cd4d3711eebc8b6b56b070109886d3bf4aeb50be7cb"
+      },
+      "objective_sha256": "be707012fb435902931d7252f37cb798782cbb377412cc460f805ec1e3e02dae",
+      "expected_sha256": "a7e66d9bf94c64e6c27eec8410f9d562d099d7334cd4608766f83ba6d80f5d02"
+    },
+    {
+      "id": "E07-code-mapping/scored-4",
+      "family": "E07",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "codes.csv": "3607a03ac44020009086ca8bcb3bab269e91e183a280fa66bf7e84018296a05e",
+        "handbook.txt": "ef5bf8fb76ced7f5843cdbbfa1abe8cd61ca8134eed422fc0a211979d648b4b3",
+        "used.txt": "c3bc2f49450f6abce43451334499ce8dc17f5890c56338c80863700d85cc8295"
+      },
+      "objective_sha256": "4d1929ac04c0d00644ecdcca573c0120e6ebdd7a0f24577010d67f70eb6bd77f",
+      "expected_sha256": "2ef83646619f90ac64acaba16da7111aea89e8e38f9206044cef1a9b98d74bdb"
+    },
+    {
+      "id": "E07-code-mapping/scored-5",
+      "family": "E07",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "codes.csv": "8ddfd630f04959b1b1a7047f18c77f18e0690db494365986b31a4cf93b93fd45",
+        "used.txt": "866c94ed39292b39532dbed9c42440c14fde385c391c40c3f1819e7d9d5e991e"
+      },
+      "objective_sha256": "be707012fb435902931d7252f37cb798782cbb377412cc460f805ec1e3e02dae",
+      "expected_sha256": "ffe24b4f0143b87cadf0a6ac66130041a880027048017d0a784acb1d8956ccb4"
+    },
+    {
+      "id": "E07-code-mapping/scored-6",
+      "family": "E07",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "codes.csv": "079b7654cd6269a1e0dd2e23ae5033ee3da996da6eab3fb3c02166defd68a135",
+        "handbook.txt": "ef5bf8fb76ced7f5843cdbbfa1abe8cd61ca8134eed422fc0a211979d648b4b3",
+        "used.txt": "2fea17fe4376fedf443cc615fd61901014f802bfb6fa2324123d5134caadffab"
+      },
+      "objective_sha256": "4d1929ac04c0d00644ecdcca573c0120e6ebdd7a0f24577010d67f70eb6bd77f",
+      "expected_sha256": "c996ea52dc99414484964b6ed7d14c8a7620ccba3cef038e193642fed4b33ded"
+    },
+    {
+      "id": "E08-template-render/internal-1",
+      "family": "E08",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "template.txt": "b95b514725cdd0608e72dcd4c0084640588a9f7262005edd169b54e619a648dd",
+        "vars.txt": "18f1be3cfa82e1ea3893e8118aafc795cf8ac5dba98de0b43394441a8d7ebe03"
+      },
+      "objective_sha256": "18e33b6a48b3f2436f6cb60ede5eb1c10717a8a4c7bdc60fdbdf261db289b7c3",
+      "expected_sha256": "318cafa312bac21a5d98d19e8f9537354c54870412333ddbc23dcffab2c12a08"
+    },
+    {
+      "id": "E08-template-render/internal-2",
+      "family": "E08",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "deploy-card.txt": "b95b514725cdd0608e72dcd4c0084640588a9f7262005edd169b54e619a648dd",
+        "deploy-values.txt": "92a2233fe1c5f2929c06a009372ef4e214fce8982958667642a37d61f4b70640"
+      },
+      "objective_sha256": "ac2245805839ab6d7efe8e2e518d22d7ab8c7772e19196520f188c51d8f114e4",
+      "expected_sha256": "d8f42cfcbf595023126b810f47c89b77c3d0bed17168a372547e845868357725"
+    },
+    {
+      "id": "E08-template-render/internal-3",
+      "family": "E08",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "template.txt": "1a6a6bff8f0cc4ef450477706dde4290cb2775e2e41628baac93494db86aba24",
+        "vars.txt": "c87dd21b627b06b1154fb7ec06b66be7372f4bba13f77a6e2246a55c67193ad8"
+      },
+      "objective_sha256": "c4bc0e1af90a055f368f258888ac5ec2c39465e8510bb77a89a29e9e5e039ac4",
+      "expected_sha256": "a1755b3d4c1945a6a072e8c414a975ee749777488f95227dbc15834887335088"
+    },
+    {
+      "id": "E08-template-render/internal-4",
+      "family": "E08",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "template.txt": "1a6a6bff8f0cc4ef450477706dde4290cb2775e2e41628baac93494db86aba24",
+        "vars.txt": "42d07bac42a9168897c90f300440c107ab1071f4a25dfd1336c68119f5ac58aa"
+      },
+      "objective_sha256": "c4bc0e1af90a055f368f258888ac5ec2c39465e8510bb77a89a29e9e5e039ac4",
+      "expected_sha256": "8658c5c549e18ef3fd89e6e48d794679504d2a60303284d5f6f8ae7fa5c2fb1a"
+    },
+    {
+      "id": "E08-template-render/internal-5",
+      "family": "E08",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "style.txt": "b9502dbfd6e5c3f2c148c9a783cb89a3773865810bfc98b15770d7f286167c92",
+        "template.txt": "1a6a6bff8f0cc4ef450477706dde4290cb2775e2e41628baac93494db86aba24",
+        "vars.txt": "ccdae05ef4efd830a746ed3242d0323a19278c7d8e293f7064468911c67a616a"
+      },
+      "objective_sha256": "87149e466276da3beb2e3bc19ad6c919a8025114d91e97ef5e64eecff920d894",
+      "expected_sha256": "ae7464a13a6b660d32d8740337fc0d822ac45259c5c0f6c567ae9009b48ab065"
+    },
+    {
+      "id": "E08-template-render/scored-1",
+      "family": "E08",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "template.txt": "187dc11454ecc12c636434f107df5362798bbbab61d9808829b2b093b727d533",
+        "vars.txt": "6675873e27bf48963e9dc783839a6c3684efd2c1d1b831e2cc9fb7f68d968964"
+      },
+      "objective_sha256": "18e33b6a48b3f2436f6cb60ede5eb1c10717a8a4c7bdc60fdbdf261db289b7c3",
+      "expected_sha256": "127c1ca96013c48394b780671ac60459e8d35ec2df3f67a509876929437867d1"
+    },
+    {
+      "id": "E08-template-render/scored-2",
+      "family": "E08",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "style.txt": "b9502dbfd6e5c3f2c148c9a783cb89a3773865810bfc98b15770d7f286167c92",
+        "template.txt": "d00e22b8f8339114dce6ac6d8a1bcfb87c1d3b80a8c7f880d6c4e061b9db8556",
+        "vars.txt": "ae8b75f812b9f46fc9260d6d4d53522f6c65bdfe8e73bbe3f0ce9b6dc0b4d56f"
+      },
+      "objective_sha256": "87149e466276da3beb2e3bc19ad6c919a8025114d91e97ef5e64eecff920d894",
+      "expected_sha256": "7ced78666e23c47be45a5a9ef31ad990d43c5401c644634de28328f1ff231524"
+    },
+    {
+      "id": "E08-template-render/scored-3",
+      "family": "E08",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "template.txt": "d00e22b8f8339114dce6ac6d8a1bcfb87c1d3b80a8c7f880d6c4e061b9db8556",
+        "vars.txt": "5aa3d3b9c65583a9c3cf36b869e479fd3529c1ccdd064d118557410a08f59e6c"
+      },
+      "objective_sha256": "c4bc0e1af90a055f368f258888ac5ec2c39465e8510bb77a89a29e9e5e039ac4",
+      "expected_sha256": "a09a353e94f7c67e453acf4de27b02293232f8cda2fa2198433395f269d62ee6"
+    },
+    {
+      "id": "E08-template-render/scored-4",
+      "family": "E08",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "style.txt": "b9502dbfd6e5c3f2c148c9a783cb89a3773865810bfc98b15770d7f286167c92",
+        "template.txt": "d00e22b8f8339114dce6ac6d8a1bcfb87c1d3b80a8c7f880d6c4e061b9db8556",
+        "vars.txt": "5d19030c2ffb5019d2a246ba0c357cf3f6ce6a1598d5b6cc266fde15a51983a6"
+      },
+      "objective_sha256": "87149e466276da3beb2e3bc19ad6c919a8025114d91e97ef5e64eecff920d894",
+      "expected_sha256": "6d6b47e352e6e08188dac31e8f48ea6244e574097c92bedf8abc50778c4e0414"
+    },
+    {
+      "id": "E08-template-render/scored-5",
+      "family": "E08",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "template.txt": "d00e22b8f8339114dce6ac6d8a1bcfb87c1d3b80a8c7f880d6c4e061b9db8556",
+        "vars.txt": "2c1abc911da0f1fd5ac6f6292094060e270a1744863e1770407e97f7918a396a"
+      },
+      "objective_sha256": "c4bc0e1af90a055f368f258888ac5ec2c39465e8510bb77a89a29e9e5e039ac4",
+      "expected_sha256": "3de015e4a7c2e5dadacba9981e36b786d7f0ced7323f4e9aab3da49eb7ff56a2"
+    },
+    {
+      "id": "E08-template-render/scored-6",
+      "family": "E08",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "style.txt": "b9502dbfd6e5c3f2c148c9a783cb89a3773865810bfc98b15770d7f286167c92",
+        "template.txt": "d00e22b8f8339114dce6ac6d8a1bcfb87c1d3b80a8c7f880d6c4e061b9db8556",
+        "vars.txt": "7231adc0f2d546b2381dcf3a7f0882069384d4f393d96756170194bab70ed75f"
+      },
+      "objective_sha256": "87149e466276da3beb2e3bc19ad6c919a8025114d91e97ef5e64eecff920d894",
+      "expected_sha256": "25956ee363ec7698f7ccd591a022b9f58934f27181f3b45860628b9f89534ed8"
+    },
+    {
+      "id": "E09-top-n-ties/internal-1",
+      "family": "E09",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "scores.csv": "759acc1195b1615fc6e0828890c333989b538fd0553cacf55aa5082491b72394"
+      },
+      "objective_sha256": "c3a801eadad9618028e611bb5f667a290c3ce87ffa520a8bd986eb7046114728",
+      "expected_sha256": "16ccb9d51472fbd8506e9010768cda1e916a8bc82ebf90770372fcd16817a42f"
+    },
+    {
+      "id": "E09-top-n-ties/internal-2",
+      "family": "E09",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "leaderboard.csv": "e424e4c57318bfb6ddcd432f91b8aad5c5907e04c1eb2d8c1f090370ee42dc79"
+      },
+      "objective_sha256": "c486fda7a167fd8041259638821d6c2aeab8a54ca41a1f0cea19140c1cc2219f",
+      "expected_sha256": "1096d53dbdbd3c30106dcf09e8d111340ce8026a1057ad7cdc41814b312b6ec0"
+    },
+    {
+      "id": "E09-top-n-ties/internal-3",
+      "family": "E09",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "scores.csv": "e94acdef43aec95c46b5a6836555b9ee378a2b00e2ad9fb1b1366ff82c3bfc7a"
+      },
+      "objective_sha256": "745fd013d485061e0ab19df9d2b229f784b78bbeca43c6403695edb8f4078282",
+      "expected_sha256": "d82828cb74abc6fe9950588ab57695b3301f3763e235c8c71c334d4512f3a3e1"
+    },
+    {
+      "id": "E09-top-n-ties/internal-4",
+      "family": "E09",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "scores.csv": "319712bea3f3b8f8486d91325ed1345b179388c0dc5a5d4d2a6fcfa3fd0b4959"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "5d55ab061f0edf5cbb77846c82519917d46f04818b11c30a3c2ece3ea66f07aa"
+    },
+    {
+      "id": "E09-top-n-ties/internal-5",
+      "family": "E09",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "rules.txt": "8fbf757eecce04e57e9f7d04ca28d2c200b8c3790b1bcb3a8ff72934d0d66aa7",
+        "scores.csv": "bd39f2e21c147707a5bba56629f91cbaad7007b5dc8a637a147a2b73410c3aaf"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "23b95d06c110abdfac163cf0489081c4f1bf1bf50d71221bb80d7789ab7a0913"
+    },
+    {
+      "id": "E09-top-n-ties/scored-1",
+      "family": "E09",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "scores.csv": "eaf4387b7e7ceadd131888a76bebcaaebac587de5170d8a3ca4d4f22ed34dc1b"
+      },
+      "objective_sha256": "4c00ca76ca3c47bfaa346222e5aee8089928abb73eda51bd2349d1457e5c5c6c",
+      "expected_sha256": "6fee92a0ce008e156bac544ce56476828c5f6e4d165915f2e74f31d5c53ab030"
+    },
+    {
+      "id": "E09-top-n-ties/scored-2",
+      "family": "E09",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "rules.txt": "8fbf757eecce04e57e9f7d04ca28d2c200b8c3790b1bcb3a8ff72934d0d66aa7",
+        "scores.csv": "b5714014b58687b020dac50abd7f58dad5b3541d16f16764a794c8e7db8e4969"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "4b3ea7e4572ca3619ea266da149be5d1629533453c805df9594822d57689c2c1"
+    },
+    {
+      "id": "E09-top-n-ties/scored-3",
+      "family": "E09",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "scores.csv": "38b88281823a1f9f716c3e47e8da9e90c8c5d6963a36ccc3b6aaf9533546ade5"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "cd057c37cd01740b2d9c03d4fcf709976c2afea075611469452b8a578719d0fd"
+    },
+    {
+      "id": "E09-top-n-ties/scored-4",
+      "family": "E09",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "rules.txt": "8fbf757eecce04e57e9f7d04ca28d2c200b8c3790b1bcb3a8ff72934d0d66aa7",
+        "scores.csv": "067ffb33552a60cdd52bc6207d909482ea7762034b32f42de0f4f60ae3cd8c1b"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "a25a831443985c89f735c30eabd077c7d0045f2331e2398db32cc135ff682b39"
+    },
+    {
+      "id": "E09-top-n-ties/scored-5",
+      "family": "E09",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "scores.csv": "d2d14c1b74c3a71fbe9843695721c6e8026ef96c0a9993b7ee2a1c937d6b01d4"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "336b78acd032e70e65bdad5372d47e69aad3af9ea2dc2601b213d92b87c81d97"
+    },
+    {
+      "id": "E09-top-n-ties/scored-6",
+      "family": "E09",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "rules.txt": "8fbf757eecce04e57e9f7d04ca28d2c200b8c3790b1bcb3a8ff72934d0d66aa7",
+        "scores.csv": "751057bfde410c3ced97d24d9c5d58cf78242e3862de1b5dc471cb715ede3101"
+      },
+      "objective_sha256": "4a3a3e563988f3f4349508103b14fadb893a531c0a8bc68c63999993f049dbaf",
+      "expected_sha256": "497b5bfa2391d3c043a0c0cf678f356e11edfe2d0cb790da1501a9b0739d33eb"
+    },
+    {
+      "id": "E10-line-length-policy/internal-1",
+      "family": "E10",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "notes.txt": "baec14f090ecc3e4e49e64a8f55c2c963158297c015a732c04e77db2a683f37b"
+      },
+      "objective_sha256": "e3926ed02aebcc5b32958f9af402e7172e080237dd378487cc58dd01e4168740",
+      "expected_sha256": "60e93e862a7393d1305a1a69db2a57e5f95bf8f2e683a0b95f6b4d60210808d6"
+    },
+    {
+      "id": "E10-line-length-policy/internal-2",
+      "family": "E10",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "release-notes.txt": "93a45ead9a1311252dd046edbc20e2c9c277850d257fedc0ee44f47dfc21eaba"
+      },
+      "objective_sha256": "3f2797a0df6129c2e3fff9e9675860012d8fd2cc7025f7bf6207bd4328689216",
+      "expected_sha256": "df6ff8fd64358d464ed326b21f87b6778ac07dc7546db293aeef232f2ab6ca7f"
+    },
+    {
+      "id": "E10-line-length-policy/internal-3",
+      "family": "E10",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "notes.txt": "5f7b28945e39d10ccf3d932b0a322f36fbd292941add75001000c13e03ac878c"
+      },
+      "objective_sha256": "df0aefbb2dd97e8c8467782e2407fde4f2101d61d29a5eb9340bb0346a18857f",
+      "expected_sha256": "7cb62c98dc740f3bab49dd07c1bc294c80517d066cf537a0ce1694670e6ab08f"
+    },
+    {
+      "id": "E10-line-length-policy/internal-4",
+      "family": "E10",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "notes.txt": "161e0c498af0edf322de5cffdfbfb1efa66cda8c453c5e1e4b03bc04632d9691"
+      },
+      "objective_sha256": "c952640aa0bf268b1a565abc98340246c1c8b9abee409bd237fa1a1fc4ad6c4d",
+      "expected_sha256": "331019eedbf012bfaeed1f92b118388c5d00e1d249eadcefff04be1bc5dea29a"
+    },
+    {
+      "id": "E10-line-length-policy/internal-5",
+      "family": "E10",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "notes.txt": "c2c333fabea6a8206bd1862378aeee9723d42c11db31afa15cf2daa638de3410",
+        "policy.txt": "1b72592f0b22a68ce422cc19110c5f991711441eb2c0fc189b5cc74787e4511f"
+      },
+      "objective_sha256": "daa533c9e6808a17a54d0225962c1ec049fbda15dc121ea2a29d7d7ade055997",
+      "expected_sha256": "674364162d7240dcb032b3178357a20a0e47b6014bb04b3c55e676fdd533cbb7"
+    },
+    {
+      "id": "E10-line-length-policy/scored-1",
+      "family": "E10",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "notes.txt": "2cae570625b4e1dc15f45cb87d37513d9ccf8b3348b16ca65aba90b072a5e2b8"
+      },
+      "objective_sha256": "95c590f628cc4a8c1d6290fa0f0e6bb31bfb4f7e1384766984ebf1c03101ab76",
+      "expected_sha256": "949ffb46bdfa330fae38d6e6ce77bdcf6ad8168603814b891e2663b1c92a8fd5"
+    },
+    {
+      "id": "E10-line-length-policy/scored-2",
+      "family": "E10",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "notes.txt": "b8478fcefbbbcdc5fef6a6ddff647737eabfd8882d8b12def3b01d52be6161ed",
+        "policy.txt": "1b72592f0b22a68ce422cc19110c5f991711441eb2c0fc189b5cc74787e4511f"
+      },
+      "objective_sha256": "daa533c9e6808a17a54d0225962c1ec049fbda15dc121ea2a29d7d7ade055997",
+      "expected_sha256": "1b08aa673c0753fe429968921400e99373a8c6bb5548a7e149a7ab5f90fd9959"
+    },
+    {
+      "id": "E10-line-length-policy/scored-3",
+      "family": "E10",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "notes.txt": "3c493a90128c2969a9eff16e7250ed8a58cc4188ab81583e9eedf847b7457a04"
+      },
+      "objective_sha256": "4c402f6f6f969726096b280d4883aa78b84c6e10e84576eb10905ad30e1d5837",
+      "expected_sha256": "93b3a3eb225ca449ead16c33e2b026388471e66fae80814313b3381781892e7b"
+    },
+    {
+      "id": "E10-line-length-policy/scored-4",
+      "family": "E10",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "notes.txt": "495ae6a92480ada97105f243baf4958e042e56bbe835838c76fe286dee738c35",
+        "policy.txt": "1b72592f0b22a68ce422cc19110c5f991711441eb2c0fc189b5cc74787e4511f"
+      },
+      "objective_sha256": "daa533c9e6808a17a54d0225962c1ec049fbda15dc121ea2a29d7d7ade055997",
+      "expected_sha256": "cd69aa7f48b996203a87c775939bbabc78f812b1842e6c9e32d9f591df45fe09"
+    },
+    {
+      "id": "E10-line-length-policy/scored-5",
+      "family": "E10",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "notes.txt": "4833bb33ed981581126c7d06cb043e57a9be33b5ca8cfc2faf0e74405c47c58b"
+      },
+      "objective_sha256": "4c402f6f6f969726096b280d4883aa78b84c6e10e84576eb10905ad30e1d5837",
+      "expected_sha256": "42d90ac9c528d3b6c68a82f63dce25dc98d2c36310947a4c7e2434997d465388"
+    },
+    {
+      "id": "E10-line-length-policy/scored-6",
+      "family": "E10",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "notes.txt": "9e37e9752178b01ac8a19ff692ddef4438bd9fa1f60f6184d774f774e73ca02f",
+        "policy.txt": "1b72592f0b22a68ce422cc19110c5f991711441eb2c0fc189b5cc74787e4511f"
+      },
+      "objective_sha256": "daa533c9e6808a17a54d0225962c1ec049fbda15dc121ea2a29d7d7ade055997",
+      "expected_sha256": "e86346cdd045c1b80f50d7f0e36ba6d986079312056d8fe5ee474044cbc9eb79"
+    },
+    {
+      "id": "E11-radius-count/internal-1",
+      "family": "E11",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "points.csv": "c32d8a2ae955d97d0e6c138d36046343c3abd43f8971802020894e07f6d16606"
+      },
+      "objective_sha256": "f0aac4a55f4542f74e2ae363d59614b1bb295134bcf739420df1524a141d9ae9",
+      "expected_sha256": "a53880e26739533e4fd7773835249750464a974c8c61153844d50d113f625946"
+    },
+    {
+      "id": "E11-radius-count/internal-2",
+      "family": "E11",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "stations.csv": "b84b5b40951e51401a775a80669d53e05b9ddfee710e9545257b9b465870eee8"
+      },
+      "objective_sha256": "7252d18fd6830d83069569d5c3e267df11eef7a5439262cf8833244dd7ecd34e",
+      "expected_sha256": "962856d108804569da5a200e0d28c57744226f5d1dd30863663998ee109eaf24"
+    },
+    {
+      "id": "E11-radius-count/internal-3",
+      "family": "E11",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "points.csv": "270a65438e19c2012bafe2ec5c023619c48aa2d29cbe3dd339936652bfb270ab"
+      },
+      "objective_sha256": "e47792029d2a3e1a4190d19c22430dac85e3894e57e01b893f07a5a56a9f29a4",
+      "expected_sha256": "7afec3c769a53022d17687d1f55611353ea2faab2a87d6fbf6b07330751abc6c"
+    },
+    {
+      "id": "E11-radius-count/internal-4",
+      "family": "E11",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "points.csv": "88dc4f817d8c38b35972b1a204b34f5940894ddc26ba6f2880406924c5cb3b1a"
+      },
+      "objective_sha256": "8439e26009d2402bde1024b5034dd19ef5a64561d783dbbae1012b0e4fedfe90",
+      "expected_sha256": "8514ae0b31ac24744ffe77c232cd28d2ba9527d3b80747764e50a5222fcefa2a"
+    },
+    {
+      "id": "E11-radius-count/internal-5",
+      "family": "E11",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "grid.txt": "7968516d202ba21246bc941bae1fcd25ebfd6818e64b1780057de1aa0128fc60",
+        "points.csv": "7c7eae189804e8875e02de7cda9df055a44861a9cfdad0ad56b0f073893fc92c"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "abc73235483400f1bbfc5db4de06a41a970ae04ca8601563096829cf2ae45d82"
+    },
+    {
+      "id": "E11-radius-count/scored-1",
+      "family": "E11",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "points.csv": "2ea983280987580b7620b56b355f9e5c5d2658d54bed29bfcff9a62af86e5f71"
+      },
+      "objective_sha256": "e7d7a22b3fcc3065be662753e74554566a9dadd0e18b165ffb79b068dbbb2e9b",
+      "expected_sha256": "b882d0fe1ebc98b66cd7d1229eb73dd5db0e0e829e35e157dcbeb46a406c2a0d"
+    },
+    {
+      "id": "E11-radius-count/scored-2",
+      "family": "E11",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "grid.txt": "7968516d202ba21246bc941bae1fcd25ebfd6818e64b1780057de1aa0128fc60",
+        "points.csv": "95571b60076f6e489cd1c118a78836d06269e9f5c9f5c1792013269f5dca8ec7"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "e63f618572270339169ac13bf34530f06e50c79dc2ad444becb5e9452f752dfd"
+    },
+    {
+      "id": "E11-radius-count/scored-3",
+      "family": "E11",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "points.csv": "d436503a20bbaf8b21f18391728b2a7ce0c9c97ae930ac06ae01a1cc04d78a2a"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "01b74c1d34a9e3ca44784e4873d92b07f5c6b1b493c8de42b9ee07c005cbe89e"
+    },
+    {
+      "id": "E11-radius-count/scored-4",
+      "family": "E11",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "grid.txt": "7968516d202ba21246bc941bae1fcd25ebfd6818e64b1780057de1aa0128fc60",
+        "points.csv": "fa671f763850e86b39f913cca2233f498a77a74a0c2a397e9ef1448b5b3117c5"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "c1f65445cc58e24fa5d453226d10b77012fb0ebaf5e6c2a3607f6abf727d3e9e"
+    },
+    {
+      "id": "E11-radius-count/scored-5",
+      "family": "E11",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "points.csv": "8046e1356d0cd9115876aa07a59705fce821f5e75e2c5d5a2ab47ae4807cd893"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "4cf674b9aad93900cb72d3144e4d1c322bfc381ab57125277a1279dbe2c2784d"
+    },
+    {
+      "id": "E11-radius-count/scored-6",
+      "family": "E11",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "grid.txt": "7968516d202ba21246bc941bae1fcd25ebfd6818e64b1780057de1aa0128fc60",
+        "points.csv": "fc68fb9a386dccd476ff1b15a2f74346d71ac582bb3ced1437968b3b637fb658"
+      },
+      "objective_sha256": "5c46291660abe309506b5c7d9b480a1ed2c7280ac04c56261cedb978e0e61764",
+      "expected_sha256": "df323f8c637403d9282d0ee2dfafe51545e8f34fe4ef61ef8da89b30e10ab493"
+    },
+    {
+      "id": "E12-running-totals/internal-1",
+      "family": "E12",
+      "kind": "internal",
+      "index": 1,
+      "role": "admission",
+      "files": {
+        "values.csv": "0e6e5c383cf9fdf61db5ee51faf0d88e0426522bc86d137eb42933482eee62ce"
+      },
+      "objective_sha256": "5fac3f9ec5239c6fa7ee7e7e8daf411cab26dea433f1e63c53740cc60e881902",
+      "expected_sha256": "498124b91e938ff901ce607eb9b1628ff98ed473d8d908c2f82bb572ea4ead96"
+    },
+    {
+      "id": "E12-running-totals/internal-2",
+      "family": "E12",
+      "kind": "internal",
+      "index": 2,
+      "role": "diagnostic",
+      "files": {
+        "daily-units.csv": "179b882626bbde7de435ad86305ff636878df3b728249a88daf65f9a3d7cf196"
+      },
+      "objective_sha256": "4fae1b8ea127ba98d2224d68827542aa0eb354917ab14fe9a4921744aa7bbc52",
+      "expected_sha256": "05264bacb68070ef7e9fe14683d95bcf164f3e22d9ddfb1b4adc1c8649175545"
+    },
+    {
+      "id": "E12-running-totals/internal-3",
+      "family": "E12",
+      "kind": "internal",
+      "index": 3,
+      "role": "regression",
+      "files": {
+        "values.csv": "d3bbe337a22c79c748fdb038d66e93588cf2e3c7b9cbf3a13c34cd3f18a8699d"
+      },
+      "objective_sha256": "e72f4ed6fe91b25067c6d602af94dec6b78bd7d405d97ba484f1ff62c91746cd",
+      "expected_sha256": "11d4b7c5ede77fb24a7bbd638207b6302c647904e51049cd65378a5f93306b62"
+    },
+    {
+      "id": "E12-running-totals/internal-4",
+      "family": "E12",
+      "kind": "internal",
+      "index": 4,
+      "role": "terminal-a",
+      "files": {
+        "values.csv": "58f123e6a5a6ecb791fd0179b0503cb9bc69a0f458b0054340ee60928a2dd8e3"
+      },
+      "objective_sha256": "e72f4ed6fe91b25067c6d602af94dec6b78bd7d405d97ba484f1ff62c91746cd",
+      "expected_sha256": "352b56a4d7ae48f1dbf7e85395f4408d2d80d430cd6a666ef30c9d794ca8937b"
+    },
+    {
+      "id": "E12-running-totals/internal-5",
+      "family": "E12",
+      "kind": "internal",
+      "index": 5,
+      "role": "terminal-b",
+      "files": {
+        "notes.txt": "a0ff2e84f26ac4af3db9c7fcbb670978315738272cd9a452b2fa5b8af2f6316c",
+        "values.csv": "ea5a19e98f258bd9b533888e731afd86735fa119316e5eed868e413804633af8"
+      },
+      "objective_sha256": "3c3c9b7c5c35c17ab1027b9c6e3511056b6a4452cc62404a83b6758aaefc8893",
+      "expected_sha256": "05c57296029eb205bde8b2f08d2bf35c8aef9715d158e48bac725196626e3609"
+    },
+    {
+      "id": "E12-running-totals/scored-1",
+      "family": "E12",
+      "kind": "scored",
+      "index": 1,
+      "role": "acquisition",
+      "files": {
+        "values.csv": "84260b614de2b1a324e1800356853333003df4867bb9a34402d5670e9d34213d"
+      },
+      "objective_sha256": "5fac3f9ec5239c6fa7ee7e7e8daf411cab26dea433f1e63c53740cc60e881902",
+      "expected_sha256": "bbe7e7f930e682805115504c8211b45079c549819a35528a00bb93e9fe4a87b6"
+    },
+    {
+      "id": "E12-running-totals/scored-2",
+      "family": "E12",
+      "kind": "scored",
+      "index": 2,
+      "role": "reuse",
+      "files": {
+        "notes.txt": "a0ff2e84f26ac4af3db9c7fcbb670978315738272cd9a452b2fa5b8af2f6316c",
+        "values.csv": "a50dbf9aac905cca99eac97bab54d5917621da2e7b246d1cfd9306518a9cc850"
+      },
+      "objective_sha256": "3c3c9b7c5c35c17ab1027b9c6e3511056b6a4452cc62404a83b6758aaefc8893",
+      "expected_sha256": "e95701f97f9f70db46779f9ad3592f91b3135e839f37322ecb978037dc46ce9c"
+    },
+    {
+      "id": "E12-running-totals/scored-3",
+      "family": "E12",
+      "kind": "scored",
+      "index": 3,
+      "role": "reuse-variation",
+      "files": {
+        "values.csv": "a562a93d50f4bf7f75088e06d439b3765385bf78236ff7a365486de8f247f02e"
+      },
+      "objective_sha256": "e72f4ed6fe91b25067c6d602af94dec6b78bd7d405d97ba484f1ff62c91746cd",
+      "expected_sha256": "151484db51fd41d1fc98b1ebec796442ddedcea85dfebc208c17f3f4352baf58"
+    },
+    {
+      "id": "E12-running-totals/scored-4",
+      "family": "E12",
+      "kind": "scored",
+      "index": 4,
+      "role": "contested-a",
+      "files": {
+        "notes.txt": "a0ff2e84f26ac4af3db9c7fcbb670978315738272cd9a452b2fa5b8af2f6316c",
+        "values.csv": "72115f873a390830978692c7f12c3a3fe30d1c89b4efe529bdbddf2832d72110"
+      },
+      "objective_sha256": "3c3c9b7c5c35c17ab1027b9c6e3511056b6a4452cc62404a83b6758aaefc8893",
+      "expected_sha256": "90c62291271519f6010a9ed8e33d9a60505f3b5e0770cb0448e8742e2f94c57d"
+    },
+    {
+      "id": "E12-running-totals/scored-5",
+      "family": "E12",
+      "kind": "scored",
+      "index": 5,
+      "role": "contested-b",
+      "files": {
+        "values.csv": "3052231481e18de4d46992d5029a22f6b095e233123575c26ec70c085821563a"
+      },
+      "objective_sha256": "e72f4ed6fe91b25067c6d602af94dec6b78bd7d405d97ba484f1ff62c91746cd",
+      "expected_sha256": "6ac33d149a7cef209377774e97bd8c22b0003650cc051e923a0bd0f6ffbb8c32"
+    },
+    {
+      "id": "E12-running-totals/scored-6",
+      "family": "E12",
+      "kind": "scored",
+      "index": 6,
+      "role": "untouched-generalization",
+      "files": {
+        "notes.txt": "a0ff2e84f26ac4af3db9c7fcbb670978315738272cd9a452b2fa5b8af2f6316c",
+        "values.csv": "ab0fb38ac29c35e35d7c6d532b3ff30e2f527928b1f68d84d799380a8988fc4f"
+      },
+      "objective_sha256": "3c3c9b7c5c35c17ab1027b9c6e3511056b6a4452cc62404a83b6758aaefc8893",
+      "expected_sha256": "0d2070cbbc5964515e0d7f3c1f2b99132a84dd97e58ab23702b03e017995aace"
+    }
+  ]
+}

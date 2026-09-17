@@ -1,0 +1,1 @@
+Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.

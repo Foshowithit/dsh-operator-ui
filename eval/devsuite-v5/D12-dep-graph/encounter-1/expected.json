@@ -1,0 +1,28 @@
+{
+  "family": "D12",
+  "counts": [
+    {
+      "component": "api",
+      "deps": "0"
+    },
+    {
+      "component": "auth",
+      "deps": "0"
+    },
+    {
+      "component": "export",
+      "deps": "2"
+    },
+    {
+      "component": "frontend",
+      "deps": "2"
+    },
+    {
+      "component": "gateway",
+      "deps": "0"
+    }
+  ],
+  "heaviest": "export",
+  "encounter": 1,
+  "role": "admission"
+}

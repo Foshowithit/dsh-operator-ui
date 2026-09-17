@@ -1,0 +1,9 @@
+# coverage plan
+
+name start end
+ada 10:00 11:48
+bo 10:15 11:00
+fay 17:00 17:46
+cy 07:15 07:57
+
+# shifts listed chronologically by start

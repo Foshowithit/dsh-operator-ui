@@ -1,0 +1,43 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "08",
+      "count": "1"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "1"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "12",
+      "count": "1"
+    },
+    {
+      "hour": "13",
+      "count": "1"
+    },
+    {
+      "hour": "15",
+      "count": "1"
+    },
+    {
+      "hour": "17",
+      "count": "2"
+    },
+    {
+      "hour": "21",
+      "count": "3"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,1 @@
+From inventory.csv, list every item whose quantity is below 10, sorted alphabetically by item name, one per line, as RESULT item=<name> qty=<n>.

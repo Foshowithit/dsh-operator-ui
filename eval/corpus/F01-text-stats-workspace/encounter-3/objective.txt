@@ -1,0 +1,1 @@
+Count the lines, words, and bytes of every .txt file in the workspace (including subdirectories), and report the totals across all of them.

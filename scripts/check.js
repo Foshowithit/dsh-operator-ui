@@ -60,9 +60,14 @@ check('host half: read-only (fixed argv, no shell)', () => {
     const src = readFileSync(join(root, f), 'utf8');
     if (/spawn\([^,]+,\s*['"`]/.test(src) && !/spawn\(\s*(GIT|chrome),/.test(src)) throw new Error(f + ': unexpected bare spawn');
     if (/\bexec(Sync)?\(|\bexecFile(Sync)?\(/.test(src.replace(/\/\/[^\n]*/g, ''))) throw new Error(f + ': shell-executing helpers are banned; use spawn with argv arrays');
+    // Scope the mutating-subcommand ban to the GIT route's own code (its
+    // argv construction), where its intent lives — not to unrelated route
+    // vocabulary elsewhere in the host (e.g. an import "stage" op name).
+    const gitImpl = src.slice(src.indexOf('async function handleGit'));
+    const gitBody = gitImpl.slice(0, gitImpl.indexOf('\nasync function '));
     for (const banned of ['commit', 'reset', 'rebase', 'merge', 'clean', 'checkout', 'restore', 'stage']) {
       const re = new RegExp(`['"]${banned}['"]`);
-      if (re.test(src)) throw new Error(f + ': mutating git subcommand found: ' + banned);
+      if (re.test(gitBody)) throw new Error(f + ': mutating git subcommand found in the git route: ' + banned);
     }
   }
 });
@@ -123,8 +128,18 @@ check('repo hygiene: no dev-home, node_modules, or logs tracked', () => {
   if (bad.length) throw new Error('tracked: ' + bad.join(', '));
 });
 check('repo hygiene: required files present', () => {
-  for (const f of ['README.md', 'LICENSE', 'docs/runs-panel.png', 'docs/git-panel.png', 'docs/command-palette.png']) {
+  for (const f of ['README.md', 'LICENSE']) {
     readFileSync(join(root, f));
+  }
+  // The README is the front door and it ships screenshots; a dead image path is
+  // invisible to every other check here, so bind the two together. Screenshots
+  // must come from the sanitized demo lane — never a real workspace (see AGENTS.md).
+  const md = readFileSync(join(root, 'README.md'), 'utf8');
+  const refs = [...md.matchAll(/\]\(docs\/([^)\s]+\.png)\)/g)].map((m) => m[1]);
+  if (!refs.length) throw new Error('README references no docs/*.png — the visual README lost its screenshots');
+  for (const r of refs) {
+    if (/^(runs-panel|git-panel|command-palette|summary-tab|workflows-tab|capabilities-tab|browser-tab|permissions-|m2-)/.test(r)) throw new Error('README references a retired screenshot: ' + r);
+    readFileSync(join(root, 'docs', r));
   }
 });
 
@@ -325,22 +340,347 @@ check('hygiene: no private names or machine paths in tracked files', () => {
   if (hits.length) throw new Error('private references in tracked files: ' + [...new Set(hits)].join(', '));
 });
 
-// 9. Goal Mode (M1-candidate v0): objective → registry routing → Archon
+// 9. Goal Mode (M1): objective → registry routing → Archon
 // execution → evidence verification → verdict. Routing truth stays in the
-// registry; verification is independent of the act of execution.
+// registry; verification is independent of the act of execution. M1 adds the
+// third check (objective-satisfaction), the trust ladder, and Next Action —
+// surfaced by the Result Card inside the existing Work surfaces (no new tab).
 check('goal: registry-routed runner + independent verification + task identity', () => {
   const g = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
-  for (const must of ['SHIP', 'BLOCK', 'FAILED', 'taskId', 'routeObjective', 'considered', 'declared-expectation', 'terminal-status']) {
+  for (const must of ['SHIP', 'BLOCK', 'FAILED', 'taskId', 'routeObjective', 'considered', 'declared-expectation', 'terminal-status', 'objective-satisfaction', 'evaluateObjective', 'trustLadder', 'nextAction', 'objectiveEvaluation']) {
     if (!g.includes(must)) throw new Error('lib/goal.js lost ' + must);
   }
   if (/\/api\/workflows\/[a-z0-9-]+\/run/.test(g)) throw new Error('lib/goal.js hardcodes a workflow dispatch URL — route through the registry');
   if (!g.includes('registry not configured')) throw new Error('goal.js lost the registry-required refusal');
   const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
   if (!host.includes("GIT_ROUTE + '/goal'")) throw new Error('lib/index.js lost the /goal route');
+  const tasks = readFileSync(join(root, 'lib', 'tasks.js'), 'utf8');
+  for (const must of ['objective-evaluation', 'capability-validation', 'sealedBy', 'trust', 'nextAction']) {
+    if (!tasks.includes(must)) throw new Error('lib/tasks.js lost ' + must);
+  }
   const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
   if (!client.includes('GoalComposer')) throw new Error('client lost the goal composer');
   if (!client.includes('What do you want RCOS to do?')) throw new Error('client lost the give-work affordance');
+  for (const must of ['ResultCard', 'deriveLadder', 'deriveNextKind', 'opui-result', 'opui-ladder']) {
+    if (!client.includes(must)) throw new Error('client lost M1 surface ' + must);
+  }
+  // SpineCard references shared helpers — every referenced helper must be
+  // DEFINED in the same module scope (a dropped helper crashes the overlay
+  // tree: React #185 abdication, tab still shows, no visible error).
+  for (const fn of ['extractNodeOutputs', 'deriveEligibility', 'resubmitGoal']) {
+    if (client.includes(fn + '(') || client.includes(fn + ' (')) {
+      const def = new RegExp('(const|function)\\s+' + fn + '\\b');
+      if (!def.test(client)) throw new Error('client calls ' + fn + ' but never defines it');
+    }
+  }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'goal.js')], { stdio: 'pipe' });
+});
+
+// 10. Permissions round: presets over scopes, fail-closed, approval gating
+// dispatch BEFORE any execution, granted policy riding the task envelope (no
+// third store), Preview→Act→Prove rendered on the existing surfaces, and
+// per-surface fault isolation (a card/surface may die; shell.overlay never).
+check('authority: scope contract + approval gate before dispatch + envelope policy + fault isolation', () => {
+  const au = readFileSync(join(root, 'lib', 'authority.js'), 'utf8');
+  for (const must of ['filesystem:read', 'filesystem:write', 'shell:execute', 'credentials:use', 'git:push', 'external:submit',
+    'PLAN_ONLY', 'ASK_BEFORE_ACTION', 'AUTO_WITHIN_POLICY', 'FULL_ACCESS',
+    'grantsFor', 'requiresOf', 'decisionFor', 'humanScope', 'humanPreset']) {
+    if (!au.includes(must)) throw new Error('lib/authority.js lost ' + must);
+  }
+  const cfg = readFileSync(join(root, 'lib', 'config.js'), 'utf8');
+  for (const must of ["authority: { preset: 'ASK_BEFORE_ACTION' }", 'DSH_OPERATOR_UI_AUTHORITY_PRESET']) {
+    if (!cfg.includes(must)) throw new Error('lib/config.js lost authority config: ' + must);
+  }
+  const g = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
+  for (const must of ['requiresOf', 'decisionFor', 'awaiting-approval', 'approvedAt', "act('approve'"]) {
+    if (!g.includes(must)) throw new Error('lib/goal.js lost authority wiring: ' + must);
+  }
+  // The gate must sit BEFORE the dispatch: an approval-required task can
+  // never reach dispatchWorkflow in the same pass.
+  const gateAt = g.indexOf("decision.mode === 'approval'");
+  const dispatchAt = g.indexOf('await dispatchWorkflow(');
+  if (gateAt < 0 || dispatchAt < 0 || gateAt > dispatchAt) throw new Error('authority gate must precede workflow dispatch');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes('approveTaskId')) throw new Error('host lost the approval route');
+  if (!host.includes('not awaiting approval')) throw new Error('approval must refuse tasks that are not awaiting approval');
+  const tasks = readFileSync(join(root, 'lib', 'tasks.js'), 'utf8');
+  for (const must of ['awaiting-approval', 'authority: goal.authority']) {
+    if (!tasks.includes(must)) throw new Error('lib/tasks.js lost envelope policy: ' + must);
+  }
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['Approve plan', 'RCOS plans to', 'approveTaskId', 'HUMAN_SCOPE', 'PRESET_LABEL']) {
+    if (!client.includes(must)) throw new Error('client lost permissions surface: ' + must);
+  }
+  // Client human labels must cover exactly the host scope vocabulary — one
+  // vocabulary, two tenses; a missing label would leak raw scope strings.
+  const hostScopes = [...au.matchAll(/'([a-z]+:(?:read|write|execute|use|outbound|interact|draft|submit))'/g)].map((m) => m[1]);
+  for (const s of new Set(hostScopes)) {
+    if (!client.includes("'" + s + "'")) throw new Error('client HUMAN_SCOPE missing ' + s);
+  }
+  // Fault isolation: every registered surface is wrapped in CardBoundary and
+  // the boundary never rethrows (no window.onerror rethrow / no bare throw).
+  for (const surf of ['GitTab', 'BrowserTab', 'SummaryTab', 'FilesTab', 'WorkflowsTab', 'CapabilitiesTab', 'SystemSurface', 'WorkSurface', 'IntelligenceSurface', 'SurfaceOverlay']) {
+    const re = new RegExp('h\\(CardBoundary,[^)]*h\\(' + surf + '\\b');
+    if (!re.test(client)) throw new Error('surface not fault-isolated: ' + surf);
+  }
+  if (!client.includes('opui-card-dead')) throw new Error('client lost the killed-card fallback');
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.permissions || !Array.isArray(m.permissions.scopes) || !m.permissions.scopes.length) throw new Error('manifest lost the permissions section');
+  for (const s of new Set(hostScopes)) {
+    if (!m.permissions.scopes.includes(s)) throw new Error('manifest permissions.scopes missing ' + s);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'authority.js')], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'client.js')], { stdio: 'pipe' });
+});
+
+// 11. Teach Mode (M2): capability acquisition with three separate identities,
+// an eval-before-candidate hard rule, explicit human promotion, and writes
+// confined to the two operator-configured teaching paths.
+check('teach: three identities + eval-before-candidate + explicit promotion + scoped writes', () => {
+  const t = readFileSync(join(root, 'lib', 'teach.js'), 'utf8');
+  for (const must of ['sourceTaskId', 'teachingTaskId', 'capabilityId', 'kind: \'teaching\'', 'CANDIDATE', 'REFUSED',
+    'builtBy', 'EVAL_SET', 'requires', 'lifecycle', 'promotedAt', 'promoteCandidate', 'Not added to Intelligence']) {
+    if (!t.includes(must)) throw new Error('lib/teach.js lost ' + must);
+  }
+  // Promotion must refuse non-candidates and duplicate ids (never overwrite).
+  for (const must of ['not a CANDIDATE', 'already in the registry', 'requiresUnknown']) {
+    if (!t.includes(must)) throw new Error('lib/teach.js lost promotion guard: ' + must);
+  }
+  const cfg = readFileSync(join(root, 'lib', 'config.js'), 'utf8');
+  for (const must of ['DSH_OPERATOR_UI_TEACH_WORKFLOWS', 'DSH_OPERATOR_UI_TEACH_WORKSPACE']) {
+    if (!cfg.includes(must)) throw new Error('lib/config.js lost teaching paths: ' + must);
+  }
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/teach'")) throw new Error('host lost the /teach route');
+  if (!host.includes('promoteTaskId')) throw new Error('host lost the promotion route');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['TeachingCard', 'Teach RCOS', 'Promote to Intelligence', 'teachFrom', 'RCOS learned this capability']) {
+    if (!client.includes(must)) throw new Error('client lost teach surface: ' + must);
+  }
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.teachMode || !m.teachMode.hardRule) throw new Error('manifest lost the teachMode section');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'teach.js')], { stdio: 'pipe' });
+});
+
+// 12. M2.5 Capability Memory: operating history is a READ MODEL over the
+// task envelopes (no new store), decay is NAMED evidence — never a
+// "confidence score" — and version lineage never overwrites history.
+
+// Production acquisition (GPT productization of the sealed Eval v2 program):
+// the proven mechanism ported into the product path. Contract properties:
+// fail-closed cognition config, conjunctive budgets, static validation
+// before ANY execution, redacted rename-loop refusal, objective evaluation
+// (never the acquisition's own opinion) as the candidate gate, promotion via
+// the existing explicit operator machinery only.
+check('acquire: production acquisition — fail-closed, bounded, evaluate-then-candidate', () => {
+  const a = readFileSync(join(root, 'lib', 'acquire.js'), 'utf8');
+  for (const must of [
+    'acquireCapability', 'staticValidate', 'ACQ_BUDGET',
+    'maxRevisions: 3', 'maxCalls: 4', 'maxOutputTokens: 50000', 'maxWallMs: 600000',
+    'ACQUISITION_NOT_CONFIGURED', 'BUDGET_EXHAUSTED', 'REVISIONS_EXHAUSTED', 'REVISION_LOOP',
+    "kind: 'teaching'", 'evaluateObjective', 'verdict = \'CANDIDATE\'', "kind: 'promote'",
+  ]) {
+    if (!a.includes(must)) throw new Error('lib/acquire.js lost ' + must);
+  }
+  // never writes outside the configured teaching dirs, never reads credentials
+  // from hardcoded paths (env only), never promotes itself
+  if (/writeFile\([^)]*registry/.test(a)) throw new Error('acquisition must never write the registry — promotion is the operator click');
+  const teachSrc = readFileSync(join(root, 'lib', 'teach.js'), 'utf8');
+  if (/name:\s*'Workspace word count/.test(teachSrc)) throw new Error('promotion must derive the capability name from the candidate, never hardcode a demo name');
+  if (new RegExp('chow' + '-secrets|\\/Users\\/').test(a)) throw new Error('acquisition must resolve credentials from env only');
+  // static validation runs before any execute stage in the loop order
+  const staticIdx = a.indexOf('staticValidate(parsed.yaml)');
+  const execIdx = a.indexOf('runWorkflowOnArchon(name, t.objective');
+  if (staticIdx < 0 || execIdx < 0 || staticIdx > execIdx) throw new Error('static validation must precede execution');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/acquire'")) throw new Error('host lost the /acquire route');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  if (!client.includes("'/plugins/operator-ui/acquire'")) throw new Error('gap affordance must call the production engine');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'acquire.js')], { stdio: 'pipe' });
+});
+
+
+// FlowRouter portability P0 (GPT-adjudicated contract): digest rule with
+// the digest field omitted, namespaced identity + collision refusal,
+// staged→verified→admitted state machine, B-local frozen verification
+// fixtures, no networking, registry written ONLY by operator admission.
+check('flowrouter: portability contract — digest rule, state machine, collision, no network', () => {
+  const fr = readFileSync(join(root, 'lib', 'flowrouter.js'), 'utf8');
+  for (const must of [
+    'exportCapability', 'stagePackage', 'verifyImport', 'admitImport',
+    'packageDigest', 'canonicalJson',
+    'LOCAL_ID_COLLISION', 'INTEGRITY_FAIL', 'COMPATIBILITY_FAIL',
+    'fixture_frozen_before_execution', 'STAGED', 'UNVERIFIED', 'INELIGIBLE',
+    'VERIFIED', 'ELIGIBLE', 'MUST_NOT_EXPORT',
+  ]) {
+    if (!fr.includes(must)) throw new Error('lib/flowrouter.js lost ' + must);
+  }
+  // the digest rule must omit the digest fields during hashing
+  if (!/bundle: \{ algorithm: 'sha256' \}/.test(fr)) throw new Error('package digest must be computed with the digest fields omitted');
+  // receiver lifecycle starts closed and only admission opens routing
+  if (!/local: \{ import: 'STAGED', verification: 'UNVERIFIED', routing: 'INELIGIBLE' \}/.test(fr)) throw new Error('receiver state must start STAGED/UNVERIFIED/INELIGIBLE');
+  // registry writes exist ONLY in admitImport (operator admission)
+  const writes = (fr.match(/writeFile\(cfg\.registry\.path/g) || []).length;
+  if (writes !== 1) throw new Error('registry must be written exactly once, in admitImport');
+  const admitIdx = fr.indexOf('export async function admitImport');
+  const wIdx = fr.indexOf('writeFile(cfg.registry.path');
+  if (admitIdx < 0 || wIdx < admitIdx) throw new Error('registry write must live inside admitImport');
+  // no networking primitives beyond the LOCAL executor base URL
+  if (/https?:\/\/(?!127\.0\.0\.1|localhost)/.test(fr)) throw new Error('flowrouter P0 must not hardcode external URLs');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/flowrouter'")) throw new Error('host lost the /flowrouter route');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'flowrouter.js')], { stdio: 'pipe' });
+  // P2 zero-authority contract: publisher authentication must be provenance
+  // only — the eligibility/ routing code paths must never read it
+  const goal = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
+  if (/publisher_auth|publisher\./.test(goal)) throw new Error('goal.js (routing/eligibility) must never read publisher authentication');
+  const idn = readFileSync(join(root, 'lib', 'identity.js'), 'utf8');
+  for (const must of ['verifyGenesis', 'replayChain', 'verifyPublication', 'classifyFreshness', 'chainExtendsPin', 'SEQUENCE_ROLLBACK', 'IDENTITY_HISTORY_FORK', 'KEY_NOT_AUTHORIZED']) {
+    if (!idn.includes(must)) throw new Error('lib/identity.js lost ' + must);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'identity.js')], { stdio: 'pipe' });
+  const fed = readFileSync(join(root, 'lib', 'federation.js'), 'utf8');
+  for (const must of ['CONSISTENT', 'PARTIAL', 'CONFLICT', 'INVALID', 'EMPTY', 'PEER_DUPLICATE_ID', 'FETCH_NOT_PERMITTED', 'readPin', 'globally_fresh: false', 'resolution_handle', 'bytesFrom', 'material_source']) {
+    if (!fed.includes(must)) throw new Error('lib/federation.js lost ' + must);
+  }
+  // federation must be READ-ONLY against local authority state
+  if (/upsertTask|writeFile/.test(fed)) throw new Error('federation resolution must never write local state (pins/registry/tasks)');
+  // fetch must consume a B-authored resolution handle, never a caller claim
+  const hostSrc = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (hostSrc.includes('p.resolveResult')) throw new Error('fetch must never trust a caller-replayed resolution result');
+  if (!hostSrc.includes('resolutionHandle: p.resolution_handle')) throw new Error('fetch must consume the B-authored resolution handle');
+  if (!hostSrc.includes('bytesFrom: p.bytes_from')) throw new Error('the byte-source steering input must reach the resolver');
+  if (!/const order = \(bytesFrom \? \[bytesFrom\] : \[\]\)/.test(fed)) throw new Error('federation lost deterministic byte-source ordering');
+  // the fetch/stage handoff carries the canonical F0-selected proof material
+  if (!/material = cand\.material/.test(fed)) throw new Error('fetch must hand off the resolution\u2019s canonical proof material');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'federation.js')], { stdio: 'pipe' });
+
+  // F1 (spec e9e7ef6): portable equivocation evidence, local-only policy
+  const eq = readFileSync(join(root, 'lib', 'equivocation.js'), 'utf8');
+  for (const must of ['flowrouter.f1.equivocation-proof.v1', 'SAME_SEQUENCE_DIVERGENT', 'NONEXTENDING_FORK', 'PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED', 'proof_digest', 'buildProofCore', 'verifyProofCore', 'proofFromLocalHistory', 'isQuarantined']) {
+    if (!eq.includes(must)) throw new Error('lib/equivocation.js lost ' + must);
+  }
+  // the proof core is unsigned evidence: no signing primitive may appear, and
+  // verification must not reach for a peer/pin/registry
+  if (/signPublication|generateKeypair|createGenesis|privateKey/.test(eq)) throw new Error('F1 evidence must add no cryptography — the core is an unsigned container');
+  if (/fetch\(/.test(eq)) throw new Error('F1 verification must be offline — no network access');
+  // quarantine refusal lives in the sealed P2 stage path, before pin mutation
+  const frSrc = readFileSync(join(root, 'lib', 'flowrouter.js'), 'utf8');
+  const gate = frSrc.indexOf('isQuarantined(g.publisher_id)');
+  const pinWrite = frSrc.indexOf("taskId: pinTaskId, kind: 'pin'");
+  if (gate === -1 || pinWrite === -1 || gate > pinWrite) throw new Error('the F1 quarantine refusal must precede any pin mutation in the stage path');
+  if (!/witness: \{ genesis, events/.test(frSrc)) throw new Error('the pin must retain its identity witness (F1 3.2)');
+  // F0 resolve may RETURN a proof core but must never record one
+  if (!/proof_core: built.core/.test(fed)) throw new Error('federation must surface the F1 proof core on genuine forks');
+  if (!/function forkEvidence/.test(fed)) throw new Error('federation lost the fork-evidence builder');
+  const hostSrc2 = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  for (const must of ["'/f1'", 'handleF1', "op === 'ingest'", "op === 'acknowledge'", 'verifyProofCore(p.proof_core)']) {
+    if (!hostSrc2.includes(must)) throw new Error('the F1 surface lost ' + must);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'equivocation.js')], { stdio: 'pipe' });
+
+  // R0 (spec 43ca378): authenticated mirror replication
+  const rep = readFileSync(join(root, 'lib', 'replication.js'), 'utf8');
+  for (const must of ['REPLICATION_P1_NOT_FEDERATABLE', 'REPLICATION_BYTES_SUBSTITUTED', 'REPLICATION_D_CONFLICT', 'REPLICATION_MATERIAL_CONFLICT', 'verifySourcePublication', 'replicationDecision', 'materialDigest']) {
+    if (!rep.includes(must)) throw new Error('lib/replication.js lost ' + must);
+  }
+  // a mirror must never re-attest: no signing/identity-creation primitives in
+  // the replication path at all
+  if (/signPublication|signRecord|createGenesis|createKeyEvent|generateKeypair|privateKey/.test(rep)) throw new Error('R0 replication must never re-attest — no signing primitive may appear');
+  // replication must never touch consumer-local trust state
+  if (/upsertTask|getTask|listTasks|tasks\.json|pin_|quarantine/i.test(rep)) throw new Error('R0 replication must not read or write consumer-local trust state');
+  // commit order is blob first, binding second (service wiring)
+  const svc = readFileSync(join(root, 'eval', 'lib', 'flowrouter-service.mjs'), 'utf8');
+  const blobWrite = svc.indexOf("await writeFile(join(BLOBS, plan.requested_D + '.pkg'), plan.wire_bytes)");
+  const bindWrite = svc.indexOf('await commitPublication({', blobWrite === -1 ? 0 : blobWrite);
+  if (blobWrite === -1 || bindWrite === -1 || blobWrite > bindWrite) throw new Error('R0 must commit the blob BEFORE the binding');
+  if (!/if \(rec\.custody && rec\.custody\.mirrored_from\) continue;/.test(svc)) throw new Error('mirrored bindings must stay out of the discovery index');
+  if (!svc.includes("url.pathname === '/replicate'") || !svc.includes("url.pathname === '/cache-blob'")) throw new Error('the repository lost its R0 replication surface');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'replication.js')], { stdio: 'pipe' });
+
+  // D0 (spec d0e935d): untrusted repository possession index
+  const disc = readFileSync(join(root, 'lib', 'discovery.js'), 'utf8');
+  for (const must of ['MAX_D0_CANDIDATES = 256', 'normalizeCandidateEntries', 'queryPossessionIndex', 'discoverCandidates', 'candidateKey', 'truncated']) {
+    if (!disc.includes(must)) throw new Error('lib/discovery.js lost ' + must);
+  }
+  // candidate identity is the exact tuple: claimed_D may not enter the key
+  if (!/const candidateKey = \(c\) => \[c\.publisher_scheme, c\.publisher_id, c\.name, c\.version\]/.test(disc)) throw new Error('D0 candidate identity must be the exact tuple only');
+  const keyLine = disc.split('\n').find((l) => l.includes('const candidateKey'));
+  if (/claimed_D/.test(keyLine)) throw new Error('claimed_D must never participate in candidate identity');
+  // discovery is read-only observation
+  if (/upsertTask|writeFile|mkdir|appendFile|rename/.test(disc)) throw new Error('D0 discovery must never write local state');
+  if (/latest|preferred|current|recommend|score|rank/.test(disc)) throw new Error('D0 must carry no version-selection or ranking semantics');
+  // the repository exposes the possession index as a SEPARATE surface
+  const svc2 = readFileSync(join(root, 'eval', 'lib', 'flowrouter-service.mjs'), 'utf8');
+  if (!svc2.includes("url.pathname === '/possession'")) throw new Error('the repository lost its possession index');
+  const possessionBlock = svc2.slice(svc2.indexOf("url.pathname === '/possession'"), svc2.indexOf("url.pathname === '/replicate'"));
+  if (!possessionBlock.includes("p2-selfcert-v1")) throw new Error('the possession index must be P2-only');
+  // the ENTRY FIELDS are exactly the five frozen ones — check the literal, not
+  // the prose (the block legitimately validates canonical names and explains
+  // that claimed_D is untrusted)
+  const entryLiteral = possessionBlock.slice(possessionBlock.indexOf('entries.push({'), possessionBlock.indexOf('entries.push({') + 400);
+  const entryFields = [...entryLiteral.matchAll(/^\s*([A-Za-z_]+):/gm)].map((m) => m[1]).sort().join(',');
+  if (entryFields !== 'claimed_D,name,publisher_id,publisher_scheme,version') throw new Error('possession entries must carry exactly the five frozen fields, got: ' + entryFields);
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'discovery.js')], { stdio: 'pipe' });
+
+  // D1 (spec ac80256): untrusted endpoint directory
+  const dirMod = readFileSync(join(root, 'lib', 'directory.js'), 'utf8');
+  for (const must of ['MAX_D1_ENDPOINTS = 256', 'canonicalOrigin', 'normalizeEndpointEntries', 'queryDirectory', 'discoverEndpoints']) {
+    if (!dirMod.includes(must)) throw new Error('lib/directory.js lost ' + must);
+  }
+  // entries are locators only: exactly one field, no capability vocabulary
+  if (!/Object\.keys\(e\)\.sort\(\)\.join\(','\) !== 'endpoint'/.test(dirMod)) throw new Error('a directory entry must carry exactly { endpoint }');
+  if (/publisher_id|publisher_scheme|claimed_D|publisher_auth|fresh|rank|popularity|availability|repository_id/.test(dirMod.replace(/\/\/.*$/gm, ''))) throw new Error('D1 must transport locators, never capability claims or authority fields');
+  // D1 never dereferences what it returns: the only fetch is the directory query
+  const fetches = [...dirMod.matchAll(/fetch\(/g)].length;
+  if (fetches !== 1) throw new Error('D1 must make exactly one kind of network call (the configured directory), got ' + fetches);
+  // no time/availability vocabulary anywhere
+  if (/last_seen|uptime|ttl|freshness|timestamp/i.test(dirMod)) throw new Error('D1 entries carry no time or availability vocabulary');
+  // discovery is read-only and reuses the sealed name grammar
+  if (/upsertTask|writeFile|mkdir|appendFile|rename/.test(dirMod)) throw new Error('D1 must never write local state');
+  if (!/const CANON_NAME = \/\^\[a-z0-9\]\[a-z0-9-\]\{0,63\}\$\//.test(dirMod)) throw new Error('D1 must reuse the sealed capability-name grammar exactly');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'directory.js')], { stdio: 'pipe' });
+
+  // S0 (spec ccf0387): exact-scope custody backfill
+  const syncSrc = readFileSync(join(root, 'lib', 'sync.js'), 'utf8');
+  for (const must of ['syncExact', 'normalizeScope', 'validateIntent', 'objectKey', 'COPIED', 'ALREADY_PRESENT', 'UNAVAILABLE']) {
+    if (!syncSrc.includes(must)) throw new Error('lib/sync.js lost ' + must);
+  }
+  // no source enumeration / version discovery anywhere in the coordinator.
+  // Strip comments AND string literals first: the refusal MESSAGE legitimately
+  // names the selectors it rejects.
+  const syncCode = syncSrc.replace(/\/\/.*$/gm, '').replace(/`[^`]*`/g, '``').replace(/'[^']*'/g, "''").replace(/"[^"]*"/g, '""');
+  if (/latest|\ball\b|everything|inventory|wildcard|version_range/i.test(syncCode)) throw new Error('S0 must accept no enumeration, latest or wildcard selector');
+  // the journal must never carry the forbidden freshness/completeness vocabulary
+  if (/UP_TO_DATE|LATEST|BEHIND|STALE|CURRENT|SOURCE_AHEAD|DESTINATION_BEHIND|FULLY_SYNCED_WITH_|COMPLETE_REPLICA/.test(syncSrc)) throw new Error('the S0 journal must never express freshness or completeness');
+  if (/scope_complete\s*:\s*[^,]*?(BEHIND|STALE|LATEST)/.test(syncSrc)) throw new Error('the S0 run record must not report freshness');
+  // publications reuse the sealed R0 surface rather than reimplementing it
+  if (!syncSrc.includes("'/replicate'")) throw new Error('publication backfill must reuse the sealed R0 replication surface');
+  if (/verifyGenesis|replayChain|verifyPublication/.test(syncSrc)) throw new Error('S0 must not reimplement P2 verification — ordinary R0 owns it');
+  // no new protocol surface and no consumer-trust access
+  if (/createServer|listen\(/.test(syncSrc)) throw new Error('S0 is a local coordinator, not a network surface');
+  if (/getTask|listTasks|upsertTask|pin_|quarantine/i.test(syncCode)) throw new Error('S0 must not read or write consumer-local trust state');
+  // evidence transport never ingests
+  if (!/ingested: false/.test(syncSrc)) throw new Error('S0 must record that copied evidence was not ingested');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'sync.js')], { stdio: 'pipe' });
+});
+
+check('memory: history read-model + named decay (no score) + lineage provenance', () => {
+  const h = readFileSync(join(root, 'lib', 'history.js'), 'utf8');
+  for (const must of ['capabilityHistory', 'listTasks', 'objectivesSatisfied', 'blocksAfterExecution', 'lastVerifiedAt', 'needsReevaluation', 'decayReason', 'recent']) {
+    if (!h.includes(must)) throw new Error('lib/history.js lost ' + must);
+  }
+  if (/writeFile|mkdir|rename/.test(h)) throw new Error('history read-model must never write');
+  if (/\bscore\s*[:=]/i.test(h) || /confidence\s*[:=]/i.test(h)) throw new Error('history must not collapse evidence into a confidence score');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("op === 'history'")) throw new Error('host lost the /rcos history op');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  for (const must of ['op=history', 'histLine', 'decayLine', 'Needs re-evaluation', 'learned via']) {
+    if (!client.includes(must)) throw new Error('client lost memory surface: ' + must);
+  }
+  const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
+  if (!m.memory || !m.memory.noScore) throw new Error('manifest lost the memory section');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'history.js')], { stdio: 'pipe' });
 });
 
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);

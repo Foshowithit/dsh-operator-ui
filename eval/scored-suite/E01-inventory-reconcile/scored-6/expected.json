@@ -1,0 +1,22 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "grommet",
+      "system": "54",
+      "physical": "31"
+    },
+    {
+      "item": "knob",
+      "system": "55",
+      "physical": "14"
+    },
+    {
+      "item": "flange",
+      "system": "36",
+      "physical": "58"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

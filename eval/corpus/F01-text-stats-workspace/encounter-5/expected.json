@@ -1,0 +1,20 @@
+{
+  "family": "F01",
+  "files": {
+    "README.txt": {
+      "lines": 1,
+      "words": 6,
+      "bytes": 35
+    },
+    "register-9.txt": {
+      "lines": 1,
+      "words": 4,
+      "bytes": 23
+    }
+  },
+  "total": {
+    "lines": 2,
+    "words": 10,
+    "bytes": 58
+  }
+}

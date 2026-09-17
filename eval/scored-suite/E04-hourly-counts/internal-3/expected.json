@@ -1,0 +1,39 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "06",
+      "count": "2"
+    },
+    {
+      "hour": "07",
+      "count": "1"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "13",
+      "count": "1"
+    },
+    {
+      "hour": "15",
+      "count": "1"
+    },
+    {
+      "hour": "16",
+      "count": "2"
+    },
+    {
+      "hour": "18",
+      "count": "1"
+    },
+    {
+      "hour": "19",
+      "count": "1"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

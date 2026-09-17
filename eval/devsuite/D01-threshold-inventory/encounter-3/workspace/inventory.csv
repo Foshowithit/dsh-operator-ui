@@ -1,0 +1,14 @@
+# weekly stock export
+
+item,qty
+"anvil",40
+"nut",15
+"bearing",2
+"collar",37
+"mount",37
+# cycle 9 verified
+"damper",3
+"gasket",7
+"washer",26
+
+# end of export

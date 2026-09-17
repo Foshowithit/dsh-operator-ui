@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "cairn",
+      "score": "94"
+    },
+    {
+      "name": "axiom",
+      "score": "93"
+    },
+    {
+      "name": "boru",
+      "score": "89"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}

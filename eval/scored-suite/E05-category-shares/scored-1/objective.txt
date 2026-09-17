@@ -1,0 +1,1 @@
+Report each named channel's share of total visits in visits.csv as a percentage with exactly one decimal place, sorted by share descending then channel name alphabetically, one per line, as RESULT category=<name> share=<pct>% (include the % sign in the value). The "other" row is NOT a named channel and must be excluded from the share computation.

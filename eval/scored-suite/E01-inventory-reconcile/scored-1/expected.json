@@ -1,0 +1,27 @@
+{
+  "family": "E01",
+  "diffs": [
+    {
+      "item": "base",
+      "system": "54",
+      "physical": "3"
+    },
+    {
+      "item": "endcap",
+      "system": "1",
+      "physical": "59"
+    },
+    {
+      "item": "dowel",
+      "system": "17",
+      "physical": "5"
+    },
+    {
+      "item": "jig",
+      "system": "33",
+      "physical": "2"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

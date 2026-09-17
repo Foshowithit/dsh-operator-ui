@@ -1,0 +1,9 @@
+{
+  "family": "F07",
+  "duplicates": [
+    {
+      "email": "alpha@test.invalid",
+      "count": 3
+    }
+  ]
+}

@@ -1,0 +1,331 @@
+{
+  "generated_at": "2026-09-17T05:44:38.185Z",
+  "steps": [
+    {
+      "step": "actors fresh: R zero publications, B empty home",
+      "ok": true,
+      "result": {
+        "R": {
+          "publications": 0,
+          "blobs": 0
+        },
+        "B": {
+          "sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "caps": 0
+        }
+      }
+    },
+    {
+      "step": "P1 genesis: derivation + self-signature verify",
+      "ok": true,
+      "result": {
+        "publisher_id": "8f49c3678144a1cc5f8c"
+      }
+    },
+    {
+      "step": "N1 genesis-key substitution → IDENTITY_DERIVATION_MISMATCH",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "K1 authorized; chain replays (seq 1, active=1)",
+      "ok": true,
+      "result": {
+        "head": "2acf28465a9b4c6e"
+      }
+    },
+    {
+      "step": "R registers publisher; reported head equals the verified chain (no off-by-one)",
+      "ok": true,
+      "result": {
+        "reported": 1,
+        "verified": 1
+      }
+    },
+    {
+      "step": "A export for the P2 chain (D0)",
+      "ok": true,
+      "result": {
+        "D0": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "K1 signs the exact publication (name+version+D at identity state 1)",
+      "ok": true,
+      "result": {
+        "key_id": "0961256e921d"
+      }
+    },
+    {
+      "step": "legacy p1-configured-v1 publication accepted (UNAUTHENTICATED)",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p1-configured-v1",
+        "publisher_id": "mac-a",
+        "name": "csv-running-total",
+        "version": "0.1.0",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+        "publisher_auth": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "step": "R independently verifies BEFORE the authenticated binding (VERIFIED)",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p2-selfcert-v1",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "name": "csv-running-total",
+        "version": "0.1.0",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+        "publisher_auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "N2 name substitution → SIGNED_STATEMENT_MISMATCH, no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "request.name does not equal assertion.name (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N3 package/D mutation → SIGNED_STATEMENT_MISMATCH (signed D ≠ recomputed), no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "assertion.D does not match the recomputed package digest (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N3b p2-selfcert publication missing its assertion → PUBLISHER_AUTH_INVALID",
+      "ok": true,
+      "result": {
+        "error": "PUBLISHER_AUTH_INVALID",
+        "reason": "missing publication assertion for a p2-selfcert publication (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N4 unauthorized signer → KEY_NOT_AUTHORIZED, no binding",
+      "ok": true,
+      "result": {
+        "error": "KEY_NOT_AUTHORIZED",
+        "reason": "KEY_NOT_AUTHORIZED: key is not active at the asserted identity state"
+      }
+    },
+    {
+      "step": "N5 attacker D under victim identity → auth fails, no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "SIGNED_STATEMENT_MISMATCH: assertion is not bound to the supplied identity state"
+      }
+    },
+    {
+      "step": "N6 malformed history (sequence gap / dup key) → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "gap_code": "IDENTITY_RECORD_INVALID",
+        "dup_attempt": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
+      "step": "N7 outer publisher substitution P→Q with an untouched valid P proof → refusal",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "request.publisher_id does not equal assertion.publisher_id (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N13 unknown publisher_scheme refused on publish AND on read",
+      "ok": true,
+      "result": {
+        "publish": "PUBLISH_INVALID",
+        "read": "IDENTITY_NONCANONICAL"
+      }
+    },
+    {
+      "step": "N14 identical textual components coexist across schemes; lookups never shadow",
+      "ok": true,
+      "result": {
+        "p1": {
+          "status": 200,
+          "auth": "UNAUTHENTICATED",
+          "scheme": "p1-configured-v1"
+        },
+        "p2": {
+          "status": 200,
+          "auth": "VERIFIED",
+          "scheme": "p2-selfcert-v1"
+        }
+      }
+    },
+    {
+      "step": "N8 wrong algorithm → ALGORITHM_UNSUPPORTED",
+      "ok": true,
+      "result": {
+        "algCode": "ALGORITHM_UNSUPPORTED"
+      }
+    },
+    {
+      "step": "N9 noncanonical key encoding → ENCODING_INVALID",
+      "ok": true,
+      "result": {
+        "encCode": "ENCODING_INVALID"
+      }
+    },
+    {
+      "step": "N10 AUTHORIZE key_id/public_key mismatch → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "idMix": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
+      "step": "N11 REVOKE unknown/inactive key → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "revUnknown": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
+      "step": "R carries full verification material (genesis + events + assertion)",
+      "ok": true,
+      "result": {
+        "keys": [
+          "genesis",
+          "events",
+          "publication"
+        ]
+      }
+    },
+    {
+      "step": "B independently verifies → VERIFIED / FIRST_OBSERVATION_UNPROVEN",
+      "ok": true,
+      "result": {
+        "publisher_auth": "VERIFIED",
+        "freshness": "FIRST_OBSERVATION_UNPROVEN",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "key_id": "0961256e921d05b11bb2b5d05af465c08ebdd0ab7a6b21577878c82fa1317fd8",
+        "identity_sequence": 1,
+        "identity_head_digest": "2acf28465a9b4c6e069cf329ba05069aeb4f06efcda75c67651bd8fe2d6c1f30",
+        "genesis_digest": "8c1abe18e6c2ed4c5bfe8a4408ba9383061086b6b31f90528267054f97cf6901"
+      }
+    },
+    {
+      "step": "repeated exact state → MATCHES_LOCAL_PIN, pin NOT mutated",
+      "ok": true,
+      "result": {
+        "freshness": "MATCHES_LOCAL_PIN",
+        "pin": {
+          "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+          "sequence": 1,
+          "head_digest": "2acf28465a9b4c6e069cf329ba05069aeb4f06efcda75c67651bd8fe2d6c1f30"
+        }
+      }
+    },
+    {
+      "step": "rotation: K2 authorized at seq 2; 0.1.1 published+verified",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p2-selfcert-v1",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "name": "csv-running-total",
+        "version": "0.1.1",
+        "D": "83f7b74a14e81d2dd7eb63686f71489a3d8d8dbcc52982c6039666cd9c8e8a85",
+        "publisher_auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "legitimate extension → EXTENDS_LOCAL_PIN, pin advanced",
+      "ok": true,
+      "result": {
+        "publisher_auth": "VERIFIED",
+        "freshness": "EXTENDS_LOCAL_PIN",
+        "publisher_id": "8f49c3678144a1cc5f8caadefa650cacf8b40d4c5e5b7f33281e39a61b050e44",
+        "key_id": "9c883e61afe19529246ad2aa95c073c1421b8241a288a74f8436153d2eaa1c3d",
+        "identity_sequence": 2,
+        "identity_head_digest": "8a52cfc732e30ed4a872f22902ec4386a3902083e9949fd9b06f915b9e81982d",
+        "genesis_digest": "8c1abe18e6c2ed4c5bfe8a4408ba9383061086b6b31f90528267054f97cf6901"
+      }
+    },
+    {
+      "step": "old chain below pinned state → SEQUENCE_ROLLBACK refusal",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "SEQUENCE_ROLLBACK: served 1 < pinned 2",
+        "failure": "SEQUENCE_ROLLBACK"
+      }
+    },
+    {
+      "step": "revoked K1 claiming the current state → KEY_NOT_AUTHORIZED",
+      "ok": true,
+      "result": {
+        "code": "KEY_NOT_AUTHORIZED"
+      }
+    },
+    {
+      "step": "same-height alternate head → IDENTITY_HISTORY_FORK",
+      "ok": true,
+      "result": {
+        "forkCode": "IDENTITY_HISTORY_FORK"
+      }
+    },
+    {
+      "step": "non-extending higher state → IDENTITY_HISTORY_FORK",
+      "ok": true,
+      "result": {
+        "fork2": "IDENTITY_HISTORY_FORK"
+      }
+    },
+    {
+      "step": "authenticated staging alone → zero registry authority",
+      "ok": true,
+      "result": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "step": "N12 forged discovery metadata at B (outer tuple P→Q) → refusal",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "publisher_id: expected 63c5d67f29d8969af7f3 but the proof authenticates 8f49c3678144a1cc5f8c",
+        "failure": "SIGNED_STATEMENT_MISMATCH"
+      }
+    },
+    {
+      "step": "N12b material without an expected tuple → fail closed",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "staging with publisher material requires the expected discovery/fetch tuple — refusing to authenticate unbound proof",
+        "failure": "SIGNED_STATEMENT_MISMATCH"
+      }
+    },
+    {
+      "step": "independent pins: two full-length publisher identities hold separate pin records",
+      "ok": true,
+      "result": {
+        "pins": [
+          "27749f6519f2…(64)",
+          "8f49c3678144…(64)"
+        ]
+      }
+    },
+    {
+      "step": "authenticated capability still: P0 stage → B-local verify → admission → route → gate → SHIP",
+      "ok": true,
+      "result": {
+        "verify": "VERIFIED",
+        "admit": true,
+        "route": "csv-running-total",
+        "gate": true,
+        "verdict": "SHIP"
+      }
+    }
+  ],
+  "verdict": "P2 MATRIX GREEN — publisher authentication implemented, provenance only"
+}

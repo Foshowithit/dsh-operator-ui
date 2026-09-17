@@ -1,0 +1,19 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "bo",
+      "second": "gus"
+    },
+    {
+      "first": "bo",
+      "second": "di"
+    },
+    {
+      "first": "gus",
+      "second": "di"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

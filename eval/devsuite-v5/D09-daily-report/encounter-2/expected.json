@@ -1,0 +1,23 @@
+{
+  "family": "D09",
+  "days": [
+    {
+      "date": "2026-09-09",
+      "count": "1"
+    },
+    {
+      "date": "2026-09-11",
+      "count": "3"
+    },
+    {
+      "date": "2026-09-12",
+      "count": "4"
+    },
+    {
+      "date": "2026-09-13",
+      "count": "2"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

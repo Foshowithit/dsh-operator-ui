@@ -1,0 +1,7 @@
+# coverage plan
+
+name start end
+SHIFT di 16:15-17:06
+SHIFT hal 10:00-11:53
+SHIFT eli 16:15-16:47
+SHIFT cy 13:00-14:31

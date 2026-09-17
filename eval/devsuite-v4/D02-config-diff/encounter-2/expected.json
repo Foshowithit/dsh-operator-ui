@@ -1,0 +1,17 @@
+{
+  "family": "D02",
+  "changed": [
+    {
+      "key": "max_retries",
+      "old": "strict",
+      "new": "300"
+    },
+    {
+      "key": "sample_rate",
+      "old": "4",
+      "new": "300"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}
