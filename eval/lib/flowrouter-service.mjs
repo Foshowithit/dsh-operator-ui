@@ -322,6 +322,37 @@ const server = createServer(async (req, res) => {
       } catch { return json(res, 404, { error: 'EVIDENCE_UNAVAILABLE', reason: 'no core stored under that digest' }); }
     }
 
+    // ---------------- GET /possession (D0, spec d0e935d) ----------------
+    // The repository POSSESSION INDEX: "which exact authenticated-publication
+    // tuples does this endpoint claim it currently holds for this name?"
+    // Deliberately separate from the older /discover surface (P1 semantics are
+    // not retrofitted). Only P2 bindings are indexable — including mirrored
+    // ones (R0's indexing exclusion is reversed for THIS contract). Entries
+    // carry NO authority: no auth verdict, no freshness, no ranking, no
+    // recommendation; claimed_D is a claim, never trusted input.
+    if (req.method === 'GET' && url.pathname === '/possession') {
+      const nameQ = url.searchParams.get('name');
+      if (typeof nameQ !== 'string' || !CANON.test(nameQ)) return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'an exact canonical capability name is required' });
+      const entries = [];
+      for (const rec of publications) {
+        if ((rec.publisher_scheme || 'p1-configured-v1') !== 'p2-selfcert-v1') continue; // P1 bindings never federate
+        if (rec.name !== nameQ) continue;
+        entries.push({
+          publisher_scheme: 'p2-selfcert-v1',
+          publisher_id: rec.publisher_id,
+          name: rec.name,
+          version: rec.version,
+          claimed_D: rec.D,
+        });
+      }
+      // canonical bytewise order for reproducibility only — ordering carries no
+      // meaning and no preference (D0 §4)
+      entries.sort((a, b) => (a.publisher_id < b.publisher_id ? -1 : a.publisher_id > b.publisher_id ? 1
+        : a.name < b.name ? -1 : a.name > b.name ? 1
+        : a.version < b.version ? -1 : a.version > b.version ? 1 : 0));
+      return json(res, 200, { name: nameQ, entries, order_semantics: 'none' });
+    }
+
     // ---------------- POST /replicate (R0, spec 43ca378) ----------------
     // Pull replication of one exact P2 tuple from one source endpoint. The
     // source is NOT trusted: everything is re-verified here, the artifact's P0
