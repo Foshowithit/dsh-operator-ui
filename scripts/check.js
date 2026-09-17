@@ -450,6 +450,38 @@ check('teach: three identities + eval-before-candidate + explicit promotion + sc
 // 12. M2.5 Capability Memory: operating history is a READ MODEL over the
 // task envelopes (no new store), decay is NAMED evidence — never a
 // "confidence score" — and version lineage never overwrites history.
+
+// Production acquisition (GPT productization of the sealed Eval v2 program):
+// the proven mechanism ported into the product path. Contract properties:
+// fail-closed cognition config, conjunctive budgets, static validation
+// before ANY execution, redacted rename-loop refusal, objective evaluation
+// (never the acquisition's own opinion) as the candidate gate, promotion via
+// the existing explicit operator machinery only.
+check('acquire: production acquisition — fail-closed, bounded, evaluate-then-candidate', () => {
+  const a = readFileSync(join(root, 'lib', 'acquire.js'), 'utf8');
+  for (const must of [
+    'acquireCapability', 'staticValidate', 'ACQ_BUDGET',
+    'maxRevisions: 3', 'maxCalls: 4', 'maxOutputTokens: 50000', 'maxWallMs: 600000',
+    'ACQUISITION_NOT_CONFIGURED', 'BUDGET_EXHAUSTED', 'REVISIONS_EXHAUSTED', 'REVISION_LOOP',
+    "kind: 'teaching'", 'evaluateObjective', 'verdict = \'CANDIDATE\'', "kind: 'promote'",
+  ]) {
+    if (!a.includes(must)) throw new Error('lib/acquire.js lost ' + must);
+  }
+  // never writes outside the configured teaching dirs, never reads credentials
+  // from hardcoded paths (env only), never promotes itself
+  if (/writeFile\([^)]*registry/.test(a)) throw new Error('acquisition must never write the registry — promotion is the operator click');
+  if (new RegExp('chow' + '-secrets|\\/Users\\/').test(a)) throw new Error('acquisition must resolve credentials from env only');
+  // static validation runs before any execute stage in the loop order
+  const staticIdx = a.indexOf('staticValidate(parsed.yaml)');
+  const execIdx = a.indexOf('runWorkflowOnArchon(name, t.objective');
+  if (staticIdx < 0 || execIdx < 0 || staticIdx > execIdx) throw new Error('static validation must precede execution');
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/acquire'")) throw new Error('host lost the /acquire route');
+  const client = readFileSync(join(root, 'lib', 'client.js'), 'utf8');
+  if (!client.includes("'/plugins/operator-ui/acquire'")) throw new Error('gap affordance must call the production engine');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'acquire.js')], { stdio: 'pipe' });
+});
+
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
   const h = readFileSync(join(root, 'lib', 'history.js'), 'utf8');
   for (const must of ['capabilityHistory', 'listTasks', 'objectivesSatisfied', 'blocksAfterExecution', 'lastVerifiedAt', 'needsReevaluation', 'decayReason', 'recent']) {
