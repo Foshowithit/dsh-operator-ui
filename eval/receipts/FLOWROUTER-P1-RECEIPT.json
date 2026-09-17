@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T04:04:31.787Z",
+  "generated_at": "2026-09-17T04:05:10.022Z",
   "steps": [
     {
       "step": "R is a FRESH actor (zero publication records before anything)",
@@ -54,7 +54,7 @@
           "name": "csv-running-total",
           "version": "0.1.0",
           "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-          "published_at": "2026-09-17T04:04:37.005Z",
+          "published_at": "2026-09-17T04:05:14.203Z",
           "kind": "workflow",
           "task_signatures": [
             "process",
@@ -161,7 +161,7 @@
         "afterStage": {
           "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
           "registry_caps": 0,
-          "taskstore_sha": "cb14d6238b99c092b968aaf3bfce7dba6161b6bbd893b01b2286fb85da6faa6c",
+          "taskstore_sha": "96ce635897d45a1a8f080e08fd6d6824e624c62be5dd9f69da2ff4a916a992b2",
           "import_tasks": 1
         }
       }
