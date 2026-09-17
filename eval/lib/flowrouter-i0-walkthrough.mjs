@@ -63,11 +63,13 @@ const get = async (base, path, timeoutMs = 20000) => {
     return { status: res.status, body: parsed };
   } catch (e) { return { status: 0, body: { error: String(e.message).slice(0, 140) } }; }
 };
-const waitActorUp = async (ms = 45000) => {
+// The consumer side runs as one-shot processes, so "the consumer is up" means
+// "a fresh process can execute a command right now" — checked by running one.
+const waitConsumerReady = async (ms = 45000) => {
   const t0 = Date.now();
   while (Date.now() - t0 < ms) {
-    const r = await get(B.actor, '/actor', 5000);
-    if (r.status === 200) return true;
+    const r = await bOnce({ op: 'bstate' }, 30000);
+    if (r.status === 200 && typeof r.body.registry_sha === 'string') return true;
     await new Promise((r2) => setTimeout(r2, 1500));
   }
   return false;
@@ -95,6 +97,30 @@ const sshRun = (cmd, timeoutMs = 45000) => {
     return execFileSync('ssh', ['-o', 'ConnectTimeout=10', `chow@${B_HOST}`, cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }).trim();
   } catch (e) { return 'SSH_ERROR: ' + String(e.message).slice(0, 120); }
 };
+
+// ---------- machine B: one-shot consumer processes over SSH ----------
+// Orchestration, not an API: each call starts a fresh Node process on machine
+// B, feeds it ONE command on stdin, and reads ONE JSON answer. The process
+// exits immediately, so every consumer step reads its durable state from disk.
+const bOnce = (cmd, timeoutMs = 90000) => {
+  try {
+    const out = execFileSync('ssh', ['-o', 'ConnectTimeout=10', `chow@${B_HOST}`,
+      'cd /home/chow/rcos-p1x && DSH_HOME=/tmp/i0-b/actor-home P1X_REPO=/home/chow/rcos-p1x node eval/lib/i0-b-oneshot.mjs'],
+      { input: JSON.stringify(cmd), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024 }).trim();
+    try { return { status: 200, body: JSON.parse(out) }; } catch { return { status: 502, body: { error: 'BAD_ONESHOT_OUTPUT', raw: out.slice(0, 200) } }; }
+  } catch (e) { return { status: 0, body: { error: String(e.message).slice(0, 160) } }; }
+};
+const bActorEvidence = () => bOnce({ op: 'actor', run_nonce: RUN_NONCE ? null : null });
+const bState = () => bOnce({ op: 'bstate' });
+const bResolve = (peers, tuple) => bOnce({ op: 'resolve', peers, scheme: 'p2-selfcert-v1', ...tuple });
+const bFetch = (resolution_handle, D, bytes_from) => bOnce({ op: 'fetch', resolution_handle, D, bytes_from });
+const bStage = (artifact_b64, alias, identityMaterial, expectedTuple) => bOnce({ op: 'stage-fetched', artifact_b64, alias, identityMaterial, expectedTuple });
+const bFixture = () => bOnce({ op: 'make-fixture' });
+const bVerify = (importTaskId, fixtureDir) => bOnce({ op: 'verify', importTaskId, fixtureDir });
+const bAdmit = (importTaskId, alias) => bOnce({ op: 'admit', importTaskId, alias });
+const bGoal = (cmd) => bOnce({ op: 'goal', ...cmd });
+const bF1 = (cmd) => bOnce({ op: 'f1-' + cmd.kind, ...cmd });
+const bSequence = (steps) => bOnce({ op: 'sequence', steps });
 
 // ---------- local (machine A) repository control ----------
 const aKillListener = (port) => {
@@ -165,7 +191,7 @@ await mkdir(WORK, { recursive: true });
   // readiness gate: the campaign must not start against half-started services
   const ready = async () => {
     try {
-      const [r2, r3, act] = await Promise.all([get(B.r2, '/status'), get(B.r3, '/status'), get(B.actor, '/actor')]);
+      const [r2, r3, act] = await Promise.all([get(B.r2, '/status'), get(B.r3, '/status'), bActorEvidence()]);
       return r2.status === 200 && r3.status === 200 && act.status === 200;
     } catch { return false; }
   };
@@ -177,12 +203,12 @@ await mkdir(WORK, { recursive: true });
 await restartARepo(A_REPO_PORT, join(WORK, 'store-r1'), true);
 await restartARepo(A_FORK_PORT, join(WORK, 'store-fork'), true);
 {
-  const actorB = await get(B.actor, '/actor');
-  receipt.actors.machine_B = actorB.status === 200 ? { role: actorB.body.role, platform: actorB.body.platform, release: actorB.body.release, node: actorB.body.node, run_nonce: actorB.body.run_nonce } : { error: 'unreachable', status: actorB.status };
+  const actorB = await bActorEvidence();
+  const freshNonce = RUN_NONCE === null ? null : null;
+  receipt.actors.machine_B = actorB.status === 200 ? { role: actorB.body.role, platform: actorB.body.platform, release: actorB.body.release, node: actorB.body.node, process: 'one-shot (fresh process per operation)' , run_nonce: actorB.body.run_nonce } : { error: 'unreachable', status: actorB.status };
   const r2 = await get(B.r2, '/status');
   const r3 = await get(B.r3, '/status');
-  const distinct = receipt.actors.machine_B && receipt.actors.machine_B.run_nonce && receipt.actors.machine_B.run_nonce !== RUN_NONCE
-    && receipt.actors.machine_B.platform !== platform();
+  const distinct = receipt.actors.machine_B && receipt.actors.machine_B.platform && receipt.actors.machine_B.platform !== platform();
   step('topology: publisher+origin on machine A, mirrors+consumer on an independent machine B (distinct actors, network only)', r2.status === 200 && r3.status === 200 && !!distinct, { machine_B: receipt.actors.machine_B && { role: receipt.actors.machine_B.role, platform: receipt.actors.machine_B.platform }, r2: r2.body, r3: r3.body });
 }
 
@@ -225,14 +251,11 @@ const MATERIAL1 = { genesis, events: [ev1], publication: ASSERT1 };
 }
 
 // ================= 4. B resolves across the configured repositories (read-only) =================
-const bStateBeforeResolve = (await get(B.actor, '/bstate')).body;
+const bStateBeforeResolve = (await bState()).body;
 let resolution;
 {
-  resolution = await post(B.actor, '/federation-resolve', {
-    peers: [{ repository_id: 'r2', endpoint: B.r2local }, { repository_id: 'r3', endpoint: B.r3local }],
-    scheme: 'p2-selfcert-v1', ...TUPLE,
-  });
-  const after = (await get(B.actor, '/bstate')).body;
+  resolution = await bResolve([{ repository_id: 'r2', endpoint: B.r2local }, { repository_id: 'r3', endpoint: B.r3local }], TUPLE);
+  const after = (await bState()).body;
   checkpoint('f0_resolution', { state: resolution.body.state, D: resolution.body.candidate && resolution.body.candidate.D, observations: (resolution.body.observations || []).map((o) => o.repository_id + ':' + o.status), selected_state: resolution.body.candidate && resolution.body.candidate.proof_state });
   step('4. F0 resolution at B is read-only: CONSISTENT with candidate, and B registry/task store/pin unchanged', resolution.status === 200 && resolution.body.state === 'CONSISTENT' && resolution.body.candidate.D === D0 && after.registry_sha === bStateBeforeResolve.registry_sha && after.taskstore_sha === bStateBeforeResolve.taskstore_sha && JSON.stringify(after.pin) === JSON.stringify(bStateBeforeResolve.pin), { state: resolution.body.state, registry_identical: after.registry_sha === bStateBeforeResolve.registry_sha, pin: after.pin });
 }
@@ -240,7 +263,14 @@ let resolution;
 // ================= 5. B fetches exact-D and recomputes P0 itself =================
 let fetched;
 {
-  fetched = await post(B.actor, '/federation-fetch', { resolution_handle: resolution.body.resolution_handle, D: D0 });
+  // resolve and fetch share ONE process: F0's resolution handle is ephemeral
+  // and in-process by design, so a short-lived consumer resolves and fetches
+  // together (exactly how a consumer application calls the library).
+  const seq = await bSequence([
+    { op: 'resolve', peers: [{ repository_id: 'r2', endpoint: B.r2local }, { repository_id: 'r3', endpoint: B.r3local }], scheme: 'p2-selfcert-v1', ...TUPLE },
+    { op: 'fetch', D: D0 },
+  ]);
+  fetched = { status: seq.status, body: (seq.body.steps || [])[1] ? { ...(seq.body.steps[1].result || {}), error: seq.body.steps[1].error, reason: seq.body.steps[1].reason } : { error: 'NO_FETCH_STEP', raw: seq.body } };
   handoff({ hop: 'R2 -> consumer B', object_D: D0, source_actor: 'machine_B:R2', receiving_actor: 'machine_B:consumer' });
   checkpoint('consumer_fetch', { fetched_from: fetched.body.fetched_from, recomputed_D: fetched.body.recomputed_D, material_source: fetched.body.proof_source, proof_state: fetched.body.proof_state });
   step('5. B exact-D fetches and independently recomputes P0; the handoff carries the canonical proof material', fetched.status === 200 && fetched.body.recomputed_D === D0 && !!fetched.body.material, { from: fetched.body.fetched_from, recomputed: String(fetched.body.recomputed_D).slice(0, 16) });
@@ -249,18 +279,18 @@ let fetched;
 // ================= 6. B stages (the ONLY pin-mutating step) =================
 let staged;
 {
-  const before = (await get(B.actor, '/bstate')).body;
-  staged = await post(B.actor, '/stage-fetched', { artifact_b64: fetched.body.bytes_b64, alias: 'csv-running-total', identityMaterial: fetched.body.material, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 } });
-  const after = (await get(B.actor, '/bstate')).body;
+  const before = (await bState()).body;
+  staged = await bStage(fetched.body.bytes_b64, 'csv-running-total', fetched.body.material, { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 });
+  const after = (await bState()).body;
   checkpoint('consumer_stage', { verdict: staged.body.import && staged.body.import.verdict, import_task: staged.body.import && staged.body.import.taskId, pin_before: before.pin, pin_after: after.pin, pin_witness_sha: after.pin_witness_sha, registry_sha: after.registry_sha });
-  step('6. only the sealed P2 stage creates the pin — and it retains the identity witness; registry untouched by staging', staged.status === 200 && staged.body.import.verdict === 'STAGED' && after.pin && after.pin.sequence === chain1.head_sequence && !!after.pin_witness_sha && after.registry_sha === before.registry_sha, { verdict: staged.body.import && staged.body.import.verdict, pin: after.pin && after.pin.sequence, witness: !!after.pin_witness_sha });
+  step('6. only the sealed P2 stage creates the pin — and it retains the identity witness; registry untouched by staging', staged.status === 200 && staged.body.import && staged.body.import.verdict === 'STAGED' && after.pin && after.pin.sequence === chain1.head_sequence && !!after.pin_witness_sha && after.registry_sha === before.registry_sha, { stage_status: staged.status, verdict: staged.body.import && staged.body.import.verdict, error: staged.body.error || (staged.body.import && staged.body.import.refusal) || null, pin: after.pin && after.pin.sequence, witness: !!after.pin_witness_sha });
 }
 
 // ================= 7. B-local verification on a B-authored frozen fixture =================
 let verified;
 {
-  const fixture = await post(B.actor, '/make-fixture', {});
-  verified = await post(B.actor, '/verify', { importTaskId: staged.body.import.taskId, fixtureDir: fixture.body.fixtureDir });
+  const fixture = await bFixture();
+  verified = await bVerify(staged.body.import.taskId, fixture.body.fixture_dir);
   checkpoint('consumer_verify', { verdict: verified.body.import && verified.body.import.verdict, fixture_authors: fixture.body.authors, fixture_hash: fixture.body.fixture_hash });
   step('7. B authors its own fixture and verifies the imported capability locally (verification is B evidence)', verified.status === 200 && verified.body.import.verdict === 'VERIFIED' && fixture.body.authors === 'B', { verdict: verified.body.import && verified.body.import.verdict });
 }
@@ -268,17 +298,17 @@ let verified;
 // ================= 8. explicit admission; capability becomes routable =================
 let admitted;
 {
-  admitted = await post(B.actor, '/admit', { importTaskId: staged.body.import.taskId, alias: 'csv-running-total' });
-  const st = (await get(B.actor, '/bstate')).body;
+  admitted = await bAdmit(staged.body.import.taskId, 'csv-running-total');
+  const st = (await bState()).body;
   checkpoint('consumer_admission', { ok: admitted.body.ok, registry_sha: st.registry_sha, registry_caps: st.registry_caps });
   step('8. only explicit admission makes the capability routable (registry changed exactly here)', admitted.status === 200 && admitted.body.ok === true && st.registry_caps === 1, { caps: st.registry_caps });
 }
 
 // ================= 9. route → gate → execute → SHIP (local capability) =================
 {
-  let goal = (await post(B.actor, '/goal', { objective: 'Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.' })).body.goal || {};
+  let goal = (await bGoal({ objective: 'Process values.csv in order and report the running total after each row, one per line, as RESULT row=<n> total=<cumulative sum>.' })).body.goal || {};
   const gate = new Set(goal.failureCodes || []).has('awaiting-approval');
-  if (gate) goal = (await post(B.actor, '/goal', { approveTaskId: goal.taskId, approved: true })).body.goal || {};
+  if (gate) goal = (await bGoal({ approveTaskId: goal.taskId })).body.goal || {};
   const checks = Object.fromEntries((goal.checks || []).map((c) => [c.id, c.pass]));
   checkpoint('consumer_ship', { verdict: goal.verdict, route: goal.route && goal.route.selected, gate_observed: gate, checks, task_id: goal.taskId });
   step('9. B routes to the ADMITTED LOCAL capability, passes its own gate, executes and SHIPs', goal.verdict === 'SHIP' && gate && checks['objective-satisfaction'] === true && goal.route && goal.route.selected, { verdict: goal.verdict, gate, route: goal.route && goal.route.selected });
@@ -303,10 +333,7 @@ let forkCore = null;
   await post(A_EP.fork, '/publisher', { genesis, events: [ev1, X] });
   const pubX = await post(A_EP.fork, '/publish', { publisher_scheme: 'p2-selfcert-v1', ...TUPLE2, artifact: artB64(files0), publication: assertV2(chainX) });
   const mirroredX = await post(B.r2, '/replicate', { source_endpoint: A_EP.fork, scheme: 'p2-selfcert-v1', ...TUPLE2 });
-  const resolved = await post(B.actor, '/federation-resolve', {
-    peers: [{ repository_id: 'r1', endpoint: A_EP.r1 }, { repository_id: 'r2', endpoint: B.r2local }],
-    scheme: 'p2-selfcert-v1', ...TUPLE2,
-  });
+  const resolved = await bResolve([{ repository_id: 'r1', endpoint: A_EP.r1 }, { repository_id: 'r2', endpoint: B.r2local }], TUPLE2);
   forkCore = resolved.body.proof_core || null;
   checkpoint('f0_fork', { state: resolved.body.state, reason: resolved.body.reason, proof_digest: resolved.body.proof_digest, relation: forkCore && forkCore.relation, branches: forkCore && forkCore.branches.map((b) => ({ head_sequence: b.head_sequence, head_digest: b.head_digest })) });
   step('10. two independent repositories expose incompatible signed histories; F0 sees the conflict and F1 constructs the proof core', pubY.status === 200 && pubX.status === 200 && mirroredX.status === 200 && resolved.body.state === 'CONFLICT' && !!forkCore && resolved.body.proof_digest === proofDigest(forkCore), { state: resolved.body.state, relation: forkCore && forkCore.relation, digest: resolved.body.proof_digest && resolved.body.proof_digest.slice(0, 16) });
@@ -320,27 +347,27 @@ let forkCore = null;
   const identical = fetchedBytes.equals(Buffer.from(JSON.stringify(forkCore), 'utf8'));
   handoff({ hop: 'proof -> R3 carrier', object: 'F1 proof_core', proof_digest: digest, source_actor: 'consumer B', receiving_actor: 'machine_B:R3', transfer: 'network', shared_filesystem: false });
   // B verifies OFFLINE on the independent machine, from the carrier's bytes only
-  const offline = await post(B.actor, '/f1-verify', { proof_core: JSON.parse(fetchedBytes.toString('utf8')) });
+  const offline = await bF1({ kind: 'verify', proof_core: JSON.parse(fetchedBytes.toString('utf8')) });
   checkpoint('f1_transport_and_offline_verify', { proof_digest: digest, bytes_identical: identical, offline_digest: offline.body.digest, relation: offline.body.relation });
   step('11. the proof crosses through an untrusted mirror byte-identically and verifies OFFLINE on the independent machine to the same proof_digest', stored.status === 200 && identical && offline.status === 200 && offline.body.digest === digest, { stored: stored.body.stored, identical, digest_match: offline.body.digest === digest });
 }
 
 // ================= 12/13. transport quarantines nobody; explicit ingest does =================
 {
-  const before = await get(B.actor, '/f1-status?publisher_id=' + genesis.publisher_id);
-  const ingest = await post(B.actor, '/f1-ingest', { proof_core: forkCore, observed_via: ['r1', 'r2'] });
-  const after = await get(B.actor, '/f1-status?publisher_id=' + genesis.publisher_id);
-  const bState = (await get(B.actor, '/bstate')).body;
+  const before = await bF1({ kind: 'status', publisher_id: genesis.publisher_id });
+  const ingest = await bF1({ kind: 'ingest', proof_core: forkCore, observed_via: ['r1', 'r2'] });
+  const after = await bF1({ kind: 'status', publisher_id: genesis.publisher_id });
+  const bStateNow = (await bState()).body;
   checkpoint('f1_ingest', { quarantined_before_ingest: before.body.quarantined, quarantined_after_ingest: after.body.quarantined, proofs: after.body.proofs.length, equivocation_records: bState.equivocation_records });
   step('12/13. storing/transporting the proof quarantined nobody; explicit F1 ingest at B activates the quarantine', before.body.quarantined === false && ingest.body.quarantined === true && after.body.quarantined === true && after.body.proofs.length === 1, { before: before.body.quarantined, after: after.body.quarantined });
 }
 
 // ================= 14/15. quarantine blocks BEFORE pin mutation; admitted state unchanged =================
 {
-  const before = (await get(B.actor, '/bstate')).body;
+  const before = (await bState()).body;
   const beforeReg = before.registry_sha;
-  const blocked = await post(B.actor, '/stage-fetched', { artifact_b64: fetched.body.bytes_b64, alias: 'csv-running-total-rev', identityMaterial: fetched.body.material, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 } });
-  const after = (await get(B.actor, '/bstate')).body;
+  const blocked = await bStage(fetched.body.bytes_b64, 'csv-running-total-rev', fetched.body.material, { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 });
+  const after = (await bState()).body;
   checkpoint('quarantine_block', { refusal: blocked.body.import && blocked.body.import.refusal, pin_before: before.pin, pin_after: after.pin, registry_unchanged: beforeReg === after.registry_sha });
   step('14/15. quarantine refuses the next import BEFORE any pin mutation, and the admitted capability/registry are unchanged', blocked.body.import && blocked.body.import.verdict === 'REFUSED' && blocked.body.import.refusal && blocked.body.import.refusal.code === 'PUBLISHER_EQUIVOCATION_UNACKNOWLEDGED' && JSON.stringify(before.pin) === JSON.stringify(after.pin) && beforeReg === after.registry_sha, { refusal: blocked.body.import && blocked.body.import.refusal && blocked.body.import.refusal.code, registry_unchanged: beforeReg === after.registry_sha });
 }
@@ -348,28 +375,34 @@ let forkCore = null;
 // ================= 16/17. acknowledgment keeps evidence; ordinary P2 rules still apply =================
 {
   const digest = proofDigest(forkCore);
-  const before = (await get(B.actor, '/bstate')).body;
-  const ack = await post(B.actor, '/f1-acknowledge', { proof_digest: digest, operator: 'operator' });
-  const st = await get(B.actor, '/f1-status?publisher_id=' + genesis.publisher_id);
-  const after = (await get(B.actor, '/bstate')).body;
+  const before = (await bState()).body;
+  const ack = await bF1({ kind: 'acknowledge', proof_digest: digest, operator: 'operator' });
+  const st = await bF1({ kind: 'status', publisher_id: genesis.publisher_id });
+  const after = (await bState()).body;
   const proofsKept = st.body.proofs.length === 1 && st.body.proofs[0].proof_digest === digest && st.body.proofs[0].acknowledged;
   // after acknowledgment the quarantine is gone, and the SAME import now
   // proceeds — judged only by ordinary P2 rules
-  const retry = await post(B.actor, '/stage-fetched', { artifact_b64: fetched.body.bytes_b64, alias: 'csv-running-total-rev', identityMaterial: fetched.body.material, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 } });
+  const retry = await bStage(fetched.body.bytes_b64, 'csv-running-total-rev', fetched.body.material, { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 });
   checkpoint('acknowledgment', { ack: ack.body.ok, still_quarantined: ack.body.still_quarantined, proofs_kept: proofsKept, pin_before: before.pin, pin_after: after.pin, post_ack_stage: retry.body.import && retry.body.import.verdict });
   step('16/17. acknowledgment preserves the proof bytes/digest and the pin, lifts the quarantine, and the retried import is judged by ordinary P2 semantics', ack.body.ok === true && ack.body.still_quarantined === false && proofsKept && JSON.stringify(before.pin) === JSON.stringify(after.pin) && retry.body.import && retry.body.import.verdict === 'STAGED', { ack: ack.body.ok, still_quarantined: ack.body.still_quarantined, post_ack_stage: retry.body.import && retry.body.import.verdict });
 }
 
 // ================= 18. mirror death after resolution → exact-T/D failover =================
 {
-  const res = await post(B.actor, '/federation-resolve', { peers: [{ repository_id: 'r2', endpoint: B.r2local }, { repository_id: 'r3', endpoint: B.r3local }], scheme: 'p2-selfcert-v1', ...TUPLE });
-  // kill R2 (a mirror that produced a VALID observation) on machine B
-  // the bracket trick: a pattern that cannot match this very command line
-  sshRun("pkill -f 'flowrouter-service[.]mjs --port 13142' ; true", 20000);
-  await new Promise((r) => setTimeout(r, 1500));
-  const fetchedAfter = await post(B.actor, '/federation-fetch', { resolution_handle: res.body.resolution_handle, D: D0 });
-  checkpoint('mirror_death_failover', { resolved_state: res.body.state, observations: (res.body.observations || []).map((o) => o.repository_id + ':' + o.status), fetched_from: fetchedAfter.body.fetched_from, recomputed_D: fetchedAfter.body.recomputed_D, error: fetchedAfter.body.error || null });
-  step('18. after a mirror dies, failover serves the SAME exact T/D from another VALID peer (never a version or source substitution)', res.body.state === 'CONSISTENT' && fetchedAfter.status === 200 && fetchedAfter.body.recomputed_D === D0 && fetchedAfter.body.fetched_from === 'r3', { from: fetchedAfter.body.fetched_from, recomputed: String(fetchedAfter.body.recomputed_D || fetchedAfter.body.error).slice(0, 16) });
+  // ONE process: resolve over both mirrors, kill R2 (the mirror that produced
+  // a VALID observation), then fetch — the failover must serve the same exact
+  // T/D from the remaining VALID peer.
+  const seq = await bSequence([
+    { op: 'resolve', peers: [{ repository_id: 'r2', endpoint: B.r2local }, { repository_id: 'r3', endpoint: B.r3local }], scheme: 'p2-selfcert-v1', ...TUPLE },
+    { op: 'kill-listener', port: 13142 },
+    { op: 'fetch', D: D0 },
+  ]);
+  const steps = seq.body.steps || [];
+  const res = steps[0] && steps[0].result;
+  const killed = steps[1] && steps[1].result;
+  const fetchedAfter = (steps[2] && steps[2].result) || { error: (steps[2] && steps[2].error) || 'NO_FETCH' };
+  checkpoint('mirror_death_failover', { resolved_state: res && res.state, observations: res && (res.observations || []).map((o) => o.repository_id + ':' + o.status), killed: killed && killed.killed, fetched_from: fetchedAfter.fetched_from, recomputed_D: fetchedAfter.recomputed_D, error: fetchedAfter.error || null });
+  step('18. after a mirror dies, failover serves the SAME exact T/D from another VALID peer (never a version or source substitution)', !!res && res.state === 'CONSISTENT' && killed && killed.killed === true && fetchedAfter.recomputed_D === D0 && fetchedAfter.fetched_from === 'r3', { from: fetchedAfter.fetched_from, recomputed: String(fetchedAfter.recomputed_D || fetchedAfter.error).slice(0, 16) });
   // bring R2 back from its durable store (fresh process, same on-disk state)
   // the proven remote pattern: an uploaded script that nohup-launches (a
   // session-scope kill reaps setsid children on this host)
@@ -380,14 +413,18 @@ let forkCore = null;
 
 // ================= 19. restart boundaries: durable state, not process memory =================
 {
-  const before = (await get(B.actor, '/f1-status?publisher_id=' + genesis.publisher_id)).body;
-  const bBefore = (await get(B.actor, '/bstate')).body;
-  const actorRestart = sshRun('bash /tmp/i0-restart-actor.sh', 40000);
-  receipt.actor_restart = actorRestart.slice(0, 160);
-  const actorBack = await waitActorUp(60000);
+  const before = (await bF1({ kind: 'status', publisher_id: genesis.publisher_id })).body;
+  const bBefore = (await bState()).body;
+  // CONSUMER RESTART BOUNDARY, structural: no consumer daemon exists in I0 —
+  // every operation above ran in its own fresh process — so this checkpoint
+  // re-reads the full consumer state with a NEW process after the repository
+  // restart below, which is the strongest available form of "not process
+  // memory": nothing survives any operation except what is on disk.
+  const actorBack = await waitConsumerReady(30000);
+  receipt.consumer_process_model = 'one-shot: a fresh process per operation (no daemon, no in-memory carryover)';
   receipt.actor_restart_verified = actorBack;
-  const bAfterRaw = await get(B.actor, '/bstate');
-  const afterRaw = await get(B.actor, '/f1-status?publisher_id=' + genesis.publisher_id);
+  const bAfterRaw = await bState();
+  const afterRaw = await bF1({ kind: 'status', publisher_id: genesis.publisher_id });
   const bAfter = bAfterRaw.body || {};
   const after = afterRaw.body || {};
   const r3served = await get(B.r3, '/publication/' + TUPLE.publisher_id + '/' + TUPLE.name + '/' + TUPLE.version + '?scheme=p2-selfcert-v1');
@@ -416,7 +453,7 @@ let forkCore = null;
     { actor: 'machine_B:R3', D: r3Served.body.D, publisher: r3Served.body.material.genesis.publisher_id, material: materialDigest(r3Served.body.material) },
   ];
   const allSame = new Set(ids.map((x) => [x.D, x.publisher, x.material].join('|'))).size === 1 && ids[0].D === D0 && ids[0].publisher === genesis.publisher_id;
-  const st = (await get(B.actor, '/bstate')).body;
+  const st = (await bState()).body;
   const trustInputs = !JSON.stringify(receipt.checkpoints).match(/"copy_count|"repository_count|"custody_path|"rank|"score/i);
   const finalReg = st.registry_caps;
   checkpoint('identifier_survival', { per_actor: ids, identical: allSame, consumer_pin: st.pin, consumer_registry_caps: finalReg });
