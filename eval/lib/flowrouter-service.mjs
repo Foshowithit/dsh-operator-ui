@@ -35,6 +35,7 @@ import { readFile, writeFile, mkdir, readdir, appendFile, rm } from 'node:fs/pro
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { verifyGenesis, replayChain, verifyPublication, recordDigest } from '../../lib/identity.js';
+import { planReplication, packageDigestOf, artifactFilesFromWire, materialDigest, r0err, R0 } from '../../lib/replication.js';
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
@@ -43,6 +44,7 @@ const STORE = argOf('--store', '/tmp/flowrouter-R');
 const BLOBS = join(STORE, 'blobs');
 const PUBS = join(STORE, 'publications.jsonl');
 const EVIDENCE = join(STORE, 'evidence');
+const MIRROR_META = join(STORE, 'mirror.jsonl'); // custody provenance only — local, non-authoritative
 const INDEX = join(STORE, 'index.json');
 const PUBLISHERS = join(STORE, 'publishers');
 
@@ -148,6 +150,10 @@ async function rebuildIndex() {
         evidence_summary: { verdicts: ((m.evidence || {}).verdicts || []).length, reported: true },
       };
     } catch { /* record without readable blob — index entry stays minimal */ }
+    // R0 (approved): a mirrored binding is served by exact lookup and exact-D
+    // fetch but is NOT listed in this repository's discovery index — R0 is
+    // about custody, not distribution policy.
+    if (rec.custody && rec.custody.mirrored_from) continue;
     out.push({ publisher_scheme: rec.publisher_scheme || 'p1-configured-v1', publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D, published_at: rec.published_at, publisher_auth: rec.publisher_auth || 'UNAUTHENTICATED', ...meta });
   }
   index = out;
@@ -314,6 +320,86 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, { 'content-type': 'application/json' });
         return res.end(bytes);
       } catch { return json(res, 404, { error: 'EVIDENCE_UNAVAILABLE', reason: 'no core stored under that digest' }); }
+    }
+
+    // ---------------- POST /replicate (R0, spec 43ca378) ----------------
+    // Pull replication of one exact P2 tuple from one source endpoint. The
+    // source is NOT trusted: everything is re-verified here, the artifact's P0
+    // digest is recomputed from the bytes actually received, and the blob is
+    // committed BEFORE the binding. A mirror never re-attests: it stores and
+    // re-serves the ORIGINAL publisher's material; custody provenance is local
+    // metadata only and never enters what is served.
+    if (req.method === 'POST' && url.pathname === '/replicate') {
+      const chunks = [];
+      for await (const c of req) chunks.push(c);
+      let reqBody;
+      try { reqBody = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'body is not valid JSON' }); }
+      const { source_endpoint, scheme, publisher_id, name, version } = reqBody;
+      if (typeof source_endpoint !== 'string' || !/^https?:\/\//.test(source_endpoint)) return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'source_endpoint (http(s)) required' });
+      if (scheme === 'p1-configured-v1') return json(res, 409, { error: R0.P1_NOT_FEDERATABLE, reason: 'a P1 publication binding is origin-scoped and does not federate in R0 (a raw P0 blob may still be cached by D)' });
+      if (scheme !== undefined && scheme !== 'p2-selfcert-v1') return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'scheme must be p2-selfcert-v1' });
+      if (typeof publisher_id !== 'string' || !CANON.test(publisher_id) || typeof name !== 'string' || !CANON.test(name) || typeof version !== 'string' || !VER.test(version)) {
+        return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'an exact P2 tuple (publisher_id, name, version) is required — there is no version fallback' });
+      }
+      const tuple = { publisher_scheme: 'p2-selfcert-v1', publisher_id, name, version };
+      try {
+        const existing = findPub(publisher_id, name, version, 'p2-selfcert-v1');
+        const existingMaterialDigest = existing && existing.material ? materialDigest(existing.material) : null;
+        const plan = await planReplication({
+          source_endpoint, tuple,
+          lookupExisting: async () => existing,
+          existingMaterialDigest,
+        });
+        if (!plan.ok) return json(res, 409, { error: plan.code, reason: plan.reason, tuple, held_D: existing ? existing.D : null, offered_D: plan.requested_D });
+        if (plan.action === 'idempotent') {
+          return json(res, 200, { replicated: true, idempotent: true, tuple, D: plan.requested_D, material_digest: plan.material_digest });
+        }
+        // blob FIRST, binding SECOND: no verified binding may point at bytes
+        // this repository did not successfully persist.
+        await mkdir(BLOBS, { recursive: true });
+        await writeFile(join(BLOBS, plan.requested_D + '.pkg'), plan.wire_bytes);
+        await withPublishLock(async () => {
+          await commitPublication({
+            ...tuple, D: plan.requested_D, published_at: nowIso(),
+            publisher_auth: 'VERIFIED',
+            material: plan.material,
+            custody: { mirrored_from: source_endpoint, replicated_at: nowIso(), custody_hops: 1 },
+          });
+        });
+        await rebuildIndex();
+        const provenance = { tuple, D: plan.requested_D, source_endpoint, replicated_at: nowIso(), material_digest: plan.material_digest };
+        await appendFile(MIRROR_META, JSON.stringify(provenance) + '\n', 'utf8');
+        return json(res, 200, { replicated: true, idempotent: false, tuple, D: plan.requested_D, requested_D: plan.requested_D, recomputed_D: plan.recomputed_D, publisher: plan.publisher, custody: { mirrored_from: source_endpoint } });
+      } catch (e) {
+        return json(res, 409, { error: e.code || R0.SOURCE_MALFORMED, reason: String(e.message).slice(0, 220), tuple });
+      }
+    }
+
+    // ---------------- POST /cache-blob (R0 content-only custody) ----------------
+    // Raw P0 caching by immutable D: possession of content without any
+    // binding, so it stays legal even for a blob referenced by a P1
+    // publication. It authorizes nothing and binds nothing.
+    if (req.method === 'POST' && url.pathname === '/cache-blob') {
+      const chunks = [];
+      for await (const c of req) chunks.push(c);
+      let reqBody;
+      try { reqBody = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'body is not valid JSON' }); }
+      const { source_endpoint, D } = reqBody;
+      if (typeof source_endpoint !== 'string' || !/^https?:\/\//.test(source_endpoint)) return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'source_endpoint (http(s)) required' });
+      if (typeof D !== 'string' || !/^[a-f0-9]{64}$/.test(D)) return json(res, 400, { error: R0.INVALID_REQUEST, reason: 'D (64-hex) required' });
+      try {
+        const base = source_endpoint.replace(/\/$/, '');
+        const r = await fetch(base + '/fetch/' + D, { signal: AbortSignal.timeout(20000) });
+        if (!r.ok) return json(res, 409, { error: R0.SOURCE_UNAVAILABLE, reason: 'source served no artifact for this D' });
+        const wire = Buffer.from(await r.arrayBuffer());
+        const recomputed = packageDigestOf(artifactFilesFromWire(wire));
+        if (recomputed !== D) return json(res, 409, { error: R0.BYTES_SUBSTITUTED, reason: `bytes recompute to ${recomputed.slice(0, 16)}… — content cached only when it is the content requested`, requested_D: D, recomputed_D: recomputed });
+        await mkdir(BLOBS, { recursive: true });
+        await writeFile(join(BLOBS, D + '.pkg'), wire);
+        return json(res, 200, { cached: true, D, recomputed_D: recomputed, binding_created: false });
+      } catch (e) {
+        return json(res, 409, { error: e.code || R0.SOURCE_UNAVAILABLE, reason: String(e.message).slice(0, 200) });
+      }
     }
 
     // ---------------- GET /status ----------------
