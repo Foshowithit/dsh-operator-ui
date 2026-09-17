@@ -3,8 +3,9 @@
 Everything below re-runs the harnesses that produced the receipts in
 `eval/receipts/` — **13 FlowRouter seal/composition/adversarial receipts, plus the
 earlier product-path receipt** (which is not one of the FlowRouter claims). Read
-this honestly: some phases re-run anywhere, one needs a
-second machine, and the receipts — not this guide — are the primary evidence.
+this honestly: some phases re-run anywhere; two require a second physical
+machine (P1-X and I0) — and the receipts, not this guide, are the primary
+evidence.
 
 ## 0. What you need
 
