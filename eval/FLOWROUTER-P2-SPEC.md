@@ -1,193 +1,224 @@
-# FlowRouter P2 — Publisher Identity / Ownership (spec for adjudication; NO CODE)
+# FlowRouter P2 — Publisher Identity / Ownership — SPEC v2 (amended per the rubric)
 
-GPT ruling: cryptographic signatures ARE warranted for P2 (P1 deliberately
-left "malicious repository" outside its publisher-authenticity guarantee).
-Spec-only until frozen. Invariant, permanently:
+v1 (e1b5c73) was REFUSED with four protocol holes. This v2 incorporates
+every amendment; spec-only until P2-SPEC-FROZEN. Invariant, permanently:
 
 > **content integrity ≠ publisher authenticity ≠ local capability trust**
 
-A valid signature never implies a good capability; a locally trusted
-capability never implies a verified real-world person; a correct package
-digest never implies authorship.
+## 0. Change log vs v1
 
-## 1. Publisher identity (durable, self-certifying, machine-independent)
+- **Explicit key-state event chain** replaces the vague key-auth chain
+  (§3): append-only AUTHORIZE/REVOKE events, replay → active
+  publication-key set; the genesis key signs ALL key-state events (no
+  delegated identity authority in P2 — the v1 inconsistency removed).
+- **Fork-resistant pinning** (§6): consumers pin
+  `{publisher_id, highest_sequence, head_record_digest}`; same-sequence or
+  alternate-branch histories are `IDENTITY_HISTORY_FORK`, not rollbacks.
+- **Publications bound to a precise identity state** (§4):
+  `identity_sequence` + `identity_head_digest` inside every signed
+  assertion.
+- **Cryptographic bytes frozen** (§2): RFC 8785 JCS canonicalization,
+  exact per-record signed-byte rules, chain record digests, FULL-LENGTH
+  ids (no truncation), unpadded canonical base64url only.
+- **Namespace separation** (§7): `publisher_scheme` distinguishes
+  `p1-configured-v1` from `p2-selfcert-v1`; no silent downgrade of P2
+  publications.
+- **Provenance presentation** (§8): `publisher_auth` and `freshness` are
+  separate, unambiguous labels.
 
-Machine nicknames (`mac-a`) disappear as security identities.
+## 1. Identity
 
-- **Key material**: Ed25519, one algorithm, no negotiation. Public keys:
-  32-byte raw, base64url. Signatures: 64-byte, base64url. Canonical
-  serialization: the P0 canonical JSON (sorted keys, no whitespace).
-- **publisher_id** = lowercase hex of
-  `SHA256("flowrouter.p2.publisher-id.v1" || genesis_public_key_raw)` first
-  20 bytes. Deterministic, self-certifying: no central slug authority.
-  (This adapts the P1 token grammar to `^[0-9a-f]{40}$` — explicitly, as
-  the one grammar change; the old nickname grammar is retired for protocol
-  identity.)
-- **Display names** (`optimized-workflow`, `Adam`, …) are METADATA carried
-  outside protocol identity; no protocol decision may depend on them.
-- Identity survives machine changes and key rotation because it is derived
-  from the genesis key, never from configuration.
+- **Algorithm**: Ed25519 only. Public keys 32-byte raw, signatures 64-byte,
+  both as UNPADDED canonical base64url; any alternate encoding is rejected
+  (`ALGORITHM_UNSUPPORTED` / `ENCODING_INVALID`). No negotiation.
+- **publisher_id** = lowercase hex of the FULL
+  `SHA256("flowrouter.p2.publisher-id.v1" || genesis_ed25519_public_key_raw)`
+  → 64 hex chars. Self-certifying; no slug authority; survives machine
+  changes and rotation.
+- **key_id** = lowercase hex of the FULL
+  `SHA256("flowrouter.p2.key-id.v1" || ed25519_public_key_raw)` → 64 hex.
+- Display names remain metadata; no protocol decision may depend on them.
 
-## 2. Genesis record (immutable, self-signed, proof of possession)
+## 2. Canonical bytes (frozen — this is a signature protocol)
 
-```
-record_type      "flowrouter.publisher.genesis.v1"
-protocol         "p2"
-publisher_id     <derived from genesis_public_key as in §1>
-genesis_key      { alg: "ed25519", key: <base64url> }
-display_name     <optional metadata>
-created_at       <ISO date — metadata>
-self_signature   Ed25519(domain "flowrouter.p2.genesis" || canonical(record minus self_signature))
-```
-
-Verification (B, independently): derivation(publisher_id) matches the key
-AND the self-signature verifies under that key. Possession is proven by
-the self-signature; nothing else in P2 asserts possession.
-
-## 3. Publication-key authorization (root authority ≠ routine keys)
-
-The genesis key does NOT sign every publication. Identity authority
-authorizes publication keys via append-only records:
+- **Serialization**: UTF-8 **RFC 8785 JCS** for every signed/ digested
+  structure (sorted keys, JCS string escaping, JCS number rules — not
+  "sorted keys, no whitespace").
+- **Signed-bytes rules (exact, per record type)**:
 
 ```
-record_type         "flowrouter.publisher.key-auth.v1"
-publisher_id        <same>
-authorized_key      { alg: "ed25519", key: <base64url> }
-key_id              hex(SHA256("flowrouter.p2.key-id.v1" || key_raw))[0:32]
-permissions         ["publish"]        // EXACTLY: sign publication statements for this publisher_id only
-sequence            1, 2, 3 …           // monotonic per publisher identity
-prev_record_digest  digest of the previous identity record (genesis or key-auth); null only for the first
+genesis      UTF8("flowrouter.p2.genesis\n")     || JCS(genesis minus self_signature)
+key-event    UTF8("flowrouter.p2.key-event\n")   || JCS(event minus signature)
+publication  UTF8("flowrouter.p2.publication\n") || JCS(statement minus signature)
+```
+
+- **Chain digest**:
+
+```
+record_digest = SHA256( UTF8("flowrouter.p2.record-digest.v1\n") || JCS(full signed record) )
+```
+
+- The P0 package digest and its (separate) canonicalization are UNTOUCHED.
+
+## 3. Identity state: the key-state event chain
+
+```
+record_type         "flowrouter.p2.key-event.v1"
+publisher_id        <derived>
+sequence            1, 2, 3 …                       (strictly monotonic, contiguous from 1)
+prev_record_digest  digest of the PREVIOUS chain record (the genesis record for sequence 1 — never null)
+action              "AUTHORIZE" | "REVOKE"
+key_id              <derived key id>
+public_key          <present iff AUTHORIZE>
+permissions         ["publish"]                     (AUTHORIZE only)
 issued_at           <ISO>
-signature           Ed25519 by the genesis key OR a currently-authorized identity-authority key,
-                    domain "flowrouter.p2.key-auth"
+signature           Ed25519 by the GENESIS key, domain "flowrouter.p2.key-event"
 ```
 
-**What an authorized key may sign**: publication statements (§4) for its
-own `publisher_id` — nothing else. It cannot authorize further keys, cannot
-sign genesis records, cannot sign rotations, cannot act for other
-publishers. Identity-authority signatures remain with the genesis key (or
-keys it has explicitly authorized with `permissions: ["identity"]`).
-
-## 4. Publication assertion (detached; D is untouched)
-
-Signatures NEVER enter the package or the P0 digest. `D` remains exactly
-the frozen P0 package digest.
+- Deterministic replay of `[genesis, key-event 1..n]` produces the ACTIVE
+  publication-key set. Rotation is explicit and revoking:
 
 ```
-statement_type  "flowrouter.publication.v1"
-publisher_id    <derived identity>
-name            <P1 canonical token>
-version         <P1 canonical version>
-D               <P0 package digest>
-key_id          <authorized publication key>
-issued_at       <ISO>
-signature       Ed25519 by the authorized key,
-                domain "flowrouter.p2.publication"
+seq 4  AUTHORIZE  K2 [publish]
+seq 5  REVOKE     K1 [publish]      → after seq 5, K1 is NOT authorized
 ```
 
-Canonical signed message (domain separation, frozen):
-`"flowrouter.p2.publication\n" + canonicalJson(statement minus signature)`.
-Distinct domain strings per record type make a signature unusable in any
-other protocol context (replay across types/domains is a verification
-failure).
+- Genesis self-signature over the §2 rule proves possession; every chain
+  record is signed by the genesis key (P2 has no delegated identity
+  authority; that is future work if ever needed).
+
+## 4. Publication assertion (detached; D untouched; bound to identity state)
+
+```
+statement_type        "flowrouter.p2.publication.v1"
+publisher_scheme      "p2-selfcert-v1"
+publisher_id          <derived>
+name / version        <P1 canonical tokens>
+D                     <P0 package digest>
+key_id                <authorized publication key>
+identity_sequence     <chain sequence whose active set includes key_id>
+identity_head_digest  <record_digest of the chain head at that sequence>
+issued_at             <ISO>
+signature             Ed25519 by the publication key, domain "flowrouter.p2.publication"
+```
+
+Verification by any party: at state `(identity_sequence, identity_head_digest)`
+(replayed from the carried chain), `key_id` must be in the ACTIVE
+publication set, and the signature must verify under that key.
+
+Precise old-key semantics:
+
+- old K1 assertion bound to a PRE-rotation state, presented to a consumer
+  that already pinned a newer state → `SEQUENCE_ROLLBACK`;
+- K1 assertion CLAIMING the newer state (where K1 is revoked) →
+  `KEY_NOT_AUTHORIZED`;
+- a fresh consumer receiving the genuinely old state CAN authenticate the
+  chain — freshness remains explicitly unproven (§6, §8).
 
 ## 5. Repository (R) behavior
 
-- R may store bytes for any package. The **authenticated binding**
-  `publisher_id/name@version → D` may be published ONLY after the
-  publication assertion verifies under a key authorized by that publisher
-  identity (genesis self-check + key-auth chain + assertion, §1–§4).
-- A valid package with no valid assertion is stored and served with
-  `publisher_auth: UNAUTHENTICATED`. It is never labeled authenticated.
-- Discovery/fetch responses carry the VERIFICATION MATERIAL — genesis
-  record, the key-auth chain, the publication assertion (canonical bytes)
-  — not just a verdict string.
-- R's own verdict (`publisher_auth: VERIFIED`) is **evidence, not proof**.
+- R may retain any raw blob. The P2 publication BINDING
+  (`p2-selfcert-v1 + publisher_id + name + version → D`) is created only
+  after: genesis self-check + chain replay + assertion verification at the
+  asserted identity state.
+- **No silent downgrade**: a p2-selfcert publication with missing/invalid
+  publisher proof FAILS — R does not create a P2 binding for it (the raw
+  blob may exist; it is not a publication).
+- R carries the full verification material (genesis record, key-event
+  chain bytes, publication assertion) in discovery/fetch responses; its
+  own verdict is evidence, not proof.
 
-## 6. Consumer (B) behavior
+## 6. Consumer (B) verification, pinning, forks
 
-- B verifies INDEPENDENTLY from the carried material: genesis
-  self-signature + derivation, each key-auth record's signature and
-  sequence continuity, then the publication assertion against the
-  authorized key. Result recorded as **remote provenance**.
-- **Zero eligibility authority**: there is no code path where
-  `publisher_auth: VERIFIED` (or any signature result) promotes, admits,
-  routes, or SHIPs anything. The authenticated publication proceeds
-  through the unchanged chain: P0 integrity → compatibility/collision →
-  B-local verification → operator admission.
+- B replays the carried chain, verifies derivation + genesis
+  self-signature + every event signature + sequence contiguity +
+  `prev_record_digest` links, then the assertion at its asserted state.
+- **Pin**: B stores `{publisher_id, highest_sequence, head_record_digest}`.
+  Enforcement on every served state:
+  - served sequence < pinned → `SEQUENCE_ROLLBACK`;
+  - same sequence + different head digest → `IDENTITY_HISTORY_FORK`;
+  - greater sequence that does NOT extend the exact pinned head →
+    `IDENTITY_HISTORY_FORK`;
+  - greater sequence extending the pinned head → accept; then update
+    the pin — **only after successful cryptographic verification**.
+- Global equivocation (two fresh consumers, two internally valid
+  histories) remains unsolved in P2 — deferred to a future
+  transparency/gossip layer, and stated as such.
+- **Zero eligibility authority**: no code path where any
+  `publisher_auth` result promotes, admits, routes, or SHIPs anything.
+  The chain remains: P0 integrity → compatibility/collision → B-local
+  verification → operator admission.
 
-## 7. Rotation, rollback, and the honest limits of revocation
+## 7. Namespace separation (P1 legacy vs P2 authenticated)
 
-- **Rotation**: a publisher authorizes a successor publication key with a
-  new key-auth record: `sequence = prev + 1`, `prev_record_digest` = prior
-  record's digest, signed by a currently-authorized identity-authority key.
-  `publisher_id` never changes.
-- **Rollback rule (what consumers enforce)**: each consumer pins the
-  highest `sequence` state it has observed per publisher. A served state
-  with `sequence` lower than the pinned state is refused
-  (`SEQUENCE_ROLLBACK`), regardless of internal validity.
-- **Fresh-consumer rule**: a consumer with no pinned state authenticates
-  the full chain back to genesis and accepts it as a first observation.
-- **Explicitly NOT guaranteed (P2)**: global freshness and equivocation
-  detection. A malicious repository can serve a stale-but-once-valid
-  identity/key state to a FRESH consumer; P2 requires that this state be
-  LABELED within these limits, never claimed as globally fresh. A
-  transparency/gossip layer is future work.
-- **Private-key compromise is outside the guarantee**: signatures made
-  with a stolen authorized key are cryptographically authentic until a
-  rotation can exclude the key for consumers who have pinned past it. The
-  spec states this; P2 does not solve key compromise.
+- `publisher_scheme` ∈ {`"p1-configured-v1"`, `"p2-selfcert-v1"`}.
+  Effective publication identity is
+  `publisher_scheme + publisher_id + name + version`.
+- The P1 conflict rule (same ref + different D → `PUBLISH_CONFLICT`) is
+  unchanged WITHIN a scheme; schemes cannot collide with each other,
+  closing the unsigned-first-writer occupancy hole.
+- `p1-configured-v1` publications remain, truthfully labeled
+  `publisher_auth = UNAUTHENTICATED`; never implicitly upgraded.
+- `p2-selfcert-v1` publications require valid proof (§5) or they are not
+  publications at all.
 
-## 8. Failure vocabulary (all fail-closed)
+## 8. Provenance presentation (unambiguous labels)
+
+```
+publisher_auth = VERIFIED | UNAUTHENTICATED | INVALID
+freshness      = FIRST_OBSERVATION_UNPROVEN | EXTENDS_LOCAL_PIN
+```
+
+Neither label means "globally current". `publisher_auth` reports
+cryptographic validity only; `freshness` reports only the relationship to
+this consumer's pin.
+
+## 9. Honest limits (restated)
+
+Private-key compromise is outside the guarantee (stolen-key signatures are
+authentic until excluded by a rotation consumers have pinned past). P2 does
+not solve global freshness, equivocation detection, WebPKI/legal identity,
+or real-world identity claims.
+
+## 10. Failure vocabulary (all fail-closed)
 
 `IDENTITY_DERIVATION_MISMATCH` · `IDENTITY_RECORD_INVALID` ·
-`KEY_NOT_AUTHORIZED` · `SIGNED_STATEMENT_MISMATCH` ·
-`SEQUENCE_ROLLBACK` · `ALGORITHM_UNSUPPORTED` · `PUBLISHER_AUTH_INVALID` ·
-status value `UNAUTHENTICATED` (not an error — a truthful label).
+`KEY_NOT_AUTHORIZED` · `SIGNED_STATEMENT_MISMATCH` · `SEQUENCE_ROLLBACK` ·
+`IDENTITY_HISTORY_FORK` · `ALGORITHM_UNSUPPORTED` · `ENCODING_INVALID` ·
+`PUBLISHER_AUTH_INVALID` · status label `UNAUTHENTICATED`.
 
-## 9. P1 compatibility (explicit)
+## 11. Acceptance experiment (for after the freeze)
 
-Unsigned legacy P1 publications remain REPRESENTABLE and serveable as
-`publisher_auth: UNAUTHENTICATED`. They are never treated as authenticated
-and never upgraded implicitly. The P1 conflict rule (same
-`package_ref` + different D → PUBLISH_CONFLICT) is unchanged.
+Actors: publisher P (genesis → publication key K1 → rotation to K2),
+repository R, clean consumer B.
 
-## 10. Acceptance experiment (P2 receipt — for after the freeze)
+Positive: P genesis → AUTHORIZE K1 → sign exact package_ref/D at the K1
+identity state → R verifies → B independently replays the chain and
+verifies the assertion → P0 stage → B-local verify → operator admit →
+route → SHIP; freshness reads `FIRST_OBSERVATION_UNPROVEN` on B's first
+observation.
 
-Actors: publisher P (genesis → authorized publication key), repository R,
-clean consumer B. Positive: P creates identity → authorizes publication key
-→ signs the exact package_ref/D → R verifies before accepting the
-authenticated binding → B discovers, INDEPENDENTLY verifies chain +
-assertion from carried material → P0 stage → B-local verify → operator
-admission → route → SHIP.
+Adversarial (all fail closed):
+1. one byte / digest change after signing → `SIGNED_STATEMENT_MISMATCH`;
+2. valid D but different name/version than signed → assertion mismatch;
+3. valid attacker package + victim publisher claim → verification fails
+   (the decisive repository-substitution negative);
+4. victim identity key replaced → `IDENTITY_DERIVATION_MISMATCH`;
+5. unauthorized signing key → `KEY_NOT_AUTHORIZED`;
+6. **rotation, split into two**: (a) old chain below B's pinned state →
+   `SEQUENCE_ROLLBACK`; (b) old/revoked K1 attempting to sign at the
+   CURRENT state → `KEY_NOT_AUTHORIZED`;
+7. **alternate history**: same-sequence different-head OR
+   higher-sequence on another branch → `IDENTITY_HISTORY_FORK`;
+8. stale identity state to a fresh consumer → accepted as first
+   observation with freshness `FIRST_OBSERVATION_UNPROVEN` (never claimed
+   globally fresh);
+9. authenticated discovery/fetch alone leaves B's registry untouched;
+10. authenticated publication still cannot bypass local verification or
+    admission.
 
-Adversarial (all must fail closed):
-1. one byte / digest change after signing → content-vs-auth binding fails;
-2. valid D but different name/version than signed → assertion fails for
-   the requested publication;
-3. valid attacker package + victim publisher claim → publisher-auth fails
-   (victim never signed that statement) — the decisive repo-substitution
-   negative;
-4. victim identity key replaced → derivation/chain failure;
-5. unauthorized signing key → KEY_NOT_AUTHORIZED;
-6. old publication key after a locally pinned rotation state → refusal
-   (SEQUENCE_ROLLBACK per the frozen rules);
-7. stale identity state to a fresh B → accepted as first observation AND
-   labeled within the §7 limitation (never claimed globally fresh);
-8. authenticated discovery/fetch alone leaves B's registry untouched;
-9. authenticated publication still cannot bypass local verification or
-   admission.
+## 12. Out of scope (unchanged)
 
-## 11. Out of scope for P2
-
-Marketplace, reputation, ratings, recommendations, WebPKI/legal identity
-binding, payments, global transparency log/gossip, algorithm negotiation,
-revocation beyond §7, real-world identity claims ("this is OpenAI",
-"this is Adam") — cryptographic identity proves CONTROL of the protocol
-key chain, nothing social or legal.
-
-## 12. What does NOT change
-
-The P0 package digest and the P0/P1 trust path; the P1 protocol surface
-(§9 compatibility); the acquisition/eligibility chain at B. P2 adds
-authentication as provenance, never as authority.
+Marketplace, reputation, ratings, recommendations, WebPKI/legal identity,
+payments, transparency log/gossip, algorithm negotiation, delegated
+identity authority, revocation beyond §6. No real-world identity claims.
