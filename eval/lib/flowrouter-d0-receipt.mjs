@@ -192,6 +192,11 @@ const stub = createServer((req, res) => {
       if (stubMode === 'boundary257_shuffled') entries = entries.sort(() => Math.random() - 0.5);
     }
     if (stubMode === 'malformed') entries = [{ ...stubEntries[0], publisher_scheme: 'p1-configured-v1' }, { ...stubEntries[0], claimed_D: 'nothex' }, stubEntries[0]];
+    if (stubMode === 'wrong_name_flood') {
+      entries = [];
+      for (let i = 0; i < 10000; i++) entries.push({ ...stubEntries[0], name: 'other-capability', version: `0.${Math.floor(i / 1000)}.${i % 1000}` });
+      entries.push(stubEntries[0]);
+    }
     if (stubMode === 'unsorted_random') entries = [...entries].sort(() => Math.random() - 0.5);
     res.writeHead(200, { 'content-type': 'application/json' });
     return res.end(JSON.stringify({ name: u.searchParams.get('name'), entries, order_semantics: 'none' }));
@@ -203,6 +208,14 @@ const stubEp = 'http://127.0.0.1:' + stubPort;
 const VICTIM = '2'.repeat(64);
 const ENTRY = { publisher_scheme: 'p2-selfcert-v1', publisher_id: genesis.publisher_id, name: NAME, version: '0.1.0', claimed_D: D0 };
 stubEntries = [ENTRY];
+
+// ================= case 0: the canonical grammar matches the sealed tuple namespace =================
+{
+  const oneChar = normalizeCandidateEntries([{ ...ENTRY, name: 'a', version: '0.1.0' }], { expectedName: 'a' });
+  const prerelease = normalizeCandidateEntries([{ ...ENTRY, version: '1.0.0-rc1' }], { expectedName: NAME });
+  step('0. the canonical validator IS the sealed tuple grammar: a one-character name is legal, a prerelease version is not', oneChar.candidates.length === 1 && oneChar.candidates[0].name === 'a' && prerelease.candidates.length === 0 && prerelease.diagnostics.rejected === 1, { one_char: oneChar.candidates.length, prerelease_candidates: prerelease.candidates.length });
+}
+
 
 // ================= case 3: false publisher entry =================
 {
@@ -240,13 +253,21 @@ stubEntries = [ENTRY];
   step('5. an indexed tuple the endpoint does not possess surfaces as ABSENT (aggregate EMPTY) — a harmless candidate failure', disc.candidates.length === 1 && r.body.state === 'EMPTY' && r.body.observations[0].status === 'ABSENT' && r.body.fetch_permitted === false, { state: r.body.state, observation: r.body.observations[0].status });
 }
 
-// ================= case 6: malformed / invalid publication material =================
+// ================= case 6: malformed material AND wrong-name poisoning =================
 {
   stubMode = 'malformed'; stubEntries = [ENTRY];
   const disc = await discoverCandidates({ endpoint: stubEp, name: NAME });
   // the index may list anything; ordinary P2 verification still rejects bad material
   const st = await post(B, '/plugins/operator-ui/flowrouter?op=stage', { packageDir: join(WORK, 'b-incoming'), alias: 'bad-material', identityMaterial: { genesis, events: [ev1], publication: { ...ASSERT1, signature: Buffer.alloc(64).toString('base64url'), D: D0 } }, expectedTuple: { publisher_scheme: 'p2-selfcert-v1', ...TUPLE, D: D0 } });
   step('6. malformed entries are rejected by normalization, and invalid publication material is still rejected by P2', disc.diagnostics.rejected === 2 && disc.candidates.length === 1 && st.body.import && st.body.import.verdict === 'REFUSED', { rejected: disc.diagnostics.rejected, candidates: disc.candidates.length, stage: st.body.import && st.body.import.verdict });
+
+  // wrong-name poisoning: 10,000 canonical entries for ANOTHER name plus one
+  // real match. The query boundary must bind, and the junk must consume zero
+  // candidate slots (otherwise it could crowd out legitimate candidates).
+  stubEntries = [ENTRY]; // the query is for NAME
+  stubMode = 'wrong_name_flood';
+  const poison = await discoverCandidates({ endpoint: stubEp, name: NAME });
+  step('6b. 10,000 canonical entries for ANOTHER name cannot enter the result or consume bound slots — exactly one candidate, for the requested name', poison.candidates.length === 1 && poison.candidates[0].name === NAME && poison.diagnostics.wrong_name_observations === 10000 && poison.diagnostics.total_unique === 1 && poison.truncated === false, { candidates: poison.candidates.length, name: poison.candidates[0] && poison.candidates[0].name, wrong_name: poison.diagnostics.wrong_name_observations, unique: poison.diagnostics.total_unique });
 }
 
 // ================= case 7: repetition (identical AND differing D claims) =================
