@@ -1,0 +1,214 @@
+{
+  "generated_at": "2026-09-17T09:09:56.616Z",
+  "spec": "ccf0387 (S0 — exact-scope custody backfill)",
+  "steps": [
+    {
+      "step": "topology: origin R1, mirror R2 (the configured SOURCE), destination R3, consumer",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13171,
+          "r2": 13172,
+          "r3": 13173
+        }
+      }
+    },
+    {
+      "step": "setup: publisher → R1 (T1 + T2) → mirror R2 as the configured source",
+      "ok": true,
+      "result": {
+        "T1": "0.1.0",
+        "T2": "0.2.0"
+      }
+    },
+    {
+      "step": "1. positive: the destination backfills T1 from the MIRROR through ordinary R0 and re-serves the original publisher material unchanged",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "D": "f7c6c2bd44e4",
+        "publisher": "786cd498e475"
+      }
+    },
+    {
+      "step": "2/19. a consumer uses the DESTINATION copy through ordinary F0/P2 → verify → admit → SHIP, and the destination never contacted the publisher",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "verdict": "SHIP"
+      }
+    },
+    {
+      "step": "3/4. exact scope only: T2 is copied only because it is named, no \"newer version\" observation is produced, and out-of-scope objects remain untouched",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "newer_language": false
+      }
+    },
+    {
+      "step": "5. a content-only intent caches bytes by recomputation WITHOUT inventing a publication binding",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "publications_unchanged": true
+      }
+    },
+    {
+      "step": "6. the exact proof copies byte-identically and verifies at the destination, while quarantine stays unchanged (syncing a proof does NOT ingest it)",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "identical": true,
+        "verified": true,
+        "quarantine_unchanged": true
+      }
+    },
+    {
+      "step": "7. re-running the same scope is idempotent: no duplicate binding, no extra trust, no extra authority",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1,
+          "ALREADY_PRESENT": 1
+        },
+        "publications": 2
+      }
+    },
+    {
+      "step": "8. same T / different D at the source → ordinary R0 refusal with the destination state byte-identical",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "REFUSED": 1
+        },
+        "error": "REPLICATION_D_CONFLICT",
+        "unchanged": true
+      }
+    },
+    {
+      "step": "9. same T+D / different material → ordinary R0 material refusal with the existing destination state byte-identical",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "REFUSED": 1
+        },
+        "error": "REPLICATION_MATERIAL_CONFLICT",
+        "unchanged": true
+      }
+    },
+    {
+      "step": "10. a missing requested object is recorded as unavailable with no trust mutation",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "UNAVAILABLE": 1
+        },
+        "error": "REPLICATION_SOURCE_ABSENT"
+      }
+    },
+    {
+      "step": "11. an interrupted run keeps what committed: the first object survives, the second never appears, and nothing is rolled back",
+      "ok": true,
+      "result": {
+        "first": {
+          "COPIED": 1
+        },
+        "second": {
+          "UNAVAILABLE": 1
+        },
+        "first_present": 200,
+        "second_present": 404
+      }
+    },
+    {
+      "step": "12. source absence never deletes: the object already held at the destination survives a source that no longer serves it",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "UNAVAILABLE": 1
+        },
+        "unchanged": true,
+        "still_served": 200,
+        "forbidden_conclusions": true
+      }
+    },
+    {
+      "step": "13/14. S0 custody work leaves consumer trust state byte-identical and grants no discovery authority",
+      "ok": true,
+      "result": {
+        "registry_identical": true,
+        "pin_identical": true,
+        "d0_entries": 1
+      }
+    },
+    {
+      "step": "15. duplicate scope intents collapse to one custody operation each",
+      "ok": true,
+      "result": {
+        "intents": 2,
+        "collapsed": 3
+      }
+    },
+    {
+      "step": "16. scope records are strict: D on a publication intent, \"latest\", a malformed digest and any unknown field all reject rather than being silently ignored",
+      "ok": true,
+      "result": {
+        "rejected": 3,
+        "accepted_shapes": 3
+      }
+    },
+    {
+      "step": "17. mirror-to-mirror: the destination receives the ORIGINAL publisher material, never a source re-attestation",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "COPIED": 1
+        },
+        "publisher": "786cd498e475"
+      }
+    },
+    {
+      "step": "18. restart durability: exact object custody survives a destination restart from disk",
+      "ok": true,
+      "result": {
+        "publications": 1,
+        "served": 200
+      }
+    },
+    {
+      "step": "20. the journal is local bookkeeping: operational fields only, with the forbidden freshness/completeness vocabulary absent by construction",
+      "ok": true,
+      "result": {
+        "journal_lines": 1,
+        "fields": [
+          "attempted_at",
+          "error_code",
+          "intent",
+          "object_class",
+          "observed_D",
+          "outcome",
+          "requested_object_key",
+          "run_id",
+          "source_endpoint"
+        ],
+        "freshness_vocabulary": "absent"
+      }
+    }
+  ],
+  "positive": {
+    "source": "http://127.0.0.1:13172",
+    "destination": "http://127.0.0.1:13173",
+    "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+    "verdict": "SHIP"
+  },
+  "verdict": "S0 GREEN — exact-scope backfill changes what a repository POSSESSES, never what a consumer is entitled to believe"
+}
