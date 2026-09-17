@@ -1,0 +1,235 @@
+{
+  "generated_at": "2026-09-17T04:50:36.904Z",
+  "steps": [
+    {
+      "step": "actors fresh: R zero publications, B empty home",
+      "ok": true,
+      "result": {
+        "R": {
+          "publications": 0,
+          "blobs": 0
+        },
+        "B": {
+          "sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
+          "caps": 0
+        }
+      }
+    },
+    {
+      "step": "P1 genesis: derivation + self-signature verify",
+      "ok": true,
+      "result": {
+        "publisher_id": "64b8084d0a0a0970ff5a"
+      }
+    },
+    {
+      "step": "N1 genesis-key substitution → IDENTITY_DERIVATION_MISMATCH",
+      "ok": true,
+      "result": {}
+    },
+    {
+      "step": "K1 authorized; chain replays (seq 1, active=1)",
+      "ok": true,
+      "result": {
+        "head": "ce82d0f37aafaf3f"
+      }
+    },
+    {
+      "step": "R registers publisher after verifying the chain",
+      "ok": true,
+      "result": {
+        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "head_sequence": 2
+      }
+    },
+    {
+      "step": "A export for the P2 chain (D0)",
+      "ok": true,
+      "result": {
+        "D0": "f7c6c2bd44e4a766"
+      }
+    },
+    {
+      "step": "K1 signs the exact publication (name+version+D at identity state 1)",
+      "ok": true,
+      "result": {
+        "key_id": "8c10a37756ad"
+      }
+    },
+    {
+      "step": "legacy p1-configured-v1 publication accepted (UNAUTHENTICATED)",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p1-configured-v1",
+        "publisher_id": "mac-a",
+        "name": "csv-running-total",
+        "version": "0.1.0",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+        "publisher_auth": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "step": "R independently verifies BEFORE the authenticated binding (VERIFIED)",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p2-selfcert-v1",
+        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "name": "csv-running-total",
+        "version": "0.1.0",
+        "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
+        "publisher_auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "N2 name substitution → SIGNED_STATEMENT_MISMATCH, no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "assertion name/version do not match the requested publication (no P2 binding created)"
+      }
+    },
+    {
+      "step": "N3 package/D mutation → PUBLISHER_AUTH_INVALID (D mismatch), no binding",
+      "ok": true,
+      "result": {
+        "error": "PUBLISHER_AUTH_INVALID",
+        "reason": "missing publication assertion or D mismatch (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N4 unauthorized signer → KEY_NOT_AUTHORIZED, no binding",
+      "ok": true,
+      "result": {
+        "error": "KEY_NOT_AUTHORIZED",
+        "reason": "KEY_NOT_AUTHORIZED: key is not active at the asserted identity state"
+      }
+    },
+    {
+      "step": "N5 attacker D under victim identity → auth fails, no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "SIGNED_STATEMENT_MISMATCH: assertion is not bound to the supplied identity state"
+      }
+    },
+    {
+      "step": "N6 malformed history (sequence gap / dup key) → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "gap_code": "IDENTITY_RECORD_INVALID",
+        "dup_attempt": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
+      "step": "R carries full verification material (genesis + events + assertion)",
+      "ok": true,
+      "result": {
+        "keys": [
+          "genesis",
+          "events",
+          "publication"
+        ]
+      }
+    },
+    {
+      "step": "B independently verifies → VERIFIED / FIRST_OBSERVATION_UNPROVEN",
+      "ok": true,
+      "result": {
+        "publisher_auth": "VERIFIED",
+        "freshness": "FIRST_OBSERVATION_UNPROVEN",
+        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "key_id": "8c10a37756adcaf76862b7f394895d8395d508770b83b869523942362f7fe583",
+        "identity_sequence": 1,
+        "identity_head_digest": "ce82d0f37aafaf3fb553bf4dea42208772dab6c48aeb100539295ad4b5b24706",
+        "genesis_digest": "66c3faaf2fe6189e567b62f88867431db2d1669b1aaec9047e501800a23f5a49"
+      }
+    },
+    {
+      "step": "repeated exact state → MATCHES_LOCAL_PIN, pin NOT mutated",
+      "ok": true,
+      "result": {
+        "freshness": "MATCHES_LOCAL_PIN",
+        "pin": {
+          "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+          "sequence": 1,
+          "head_digest": "ce82d0f37aafaf3fb553bf4dea42208772dab6c48aeb100539295ad4b5b24706"
+        }
+      }
+    },
+    {
+      "step": "rotation: K2 authorized at seq 2; 0.1.1 published+verified",
+      "ok": true,
+      "result": {
+        "publisher_scheme": "p2-selfcert-v1",
+        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "name": "csv-running-total",
+        "version": "0.1.1",
+        "D": "83f7b74a14e81d2dd7eb63686f71489a3d8d8dbcc52982c6039666cd9c8e8a85",
+        "publisher_auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "legitimate extension → EXTENDS_LOCAL_PIN, pin advanced",
+      "ok": true,
+      "result": {
+        "publisher_auth": "VERIFIED",
+        "freshness": "EXTENDS_LOCAL_PIN",
+        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "key_id": "e604d8f6199d827bad966e406c9ef35d4d231773b1b8267f92011eb6179cfa54",
+        "identity_sequence": 2,
+        "identity_head_digest": "5cd26f97afdad934d37118d99d3d58adcc26322b029ad409d6472c500ab7b9d7",
+        "genesis_digest": "66c3faaf2fe6189e567b62f88867431db2d1669b1aaec9047e501800a23f5a49"
+      }
+    },
+    {
+      "step": "old chain below pinned state → SEQUENCE_ROLLBACK refusal",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "SEQUENCE_ROLLBACK: served 1 < pinned 2",
+        "failure": "SEQUENCE_ROLLBACK"
+      }
+    },
+    {
+      "step": "revoked K1 claiming the current state → KEY_NOT_AUTHORIZED",
+      "ok": true,
+      "result": {
+        "code": "KEY_NOT_AUTHORIZED"
+      }
+    },
+    {
+      "step": "same-height alternate head → IDENTITY_HISTORY_FORK",
+      "ok": true,
+      "result": {
+        "forkCode": "IDENTITY_HISTORY_FORK"
+      }
+    },
+    {
+      "step": "non-extending higher state → IDENTITY_HISTORY_FORK",
+      "ok": true,
+      "result": {
+        "fork2": "IDENTITY_HISTORY_FORK"
+      }
+    },
+    {
+      "step": "authenticated staging alone → zero registry authority",
+      "ok": true,
+      "result": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "step": "authenticated capability still: P0 stage → B-local verify → admission → route → gate → SHIP",
+      "ok": true,
+      "result": {
+        "verify": "VERIFIED",
+        "admit": true,
+        "route": "csv-running-total",
+        "gate": true,
+        "verdict": "SHIP"
+      }
+    }
+  ],
+  "verdict": "P2 MATRIX GREEN — publisher authentication implemented, provenance only"
+}
