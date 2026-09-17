@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T09:36:39.990Z",
+  "generated_at": "2026-09-17T09:41:21.128Z",
   "matrix": "aef3efd (A0 — cross-phase adversarial campaign)",
   "attacks": [
     {
@@ -106,11 +106,12 @@
       "id": "A0-9",
       "criterion": "exactly the valid intent is processed; every malformed record is rejected with a reason; nothing silently normalized",
       "observed": {
-        "rejected": 3,
-        "processed": 2,
+        "processed": 1,
+        "rejected": 4,
         "reasons": [
-          "unknown scope record fields \"D,name,publ",
+          "unknown scope record fields \"D,name,publishe",
           "version must be canonical x.y.z",
+          "unknown scope record fields \"name,publisher_",
           "D must be 64-hex"
         ]
       },
@@ -131,13 +132,15 @@
     },
     {
       "id": "A0-11",
-      "criterion": "REFUSE or UNAVAILABLE, no manufactured authority; any mutation attributable to a sealed step",
+      "criterion": "REFUSE or UNAVAILABLE with trust state unchanged — not successful availability",
       "observed": {
         "resolution": "EMPTY",
         "fetch_permitted": false,
-        "stage": "STAGED",
-        "registry_unchanged": true,
-        "quarantine_unchanged": true
+        "stage": "REFUSED",
+        "trust_state_unchanged": true,
+        "refusal_record_only": true,
+        "pin_before": null,
+        "pin_after": null
       },
       "verdict": "PASS"
     }
@@ -228,11 +231,11 @@
       }
     },
     {
-      "step": "A0-9 malformed scope records mixed with valid intents: reject-with-reason, no silent normalization",
+      "step": "A0-9 one valid intent + four malformed records: exactly the valid one is processed and all four are rejected with reasons",
       "ok": true,
       "result": {
-        "rejected": 3,
-        "processed": 2
+        "processed": 1,
+        "rejected": 4
       }
     },
     {
@@ -244,14 +247,13 @@
       }
     },
     {
-      "step": "A0-11 everything hostile at once: the composition refuses or reports unavailable and manufactures no authority",
+      "step": "A0-11 everything hostile at once: REFUSE/UNAVAILABLE with pin, witness, registry and quarantine byte-identical (the task store gains only the refused attempt)",
       "ok": true,
       "result": {
         "resolution": "EMPTY",
-        "registry_unchanged": true,
-        "quarantine_unchanged": true,
-        "pin_move_attributable_to_stage": true,
-        "stage": "STAGED"
+        "stage": "REFUSED",
+        "trust_unchanged": true,
+        "refusal_record_only": true
       }
     }
   ],
