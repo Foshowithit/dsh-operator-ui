@@ -2,6 +2,14 @@
 
 An operator panel for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH): seven tabs in the existing web UI — **Runs** (every session at a glance), **Summary** (per-run state, output, context, work), **Git** (read-only status/diff/log with staged-unstaged-untracked chips), **Browser** (a supervised on-screen browser the agent drives while you watch live), **Files** (workspace tree with git badges and text preview), plus a **⌘K command palette**.
 
+> **Also in this repository: [FlowRouter](./FLOWROUTER.md)** — a sealed
+> federation layer for capability artifacts that transports *evidence* of trust,
+> never trust itself. Repositories, mirrors, discovery indexes and sync
+> schedulers are all assumed untrusted. Start with
+> [`FLOWROUTER.md`](./FLOWROUTER.md); the evidence is fourteen raw receipts in
+> [`eval/receipts/`](./eval/receipts/) and `node eval/lib/flowrouter-show.mjs`
+> prints the end-to-end trace in five minutes.
+
 It is a side-loaded DSH plugin (a Cordis bundle patch), not a fork:
 
 - **No upstream changes.** One package, installed into a profile; removing it restores stock DSH exactly.
