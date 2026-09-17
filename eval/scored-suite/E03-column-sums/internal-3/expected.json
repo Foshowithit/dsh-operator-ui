@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "258"
+    },
+    {
+      "column": "feb",
+      "sum": "258"
+    },
+    {
+      "column": "mar",
+      "sum": "348"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

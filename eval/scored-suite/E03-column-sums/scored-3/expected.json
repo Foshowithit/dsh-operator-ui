@@ -1,0 +1,19 @@
+{
+  "family": "E03",
+  "columns": [
+    {
+      "column": "jan",
+      "sum": "246"
+    },
+    {
+      "column": "feb",
+      "sum": "300"
+    },
+    {
+      "column": "mar",
+      "sum": "234"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "ember",
+      "score": "97"
+    },
+    {
+      "name": "flint",
+      "score": "79"
+    },
+    {
+      "name": "cairn",
+      "score": "72"
+    }
+  ],
+  "role": "contested-b",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "axiom",
+      "score": "98"
+    },
+    {
+      "name": "boru",
+      "score": "93"
+    },
+    {
+      "name": "duna",
+      "score": "63"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

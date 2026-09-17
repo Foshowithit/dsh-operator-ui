@@ -1,0 +1,22 @@
+# check results
+
+pass
+pass
+pass
+fail
+pass
+fail
+fail
+pass
+pass
+pass
+fail
+fail
+pass
+pass
+pass
+pass
+pass
+pass
+fail
+# end of run

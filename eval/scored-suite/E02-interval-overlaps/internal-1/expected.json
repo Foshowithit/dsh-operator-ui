@@ -1,0 +1,19 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "fay",
+      "second": "hal"
+    },
+    {
+      "first": "fay",
+      "second": "di"
+    },
+    {
+      "first": "hal",
+      "second": "di"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

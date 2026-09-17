@@ -1,0 +1,15 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "ember",
+      "score": "96"
+    },
+    {
+      "name": "duna",
+      "score": "89"
+    }
+  ],
+  "role": "admission",
+  "fixture_kind": "internal"
+}

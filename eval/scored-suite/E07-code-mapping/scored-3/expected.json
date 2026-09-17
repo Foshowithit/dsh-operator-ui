@@ -1,0 +1,31 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "D4",
+      "label": "legacy"
+    },
+    {
+      "code": "A1",
+      "label": "starter"
+    },
+    {
+      "code": "X8",
+      "label": "UNKNOWN"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

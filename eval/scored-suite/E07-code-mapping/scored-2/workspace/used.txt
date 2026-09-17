@@ -1,0 +1,11 @@
+# licenses in use
+
+D4
+A1
+B2
+E5
+B2
+A1
+E5
+X3
+

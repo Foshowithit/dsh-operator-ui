@@ -1,0 +1,35 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "7"
+    },
+    {
+      "row": "2",
+      "total": "20"
+    },
+    {
+      "row": "3",
+      "total": "87"
+    },
+    {
+      "row": "4",
+      "total": "138"
+    },
+    {
+      "row": "5",
+      "total": "190"
+    },
+    {
+      "row": "6",
+      "total": "251"
+    },
+    {
+      "row": "7",
+      "total": "326"
+    }
+  ],
+  "role": "contested-a",
+  "fixture_kind": "scored"
+}

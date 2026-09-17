@@ -1,0 +1,43 @@
+{
+  "family": "E04",
+  "hours": [
+    {
+      "hour": "06",
+      "count": "1"
+    },
+    {
+      "hour": "07",
+      "count": "1"
+    },
+    {
+      "hour": "08",
+      "count": "1"
+    },
+    {
+      "hour": "09",
+      "count": "1"
+    },
+    {
+      "hour": "10",
+      "count": "2"
+    },
+    {
+      "hour": "11",
+      "count": "1"
+    },
+    {
+      "hour": "14",
+      "count": "1"
+    },
+    {
+      "hour": "19",
+      "count": "2"
+    },
+    {
+      "hour": "20",
+      "count": "2"
+    }
+  ],
+  "role": "terminal-b",
+  "fixture_kind": "internal"
+}

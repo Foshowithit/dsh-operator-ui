@@ -1,0 +1,43 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "59"
+    },
+    {
+      "row": "2",
+      "total": "87"
+    },
+    {
+      "row": "3",
+      "total": "156"
+    },
+    {
+      "row": "4",
+      "total": "194"
+    },
+    {
+      "row": "5",
+      "total": "248"
+    },
+    {
+      "row": "6",
+      "total": "264"
+    },
+    {
+      "row": "7",
+      "total": "286"
+    },
+    {
+      "row": "8",
+      "total": "318"
+    },
+    {
+      "row": "9",
+      "total": "351"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

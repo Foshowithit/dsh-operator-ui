@@ -1,0 +1,1 @@
+Every line in notes.txt must be at most 48 characters. Report each violating line in file order, one per line, as RESULT line=<line number> length=<character count>. Comment lines starting with # are exempt and must be ignored.

@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "gorse",
+      "score": "95"
+    },
+    {
+      "name": "boru",
+      "score": "89"
+    },
+    {
+      "name": "duna",
+      "score": "81"
+    }
+  ],
+  "role": "reuse-variation",
+  "fixture_kind": "scored"
+}

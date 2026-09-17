@@ -1,0 +1,19 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "axiom",
+      "score": "99"
+    },
+    {
+      "name": "flint",
+      "score": "94"
+    },
+    {
+      "name": "gorse",
+      "score": "75"
+    }
+  ],
+  "role": "untouched-generalization",
+  "fixture_kind": "scored"
+}

@@ -1,0 +1,43 @@
+{
+  "family": "E07",
+  "rows": [
+    {
+      "code": "C3",
+      "label": "trial"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "X3",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "G7",
+      "label": "lab"
+    },
+    {
+      "code": "C3",
+      "label": "trial"
+    },
+    {
+      "code": "X6",
+      "label": "UNKNOWN"
+    },
+    {
+      "code": "F6",
+      "label": "gov"
+    },
+    {
+      "code": "G7",
+      "label": "lab"
+    }
+  ],
+  "role": "diagnostic",
+  "fixture_kind": "internal"
+}

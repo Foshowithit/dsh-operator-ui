@@ -1,0 +1,27 @@
+{
+  "family": "E10",
+  "violations": [
+    {
+      "line": "1",
+      "length": "66"
+    },
+    {
+      "line": "5",
+      "length": "75"
+    },
+    {
+      "line": "8",
+      "length": "80"
+    },
+    {
+      "line": "9",
+      "length": "68"
+    },
+    {
+      "line": "10",
+      "length": "55"
+    }
+  ],
+  "role": "acquisition",
+  "fixture_kind": "scored"
+}

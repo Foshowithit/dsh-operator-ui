@@ -1,0 +1,6 @@
+# variable values
+
+area=north
+lead=maria
+unit=u63
+count=17

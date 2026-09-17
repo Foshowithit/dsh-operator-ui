@@ -1,0 +1,18 @@
+# check results
+
+pass
+fail
+pass
+pass
+pass
+pass
+pass
+fail
+pass
+fail
+pass
+pass
+pass
+fail
+pass
+pass

@@ -1,0 +1,31 @@
+{
+  "family": "E12",
+  "rows": [
+    {
+      "row": "1",
+      "total": "58"
+    },
+    {
+      "row": "2",
+      "total": "134"
+    },
+    {
+      "row": "3",
+      "total": "154"
+    },
+    {
+      "row": "4",
+      "total": "228"
+    },
+    {
+      "row": "5",
+      "total": "250"
+    },
+    {
+      "row": "6",
+      "total": "282"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}

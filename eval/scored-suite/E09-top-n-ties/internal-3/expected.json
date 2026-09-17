@@ -1,0 +1,15 @@
+{
+  "family": "E09",
+  "rows": [
+    {
+      "name": "axiom",
+      "score": "85"
+    },
+    {
+      "name": "ember",
+      "score": "68"
+    }
+  ],
+  "role": "regression",
+  "fixture_kind": "internal"
+}

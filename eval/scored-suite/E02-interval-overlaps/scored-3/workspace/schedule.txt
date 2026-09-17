@@ -1,0 +1,9 @@
+# coverage plan
+
+name start end
+cy 11:15 13:15
+di 17:15 18:38
+bo 15:15 16:18
+hal 10:30 11:45
+
+# shifts listed chronologically by start

@@ -1,0 +1,1 @@
+Timestamps are 24-hour HH:MM.

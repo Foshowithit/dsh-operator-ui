@@ -1,0 +1,11 @@
+{
+  "family": "E02",
+  "pairs": [
+    {
+      "first": "di",
+      "second": "eli"
+    }
+  ],
+  "role": "terminal-a",
+  "fixture_kind": "internal"
+}
