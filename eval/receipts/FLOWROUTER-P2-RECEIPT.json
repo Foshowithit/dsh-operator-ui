@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T04:50:36.904Z",
+  "generated_at": "2026-09-17T05:11:21.944Z",
   "steps": [
     {
       "step": "actors fresh: R zero publications, B empty home",
@@ -19,7 +19,7 @@
       "step": "P1 genesis: derivation + self-signature verify",
       "ok": true,
       "result": {
-        "publisher_id": "64b8084d0a0a0970ff5a"
+        "publisher_id": "8943b4a444c1cb34e08f"
       }
     },
     {
@@ -31,15 +31,15 @@
       "step": "K1 authorized; chain replays (seq 1, active=1)",
       "ok": true,
       "result": {
-        "head": "ce82d0f37aafaf3f"
+        "head": "bce66302fb25883a"
       }
     },
     {
-      "step": "R registers publisher after verifying the chain",
+      "step": "R registers publisher; reported head equals the verified chain (no off-by-one)",
       "ok": true,
       "result": {
-        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
-        "head_sequence": 2
+        "reported": 1,
+        "verified": 1
       }
     },
     {
@@ -53,7 +53,7 @@
       "step": "K1 signs the exact publication (name+version+D at identity state 1)",
       "ok": true,
       "result": {
-        "key_id": "8c10a37756ad"
+        "key_id": "7d3f4b4e0c55"
       }
     },
     {
@@ -73,7 +73,7 @@
       "ok": true,
       "result": {
         "publisher_scheme": "p2-selfcert-v1",
-        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
         "name": "csv-running-total",
         "version": "0.1.0",
         "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
@@ -85,15 +85,23 @@
       "ok": true,
       "result": {
         "error": "SIGNED_STATEMENT_MISMATCH",
-        "reason": "assertion name/version do not match the requested publication (no P2 binding created)"
+        "reason": "request.name does not equal assertion.name (no P2 binding created; raw blob retained)"
       }
     },
     {
-      "step": "N3 package/D mutation → PUBLISHER_AUTH_INVALID (D mismatch), no binding",
+      "step": "N3 package/D mutation → SIGNED_STATEMENT_MISMATCH (signed D ≠ recomputed), no binding",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "assertion.D does not match the recomputed package digest (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N3b p2-selfcert publication missing its assertion → PUBLISHER_AUTH_INVALID",
       "ok": true,
       "result": {
         "error": "PUBLISHER_AUTH_INVALID",
-        "reason": "missing publication assertion or D mismatch (no P2 binding created; raw blob retained)"
+        "reason": "missing publication assertion for a p2-selfcert publication (no P2 binding created; raw blob retained)"
       }
     },
     {
@@ -121,6 +129,42 @@
       }
     },
     {
+      "step": "N7 outer tuple substitution P→Q at R → SIGNED_STATEMENT_MISMATCH",
+      "ok": true,
+      "result": {
+        "error": "SIGNED_STATEMENT_MISMATCH",
+        "reason": "request.publisher_id does not equal assertion.publisher_id (no P2 binding created; raw blob retained)"
+      }
+    },
+    {
+      "step": "N8 wrong algorithm → ALGORITHM_UNSUPPORTED",
+      "ok": true,
+      "result": {
+        "algCode": "ALGORITHM_UNSUPPORTED"
+      }
+    },
+    {
+      "step": "N9 noncanonical key encoding → ENCODING_INVALID",
+      "ok": true,
+      "result": {
+        "encCode": "ENCODING_INVALID"
+      }
+    },
+    {
+      "step": "N10 AUTHORIZE key_id/public_key mismatch → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "idMix": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
+      "step": "N11 REVOKE unknown/inactive key → IDENTITY_RECORD_INVALID",
+      "ok": true,
+      "result": {
+        "revUnknown": "IDENTITY_RECORD_INVALID"
+      }
+    },
+    {
       "step": "R carries full verification material (genesis + events + assertion)",
       "ok": true,
       "result": {
@@ -137,11 +181,11 @@
       "result": {
         "publisher_auth": "VERIFIED",
         "freshness": "FIRST_OBSERVATION_UNPROVEN",
-        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
-        "key_id": "8c10a37756adcaf76862b7f394895d8395d508770b83b869523942362f7fe583",
+        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
+        "key_id": "7d3f4b4e0c5526fa99d715be767e39f4ee6511f1d422b8983133643ad0e2d451",
         "identity_sequence": 1,
-        "identity_head_digest": "ce82d0f37aafaf3fb553bf4dea42208772dab6c48aeb100539295ad4b5b24706",
-        "genesis_digest": "66c3faaf2fe6189e567b62f88867431db2d1669b1aaec9047e501800a23f5a49"
+        "identity_head_digest": "bce66302fb25883a497a9041da9190059386105faed4b6c5d75889e78599fb45",
+        "genesis_digest": "1abea0cdf601392916b482e336ea0900e3239acb6a7997604f4c4e0ac0e181b6"
       }
     },
     {
@@ -150,9 +194,9 @@
       "result": {
         "freshness": "MATCHES_LOCAL_PIN",
         "pin": {
-          "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+          "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
           "sequence": 1,
-          "head_digest": "ce82d0f37aafaf3fb553bf4dea42208772dab6c48aeb100539295ad4b5b24706"
+          "head_digest": "bce66302fb25883a497a9041da9190059386105faed4b6c5d75889e78599fb45"
         }
       }
     },
@@ -161,7 +205,7 @@
       "ok": true,
       "result": {
         "publisher_scheme": "p2-selfcert-v1",
-        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
+        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
         "name": "csv-running-total",
         "version": "0.1.1",
         "D": "83f7b74a14e81d2dd7eb63686f71489a3d8d8dbcc52982c6039666cd9c8e8a85",
@@ -174,11 +218,11 @@
       "result": {
         "publisher_auth": "VERIFIED",
         "freshness": "EXTENDS_LOCAL_PIN",
-        "publisher_id": "64b8084d0a0a0970ff5a35c49e3bdb5567c5e97c470782d6d6d0acf27fbf4cea",
-        "key_id": "e604d8f6199d827bad966e406c9ef35d4d231773b1b8267f92011eb6179cfa54",
+        "publisher_id": "8943b4a444c1cb34e08f22c0c36e297fe1b6a1dfdee39d9de4256dcaa3ee818a",
+        "key_id": "09db050546e4aa128feda9c4633e2c2409ecdebb35ca7a269b4390a0b5521113",
         "identity_sequence": 2,
-        "identity_head_digest": "5cd26f97afdad934d37118d99d3d58adcc26322b029ad409d6472c500ab7b9d7",
-        "genesis_digest": "66c3faaf2fe6189e567b62f88867431db2d1669b1aaec9047e501800a23f5a49"
+        "identity_head_digest": "c5409075fdae2fd7c0b6da7bb488326e152befa38fc72e69c5378dba5c930105",
+        "genesis_digest": "1abea0cdf601392916b482e336ea0900e3239acb6a7997604f4c4e0ac0e181b6"
       }
     },
     {
@@ -217,6 +261,34 @@
       "result": {
         "before": 0,
         "after": 0
+      }
+    },
+    {
+      "step": "N12 forged discovery metadata at B (outer tuple P→Q) → refusal",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "publisher_id: expected 63f35f84ca42073ad66e but the proof authenticates 8943b4a444c1cb34e08f",
+        "failure": "SIGNED_STATEMENT_MISMATCH"
+      }
+    },
+    {
+      "step": "N12b material without an expected tuple → fail closed",
+      "ok": true,
+      "result": {
+        "publisher_auth": "INVALID",
+        "reason": "staging with publisher material requires the expected discovery/fetch tuple — refusing to authenticate unbound proof",
+        "failure": "SIGNED_STATEMENT_MISMATCH"
+      }
+    },
+    {
+      "step": "independent pins: two full-length publisher identities hold separate pin records",
+      "ok": true,
+      "result": {
+        "pins": [
+          "c007d6912054…(64)",
+          "8943b4a444c1…(64)"
+        ]
       }
     },
     {
