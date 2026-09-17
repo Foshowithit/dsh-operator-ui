@@ -47,7 +47,15 @@ verifies offline, survives transport through untrusted carriers, and drives
 explicit, local quarantine. Carrying that evidence quarantines nobody; only an
 explicit consumer-side ingest does.
 
+## The picture
+
+[`docs/flowrouter-trust-boundaries.svg`](docs/flowrouter-trust-boundaries.svg) — the
+three layers (untrusted claims / cryptographic evidence / consumer-local trust),
+the three operations that may write consumer-local state, and the rule that
+verification only ever flows upward.
+
 ## Read it in this order
+
 
 | Document | What it gives you |
 |---|---|
