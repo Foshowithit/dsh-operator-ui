@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T09:09:56.616Z",
+  "generated_at": "2026-09-17T09:15:10.371Z",
   "spec": "ccf0387 (S0 — exact-scope custody backfill)",
   "steps": [
     {
@@ -29,7 +29,7 @@
           "COPIED": 1
         },
         "D": "f7c6c2bd44e4",
-        "publisher": "786cd498e475"
+        "publisher": "feea0c8a3d88"
       }
     },
     {
@@ -69,6 +69,18 @@
         },
         "identical": true,
         "verified": true,
+        "quarantine_unchanged": true
+      }
+    },
+    {
+      "step": "6b. a digest-matching but cryptographically INVALID core is REFUSED at the destination — nothing is stored, quarantine and pins unchanged",
+      "ok": true,
+      "result": {
+        "outcome": {
+          "REFUSED": 1
+        },
+        "error": "EVIDENCE_INVALID",
+        "evidence_at_destination": 404,
         "quarantine_unchanged": true
       }
     },
@@ -173,7 +185,7 @@
         "outcome": {
           "COPIED": 1
         },
-        "publisher": "786cd498e475"
+        "publisher": "feea0c8a3d88"
       }
     },
     {
