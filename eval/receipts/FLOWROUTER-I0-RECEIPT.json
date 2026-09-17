@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T08:04:00.249Z",
+  "generated_at": "2026-09-17T08:10:40.642Z",
   "spec": "060aa90 (I0 — integrated federation walkthrough / composition seal)",
   "actors": {
     "machine_A": {
@@ -7,14 +7,15 @@
       "platform": "darwin",
       "release": "25.4.0",
       "node": "v24.15.0",
-      "run_nonce": "8db2dff2-e184-4c20-bfab-6fdd28e848a8"
+      "run_nonce": "a88cbfaf-f8b1-4671-a0e1-12f4d562ca98"
     },
     "machine_B": {
       "role": "machine_B_consumer_and_mirrors",
       "platform": "linux",
       "release": "7.0.0-31-generic",
       "node": "v22.23.2",
-      "run_nonce": "f675f6ba-4900-4582-956a-e90f20160048"
+      "process": "one-shot (fresh process per operation)",
+      "run_nonce": null
     }
   },
   "network_handoffs": [
@@ -41,7 +42,7 @@
       "shared_filesystem": false,
       "hop": "proof -> R3 carrier",
       "object": "F1 proof_core",
-      "proof_digest": "97e474c259dd9159e309d9d1de2cd3efe36331cb50c07906c45507ee389a2f74",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
       "source_actor": "consumer B",
       "receiving_actor": "machine_B:R3"
     }
@@ -50,12 +51,12 @@
     {
       "name": "publish",
       "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-      "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
-      "key_id": "acf604b3d5fdd886e3060df7bb58badda0ad5f19c0813a0beeff17e447ca5ae0",
+      "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+      "key_id": "3561fb8d3b3e743a65e45d10f3074008c82ddfb2ae1fe3836f6c0883900c5218",
       "identity_sequence": 1,
-      "identity_head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b",
+      "identity_head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
       "tuple": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "name": "csv-running-total",
         "version": "0.1.0"
       },
@@ -65,13 +66,13 @@
     {
       "name": "mirror_hop_1",
       "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-      "material_digest": "33d6a163d3ac483bc5f5a76a7f3c663b775159be2a35dcdcef0bc709ae8d4d44",
+      "material_digest": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c",
       "custody_from": "machine_A:R1"
     },
     {
       "name": "mirror_hop_2",
       "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-      "material_digest": "33d6a163d3ac483bc5f5a76a7f3c663b775159be2a35dcdcef0bc709ae8d4d44",
+      "material_digest": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c",
       "identical_to_origin": true,
       "custody_from": "machine_B:R2"
     },
@@ -85,7 +86,7 @@
       ],
       "selected_state": {
         "head_sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b",
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
         "proof_source": "r2",
         "globally_fresh": false,
         "note": "most advanced mutually compatible state observed in this query — not globally fresh"
@@ -98,7 +99,7 @@
       "material_source": "r2",
       "proof_state": {
         "head_sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b",
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9",
         "proof_source": "r2",
         "globally_fresh": false,
         "note": "most advanced mutually compatible state observed in this query — not globally fresh"
@@ -107,26 +108,25 @@
     {
       "name": "consumer_stage",
       "verdict": "STAGED",
-      "import_task": "imp_41a37ad7",
+      "import_task": "imp_049a14d2",
       "pin_before": null,
       "pin_after": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
-      "pin_witness_sha": "c3b7bb041ecfab2a896082261928372fdc94bab886cbefa65e3726f33aaa068d",
+      "pin_witness_sha": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
       "registry_sha": "bf078aebf716284bfab732f1daeb9c1455d12aba6bf36ace6d010f6506b530ca"
     },
     {
       "name": "consumer_verify",
       "verdict": "VERIFIED",
-      "fixture_authors": "B",
-      "fixture_hash": "0e5eb75aed7aeb213eb9029f1d674fdb8749da5534665abac58084677befe3c6"
+      "fixture_authors": "B"
     },
     {
       "name": "consumer_admission",
       "ok": true,
-      "registry_sha": "af3a47941e0c2e50154b0db7bee20f7f20fda02662af88efa61a3be509fa6ad0",
+      "registry_sha": "6614ec59e8906f0cae9b636600211454b0784b2ed2961a358a1bc7792448e396",
       "registry_caps": 1
     },
     {
@@ -144,38 +144,37 @@
         "declared-expectation": true,
         "objective-satisfaction": true
       },
-      "task_id": "goal-74edb165"
+      "task_id": "goal-94c1e136"
     },
     {
       "name": "f0_fork",
       "state": "CONFLICT",
       "reason": "equal-sequence valid heads differ",
-      "proof_digest": "97e474c259dd9159e309d9d1de2cd3efe36331cb50c07906c45507ee389a2f74",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
       "relation": "SAME_SEQUENCE_DIVERGENT",
       "branches": [
         {
           "head_sequence": 2,
-          "head_digest": "2940b3ac96cc945de0fe4dfac8ba180b90b1892075f463e0dcb38461ea4ebb29"
+          "head_digest": "89f9fc5979d820669c14da073aaa99087a9effdda77ecc9574ae318c375b58f3"
         },
         {
           "head_sequence": 2,
-          "head_digest": "f6bc8c23fb5ff327299ef20725a7aaf40ec8f23dea59de23f22aaf012a54881a"
+          "head_digest": "ac7a15cd6169414a507b9b8627a2f9d7ea64e6ac7ae117beed22467fc0d91794"
         }
       ]
     },
     {
       "name": "f1_transport_and_offline_verify",
-      "proof_digest": "97e474c259dd9159e309d9d1de2cd3efe36331cb50c07906c45507ee389a2f74",
+      "proof_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
       "bytes_identical": true,
-      "offline_digest": "97e474c259dd9159e309d9d1de2cd3efe36331cb50c07906c45507ee389a2f74",
+      "offline_digest": "fd085ade1c28f4dc901c0cbb13280230a2b322002f166a2ec1fcbc4a9c1736c6",
       "relation": "SAME_SEQUENCE_DIVERGENT"
     },
     {
       "name": "f1_ingest",
       "quarantined_before_ingest": false,
       "quarantined_after_ingest": true,
-      "proofs": 1,
-      "equivocation_records": 1
+      "proofs": 1
     },
     {
       "name": "quarantine_block",
@@ -184,14 +183,14 @@
         "reason": "publisher is locally quarantined by a verified, unacknowledged equivocation proof"
       },
       "pin_before": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "pin_after": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "registry_unchanged": true
     },
@@ -200,18 +199,18 @@
       "ack": true,
       "still_quarantined": false,
       "proofs_kept": {
-        "at": "2026-09-17T08:04:14.649Z",
+        "at": "2026-09-17T08:11:01.013Z",
         "by": "operator"
       },
       "pin_before": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "pin_after": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "post_ack_stage": "STAGED"
     },
@@ -222,6 +221,7 @@
         "r2:VALID",
         "r3:VALID"
       ],
+      "killed": true,
       "fetched_from": "r3",
       "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
       "error": null
@@ -229,20 +229,19 @@
     {
       "name": "restart_boundaries",
       "pin_before": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "pin_after": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
-      "witness_before": "c3b7bb041ecfab2a896082261928372fdc94bab886cbefa65e3726f33aaa068d",
-      "witness_after": "c3b7bb041ecfab2a896082261928372fdc94bab886cbefa65e3726f33aaa068d",
+      "witness_before": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
+      "witness_after": "31357010500c34974e631bf605419143f5a07991cff7d9e3d4d1e757af670336",
       "proofs_before": 1,
       "proofs_after": 1,
-      "actor_restart_cmd": "{\"role\":\"machine_B_consumer_and_mirrors\",\"platform\":\"linux\",\"release\":\"7.0.0-31-generic\",\"node\":\"v22.23.2\",\"run_nonce\":\"",
       "actor_restart_verified": true,
       "bstate_status": 200,
       "f1_status_status": 200,
@@ -256,27 +255,27 @@
         {
           "actor": "machine_A:R1",
           "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-          "publisher": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
-          "material": "33d6a163d3ac483bc5f5a76a7f3c663b775159be2a35dcdcef0bc709ae8d4d44"
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
         },
         {
           "actor": "machine_B:R2",
           "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-          "publisher": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
-          "material": "33d6a163d3ac483bc5f5a76a7f3c663b775159be2a35dcdcef0bc709ae8d4d44"
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
         },
         {
           "actor": "machine_B:R3",
           "D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
-          "publisher": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
-          "material": "33d6a163d3ac483bc5f5a76a7f3c663b775159be2a35dcdcef0bc709ae8d4d44"
+          "publisher": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
+          "material": "c67ae920234dbffec093f53b18f47068e515bb98dc427d5a73fc8ac24a0a855c"
         }
       ],
       "identical": true,
       "consumer_pin": {
-        "publisher_id": "28ae2f8d9cb1af72431d83cf2b3fa3341c2731e09e0789091c48ef1e100c6472",
+        "publisher_id": "b7cb058f6e93ac2910b3e630fd7caa0ddfcc39cd367d9e3d881dedcb327df929",
         "sequence": 1,
-        "head_digest": "bfbfcbc6492a12aaad4da9e192e6e3fdbf6f9238d0c718ae121cfdfa31ed172b"
+        "head_digest": "7eea953eb6a1ed5ab6b63e159419b08052b847f2e4c10c8630192e653d4fe7c9"
       },
       "consumer_registry_caps": 1
     }
@@ -345,7 +344,9 @@
       "step": "6. only the sealed P2 stage creates the pin — and it retains the identity witness; registry untouched by staging",
       "ok": true,
       "result": {
+        "stage_status": 200,
         "verdict": "STAGED",
+        "error": null,
         "pin": 1,
         "witness": true
       }
@@ -389,7 +390,7 @@
       "result": {
         "state": "CONFLICT",
         "relation": "SAME_SEQUENCE_DIVERGENT",
-        "digest": "97e474c259dd9159"
+        "digest": "fd085ade1c28f4dc"
       }
     },
     {
@@ -461,12 +462,11 @@
   "machine_b_bootstrap": [
     "R2: {\"publications\":0,\"blobs\":0}",
     "R3: {\"publications\":0,\"blobs\":0}",
-    "ACTOR: {\"role\":\"machine_B_consumer_and_mirrors\",\"platform\":\"linux\",\"release\":\"7.0.0-31-generic\",\"node\":\"v22.23.2\",\"run_nonce\":\"f675f6ba-4900-4582-956a-e90f20160048\"}",
     "RUNNER: 200"
   ],
   "machine_b_ready": true,
   "mirror_restart": "{\"publications\":2,\"blobs\":1}",
-  "actor_restart": "{\"role\":\"machine_B_consumer_and_mirrors\",\"platform\":\"linux\",\"release\":\"7.0.0-31-generic\",\"node\":\"v22.23.2\",\"run_nonce\":\"",
+  "consumer_process_model": "one-shot: a fresh process per operation (no daemon, no in-memory carryover)",
   "actor_restart_verified": true,
   "verdict": "I0 GREEN — the sealed phases compose into one continuous real-network lifecycle without collapsing their trust boundaries"
 }
