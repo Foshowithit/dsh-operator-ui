@@ -42,6 +42,7 @@ const PORT = Number(argOf('--port', 13093));
 const STORE = argOf('--store', '/tmp/flowrouter-R');
 const BLOBS = join(STORE, 'blobs');
 const PUBS = join(STORE, 'publications.jsonl');
+const EVIDENCE = join(STORE, 'evidence');
 const INDEX = join(STORE, 'index.json');
 const PUBLISHERS = join(STORE, 'publishers');
 
@@ -281,6 +282,38 @@ const server = createServer(async (req, res) => {
         await rebuildIndex();
         return json(res, 200, { ...bindingTuple, publisher_auth: auth.publisher_auth });
       });
+    }
+
+    // ---------------- evidence carrier (F1 §3.3) ----------------
+    // Deliberately dumb transport: store a proof core's bytes under the
+    // digest the client names, return exactly those bytes. No verification,
+    // no ranking, no consequences, no authority of any kind.
+    if (req.method === 'POST' && url.pathname === '/evidence') {
+      const evChunks = [];
+      for await (const c of req) evChunks.push(c);
+      let evBody;
+      try { evBody = JSON.parse(Buffer.concat(evChunks).toString('utf8') || '{}'); } catch { return json(res, 400, { error: 'EVIDENCE_INVALID', reason: 'body is not valid JSON' }); }
+      const digest = String((evBody && evBody.proof_digest) || '');
+      if (!/^[a-f0-9]{64}$/.test(digest)) return json(res, 400, { error: 'EVIDENCE_INVALID', reason: 'proof_digest must be 64-hex' });
+      if (!evBody || typeof evBody.proof_core !== 'object' || evBody.proof_core === null) return json(res, 400, { error: 'EVIDENCE_INVALID', reason: 'proof_core required' });
+      const bytes = JSON.stringify(evBody.proof_core);
+      await mkdir(EVIDENCE, { recursive: true });
+      const path = join(EVIDENCE, digest + '.json');
+      try {
+        const existing = await readFile(path, 'utf8');
+        if (existing === bytes) return json(res, 200, { stored: true, idempotent: true, proof_digest: digest, bytes: Buffer.byteLength(bytes) });
+        return json(res, 409, { error: 'EVIDENCE_CONFLICT', reason: 'a different core is already stored under that digest' });
+      } catch { /* not stored yet */ }
+      await writeFile(path, bytes, 'utf8');
+      return json(res, 200, { stored: true, proof_digest: digest, bytes: Buffer.byteLength(bytes) });
+    }
+    const evMatch = url.pathname.match(/^\/evidence\/([a-f0-9]{64})$/);
+    if (req.method === 'GET' && evMatch) {
+      try {
+        const bytes = await readFile(join(EVIDENCE, evMatch[1] + '.json'), 'utf8');
+        res.writeHead(200, { 'content-type': 'application/json' });
+        return res.end(bytes);
+      } catch { return json(res, 404, { error: 'EVIDENCE_UNAVAILABLE', reason: 'no core stored under that digest' }); }
     }
 
     // ---------------- GET /status ----------------
