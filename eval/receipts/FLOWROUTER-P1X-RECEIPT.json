@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T04:24:55.040Z",
+  "generated_at": "2026-09-17T04:28:04.560Z",
   "steps": [
     {
       "step": "P1-X actors are independent machines",
@@ -19,15 +19,15 @@
       }
     },
     {
-      "step": "dev-host reaches R over the network (Tailscale)",
+      "step": "independent machine B reaches R over the network (Tailscale)",
       "ok": true,
       "result": {
-        "from": "dev-host",
+        "from": "independent machine B",
         "to": "http://203.0.113.2:13093"
       }
     },
     {
-      "step": "B (dev-host) starts empty: registry 0 caps, 0 import tasks",
+      "step": "B (independent machine B) starts empty: registry 0 caps, 0 import tasks",
       "ok": true,
       "result": {
         "registry_sha": "45a8d752d2707c70d432aedcd6fe03b014683d99dccc05ca77a8032cc8a8057b",
@@ -56,11 +56,11 @@
       "ok": true,
       "result": {
         "D0": "f7c6c2bd44e4a766",
-        "D1": "49f357118a06538d"
+        "D1": "bc4bb52430fa5bc5"
       }
     },
     {
-      "step": "dev-host discover (over the network) returns 0.1.0 = D0, record truth",
+      "step": "independent machine B discover (over the network) returns 0.1.0 = D0, record truth",
       "ok": true,
       "result": {
         "discovered_from": "http://203.0.113.2:13093",
@@ -71,12 +71,12 @@
       }
     },
     {
-      "step": "N5a dev-host state unchanged after discovery",
+      "step": "N5a independent machine B state unchanged after discovery",
       "ok": true,
       "result": {}
     },
     {
-      "step": "dev-host fetch-stage: network fetch + B-side recompute + B-side staging",
+      "step": "independent machine B fetch-stage: network fetch + B-side recompute + B-side staging",
       "ok": true,
       "result": {
         "fetch": {
@@ -94,55 +94,55 @@
       }
     },
     {
-      "step": "N5b dev-host registry unchanged after stage (one staging record appears)",
+      "step": "N5b independent machine B registry unchanged after stage (one staging record appears)",
       "ok": true,
       "result": {
         "import_tasks": 1
       }
     },
     {
-      "step": "Fixture authored AND hashed on the dev-host (before execution)",
+      "step": "Fixture authored AND hashed on the independent machine B (before execution)",
       "ok": true,
       "result": {
-        "fixtureDir": "/home/<redacted>/p1x-home/fixtures/p1x-71e7e71e",
+        "fixtureDir": "/home/<redacted>/p1x-home/fixtures/p1x-8780b616",
         "hash": "5f5875784d64eb892e877289bc4ac384d2d313945a75d5d479d5bb13fc49d64b",
         "computed_on": "chow"
       }
     },
     {
-      "step": "dev-host-local verification: dev-host executor ran the imported implementation",
+      "step": "independent machine B-local verification: independent machine B executor ran the imported implementation",
       "ok": true,
       "result": {
         "error": null,
         "verification": {
           "fixture_hash": "5f5875784d64eb892e877289bc4ac384d2d313945a75d5d479d5bb13fc49d64b",
           "fixture_frozen_before_execution": true,
-          "run_id": "f1e4cfdf-8332-4547-ab17-c51ad631f5f6",
+          "run_id": "9349864c-4bdf-41f3-9370-f1ecbc14bf0c",
           "run_status": "completed",
           "marker_ok": true,
           "grader": {
             "satisfied": true,
             "detail": "all running totals match locally-authored truth"
           },
-          "verified_at": "2026-09-17T04:25:01.404Z"
+          "verified_at": "2026-09-17T04:28:11.649Z"
         },
         "fixture_match": true
       }
     },
     {
-      "step": "N5c dev-host registry unchanged after verification (same single verified record)",
+      "step": "N5c independent machine B registry unchanged after verification (same single verified record)",
       "ok": true,
       "result": {}
     },
     {
-      "step": "Operator admission mutates the dev-host registry (the ONLY mutation)",
+      "step": "Operator admission mutates the independent machine B registry (the ONLY mutation)",
       "ok": true,
       "result": {
         "caps": 1
       }
     },
     {
-      "step": "dev-host normal route → imported capability → dev-host authority gate → dev-host execution → SHIP",
+      "step": "independent machine B normal route → imported capability → independent machine B authority gate → independent machine B execution → SHIP",
       "ok": true,
       "result": {
         "route": "csv-running-total",
@@ -169,7 +169,7 @@
       }
     },
     {
-      "step": "N2 corrupt transport → dev-host-side recompute refuses BEFORE stage",
+      "step": "N2 corrupt transport → independent machine B-side recompute refuses BEFORE stage",
       "ok": true,
       "result": {
         "requested": "f7c6c2bd44e4a766",
@@ -178,7 +178,7 @@
       }
     },
     {
-      "step": "N3 forged valid-D substitution: dev-host is served D0 (record truth), never D1",
+      "step": "N3 forged valid-D substitution: independent machine B is served D0 (record truth), never D1",
       "ok": true,
       "result": {
         "served": "f7c6c2bd44e4a766",
@@ -193,7 +193,7 @@
       }
     },
     {
-      "step": "N4 unavailable blob → honest FETCH_UNAVAILABLE from the dev-host, no substitution",
+      "step": "N4 unavailable blob → honest FETCH_UNAVAILABLE from the independent machine B, no substitution",
       "ok": true,
       "result": {
         "status": 404,
@@ -205,7 +205,7 @@
       "ok": true,
       "result": {
         "d0": "f7c6c2bd44e4a766",
-        "d1": "49f357118a06538d"
+        "d1": "bc4bb52430fa5bc5"
       }
     }
   ],
@@ -225,7 +225,7 @@
       "platform": "linux",
       "release": "7.0.0-31-generic",
       "node": "v22.23.2",
-      "pid": 4079548,
+      "pid": 4131255,
       "registry_path": "/home/<redacted>/p1x-home/operator-ui/b-registry.json",
       "teaching": {
         "workflowsDir": "/home/<redacted>/p1x-wf",
@@ -237,7 +237,7 @@
   },
   "verdict": "P1-X MATRIX GREEN — independent-machine portability proven, trust boundary unmoved",
   "transfer_channel": {
-    "capability_artifact": "network only — the dev-host fetched bytes from R by digest over Tailscale; no scp/rsync/shared mount carried the artifact",
+    "capability_artifact": "network only — the independent machine B fetched bytes from R by digest over Tailscale; no scp/rsync/shared mount carried the artifact",
     "code_deployment": "rsync (plugin code, not the artifact) disclosed"
   }
 }
