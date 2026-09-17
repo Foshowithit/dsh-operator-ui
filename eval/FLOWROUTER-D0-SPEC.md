@@ -1,6 +1,14 @@
-# FlowRouter D0 — Untrusted Repository Possession Index (spec v1, for adjudication)
+# FlowRouter D0 — Untrusted Repository Possession Index (spec v2, for adjudication)
 
 Status: spec-only. No code until frozen.
+
+v2 folds in the one v1 amendment: CANDIDATE IDENTITY IS THE EXACT P2 TUPLE
+ONLY. `claimed_D` may not participate in identity, deduplication, ordering, the
+candidate bound, peer multiplicity, downstream selection or trust weighting —
+otherwise attacker-chosen D claims could consume the local result bound and
+crowd out other candidates, giving `claimed_D` an indirect authority that §2
+forbids. The bound itself is now frozen exactly (MAX_D0_CANDIDATES = 256 with a
+deterministic algorithm) rather than left to the implementation.
 Sealed predecessors: P0, P1, P1-X, P2, F0 (6093ce5), F1 (e9e7ef6), R0 (43ca378),
 I0 (060aa90).
 
@@ -73,19 +81,42 @@ local index with D.*
 - Fuzzy search, semantic search, tags and natural-language retrieval are out of
   scope.
 
-## 4. Ordering, repetition, bounds (frozen)
+## 4. Candidate identity, ordering, repetition, bounds (frozen)
 
-- **Set semantics.** Index results are a set of observations; response
-  ordering carries ZERO meaning. Implementation may canonical-sort normalized
-  entries, but that sort is serialization/presentation only.
+- **CANDIDATE IDENTITY IS THE EXACT P2 TUPLE ONLY:**
+
+  ```
+  candidate_key = (publisher_scheme, publisher_id, name, version)
+  ```
+
+  `claimed_D` MUST NOT participate in: candidate identity; deduplication;
+  canonical ordering; the candidate-count bound; peer multiplicity; downstream
+  selection; or trust weighting. `T/D1`, `T/D2`, `T/D3` therefore normalize to
+  exactly ONE candidate `T`. Contradictory D claims may be retained as
+  non-authoritative diagnostic observations (or simply discarded after the
+  receipt records that the source lied), but they may never alter the
+  normalized candidate set.
+- **Set semantics.** Response ordering carries ZERO meaning; the canonical sort
+  below exists solely to make truncation independent of attacker-supplied
+  ordering, and carries no preference semantics.
 - **Deduplicate before anything downstream.** `1 occurrence = 100 occurrences
   = 10,000 occurrences` in trust weight. Repetition may consume bandwidth; it
   can never increase authority.
-- **A consumer-local bounded result limit** exists. Its handling is
-  deterministic and independent of attacker-supplied ordering: **normalize →
-  dedupe/canonicalize → then apply the local bound.** Hitting the bound is an
-  availability/completeness problem and is never a reason to trust the entries
-  retained.
+- **The local bound is frozen, not implementation-chosen:**
+
+  ```
+  MAX_D0_CANDIDATES = 256
+
+  validate entries
+    → normalize to exact tuple keys
+    → dedupe BY TUPLE KEY
+    → canonical bytewise sort: publisher_scheme, publisher_id, name, version
+    → retain the first 256
+    → truncated = true iff more than 256 UNIQUE tuple candidates existed
+  ```
+
+  Crossing 256 is a completeness/availability limitation and is never a trust
+  signal.
 
 ## 5. What the consumer does with an answer (frozen flow)
 
@@ -153,9 +184,10 @@ quietly acquire a version-choice policy merely to reach SHIP.
    candidate failure.
 6. **Malformed/invalid publication material**: the index may list it; F0/P2
    still reject it.
-7. **Repetition**: one entry versus many duplicates normalize to an identical
-   candidate set and an identical downstream result.
-8. **Permutation**: all response permutations normalize identically.
+7. **Repetition**: the same tuple repeated with IDENTICAL or with DIFFERENT
+   `claimed_D` values always yields exactly one candidate.
+8. **Permutation**: arbitrary permutations — including differing D claims for
+   the same tuple — produce the identical normalized candidate set.
 9. **Multiple versions**: the index returns several exact versions and selects
    none; F0 is not invoked until an exact tuple is chosen externally.
 10. **Withholding**: the index omits a publication the endpoint actually holds;
@@ -167,8 +199,10 @@ quietly acquire a version-choice policy merely to reach SHIP.
     simply unavailable.
 12. **No trust-state mutation**: querying and normalizing leaves pins, task
     evidence, quarantine records, registry and admissions byte-identical.
-13. **Flood bound**: excess/repeated results are locally bounded after
-    deterministic normalization, with no popularity or weight inference.
+13. **Flood bound**: 10,000 different fake D claims for ONE tuple consume
+    exactly one candidate slot; and 256 genuinely distinct tuple keys produce
+    the same canonical 256 candidates under every tested input ordering, with
+    `truncated: true`. No popularity or weight inference anywhere.
 14. **Copy count adds nothing**: the same tuple appearing in 1, 2 or N known
     repository indexes yields no stronger authentication than one valid P2
     observation.
@@ -201,8 +235,9 @@ Confirm or amend: (a) the object and its single question, including the
 explicit reversal of R0's indexing exclusion and the separation from P1's
 discovery surface (§1); (b) the entry semantics and the untrusted-`claimed_D`
 rule with the forbidden-field list (§2); (c) the exact-name query boundary and
-the "never choose a version" rule (§3); (d) set semantics, dedupe-before-bound
-and the deterministic local bound (§4); (e) the consumer flow with the
+the "never choose a version" rule (§3); (d) candidate identity as the exact
+tuple only, dedupe by tuple key, and the frozen MAX_D0_CANDIDATES = 256
+algorithm (§4); (e) the consumer flow with the
 indistinguishability invariant and the read-only rule (§5); (f) the poisoning
 posture and the stated limits — especially "candidate discovery, not
 completeness" (§6); (g) the fourteen acceptance cases (§7); (h) the deferral
