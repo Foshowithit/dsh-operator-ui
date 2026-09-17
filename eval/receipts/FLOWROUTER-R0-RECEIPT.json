@@ -1,0 +1,215 @@
+{
+  "generated_at": "2026-09-17T07:20:17.454Z",
+  "steps": [
+    {
+      "step": "three fresh repositories started (R1 source, R2 destination, R3 second hop)",
+      "ok": true,
+      "result": {
+        "ports": {
+          "r1": 13131,
+          "r2": 13132,
+          "r3": 13133
+        }
+      }
+    },
+    {
+      "step": "P publishes an authenticated capability to R1 only",
+      "ok": true,
+      "result": {
+        "D": "f7c6c2bd44e4a766",
+        "auth": "VERIFIED"
+      }
+    },
+    {
+      "step": "property 1/2 positive mirror: R2 replicates from R1, stores the ORIGINAL material, and never talks to P",
+      "ok": true,
+      "result": {
+        "replicated": true,
+        "D": "f7c6c2bd44e4a766",
+        "r2": {
+          "publications": 1,
+          "blobs": 1,
+          "custody": 1,
+          "publishers": 0,
+          "mirror_meta": 1,
+          "index_entries": 0
+        }
+      }
+    },
+    {
+      "step": "property 2 R2 serves the ORIGINAL publisher material byte-for-byte; no mirror identity enters it",
+      "ok": true,
+      "result": {
+        "served_auth": "VERIFIED",
+        "material_identical": true,
+        "publisher": "4dc80b187d56"
+      }
+    },
+    {
+      "step": "property 13 B talks ONLY to R2 and still authenticates P (resolve→fetch→stage→verify→admit→route→SHIP)",
+      "ok": true,
+      "result": {
+        "state": "CONSISTENT",
+        "fetched_D": "f7c6c2bd44e4",
+        "stage": "STAGED",
+        "verify": "VERIFIED",
+        "verdict": "SHIP"
+      }
+    },
+    {
+      "step": "property 9 storage changes at mirrors, never B trust state (registry/pins/witness/task store byte-identical)",
+      "ok": true,
+      "result": {
+        "registry_identical": true,
+        "taskstore_identical": true,
+        "pin": 1,
+        "witness_identical": true
+      }
+    },
+    {
+      "step": "property 13 (multi-hop) P → R1 → R2 → R3 → B: identical T/D/material after two custody hops; custody provenance never enters authentication",
+      "ok": true,
+      "result": {
+        "r2_custody": 1,
+        "r3_custody": 1,
+        "D": "f7c6c2bd44e4",
+        "publisher": "4dc80b187d56"
+      }
+    },
+    {
+      "step": "property 10 one mirror and three mirrors give the same publisher authentication — possession adds no ranking/score/endorsement",
+      "ok": true,
+      "result": {
+        "one": "VERIFIED",
+        "many": "VERIFIED|VERIFIED|VERIFIED",
+        "same_D": true
+      }
+    },
+    {
+      "step": "property 8 exact repeat replication is one semantic object (idempotent, no second copy, no extra trust)",
+      "ok": true,
+      "result": {
+        "idempotent": true,
+        "publications": 1,
+        "meta_records": 1
+      }
+    },
+    {
+      "step": "property 3 source advertises valid signed T/D but serves altered bytes → recomputation rejects; NOTHING commits",
+      "ok": true,
+      "result": {
+        "error": "REPLICATION_BYTES_SUBSTITUTED",
+        "committed_publications": 0,
+        "committed_blobs": 0
+      }
+    },
+    {
+      "step": "property 4/5 binding + history substitution from a malicious source → six tamper families all refused before any commit",
+      "ok": true,
+      "result": {
+        "name": {
+          "error": "REPLICATION_TUPLE_MISMATCH",
+          "committed": 0
+        },
+        "material_other": {
+          "error": "REPLICATION_TUPLE_MISMATCH",
+          "committed": 0
+        },
+        "bad_genesis": {
+          "error": "REPLICATION_MATERIAL_INVALID",
+          "committed": 0
+        },
+        "bad_head": {
+          "error": "REPLICATION_MATERIAL_INVALID",
+          "committed": 0
+        },
+        "unauthorized": {
+          "error": "REPLICATION_MATERIAL_INVALID",
+          "committed": 0
+        },
+        "different_D": {
+          "error": "REPLICATION_TUPLE_MISMATCH",
+          "committed": 0
+        }
+      }
+    },
+    {
+      "step": "property 6 same tuple at a different D → refuse; the held binding is byte-identical (no overwrite, no majority)",
+      "ok": true,
+      "result": {
+        "error": "REPLICATION_D_CONFLICT",
+        "binding_unchanged": true,
+        "held_D": "f7c6c2bd44e4",
+        "offered_D": "3a89b6eb9efa"
+      }
+    },
+    {
+      "step": "property 7a compatible material for the same T/D → refuse replacement (immutability), NO F1 evidence emitted, mirror not an adjudicator",
+      "ok": true,
+      "result": {
+        "error": "REPLICATION_MATERIAL_CONFLICT",
+        "material_differs": true,
+        "f1_proof": null,
+        "consumer_state": "CONSISTENT"
+      }
+    },
+    {
+      "step": "property 7b non-comparable material for the same T/D → mirror refuses (no overwrite); the F0/F1 fork path still works across the two repositories",
+      "ok": true,
+      "result": {
+        "mirrored": 200,
+        "error": "REPLICATION_MATERIAL_CONFLICT",
+        "binding_unchanged": true,
+        "consumer_state": "CONFLICT",
+        "reason": "equal-sequence valid heads differ",
+        "f1_verifies": true
+      }
+    },
+    {
+      "step": "property 11 a stale mirror asserts nothing: R2 keeps serving state 1, the consumer (not R2) classifies the compatible extension",
+      "ok": true,
+      "result": {
+        "consumer_head": 2,
+        "r2_serves_state": 1,
+        "r2_claims_freshness": false
+      }
+    },
+    {
+      "step": "property 12: a proof mirrored at R2 quarantines nobody; byte-identical through the carrier; only B's explicit ingest activates quarantine (then acknowledged)",
+      "ok": true,
+      "result": {
+        "stored_at_mirror": true,
+        "bytes_identical": true,
+        "verifies": true,
+        "quarantined_before": false,
+        "quarantined_after_ingest": true,
+        "after_ack": false
+      }
+    },
+    {
+      "step": "property 14 P1 binding replication refused (explicit P1_NOT_FEDERATABLE; implicit 409); raw P0 caching by D still legal and authorizes nothing",
+      "ok": true,
+      "result": {
+        "p1_publish": 200,
+        "p1_error": null,
+        "explicit": "REPLICATION_P1_NOT_FEDERATABLE",
+        "implicit": "REPLICATION_SOURCE_ABSENT",
+        "cache": "cached",
+        "binding_created": false,
+        "publications_unchanged": true
+      }
+    }
+  ],
+  "_r3_restored": true,
+  "_r3_restored2": true,
+  "_fork_observed": {
+    "relation": "SAME_SEQUENCE_DIVERGENT"
+  },
+  "f1_carriage": {
+    "proof_digest": "b93aa4dc50896070",
+    "mirrored": true,
+    "identical": true,
+    "verifies": true
+  },
+  "verdict": "R0 MATRIX GREEN — replication copies possession, never authority"
+}
