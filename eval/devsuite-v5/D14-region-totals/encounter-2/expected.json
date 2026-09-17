@@ -1,0 +1,23 @@
+{
+  "family": "D14",
+  "totals": [
+    {
+      "region": "west",
+      "total": "827"
+    },
+    {
+      "region": "gulf",
+      "total": "653"
+    },
+    {
+      "region": "north",
+      "total": "247"
+    },
+    {
+      "region": "east",
+      "total": "244"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

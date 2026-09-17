@@ -1,0 +1,23 @@
+{
+  "family": "D09",
+  "days": [
+    {
+      "date": "2026-09-17",
+      "count": "5"
+    },
+    {
+      "date": "2026-09-19",
+      "count": "4"
+    },
+    {
+      "date": "2026-09-21",
+      "count": "4"
+    },
+    {
+      "date": "2026-09-24",
+      "count": "3"
+    }
+  ],
+  "encounter": 5,
+  "role": "terminal-promotion-b"
+}

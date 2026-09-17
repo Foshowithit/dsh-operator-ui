@@ -1,0 +1,1 @@
+Every component in release-versions.txt reports a semver version. Compare each major version against target major 3 and report per component, in file order, one per line, as RESULT name=<component> version=<x.y.z> status=<stale|current|ahead> where stale means major < target, current means major = target, ahead means major > target. Report the full three-part version verbatim.

@@ -1,0 +1,5 @@
+# change plan — apply in order
+jobs: info
+timeout: 3
+interval_s: on
+keepalive: 90

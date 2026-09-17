@@ -1,0 +1,1 @@
+Count the events per date in events.log and report each date with its count, sorted by date ascending, one per line, as RESULT date=<YYYY-MM-DD> count=<n>. Some lines carry a bracketed [date] prefix before the real date — use the first bare date token on the line (YYYY-MM-DD).

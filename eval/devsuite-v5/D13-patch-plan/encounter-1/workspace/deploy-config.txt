@@ -1,0 +1,6 @@
+jobs=64
+log_level=512m
+interval_s=30
+timeout=4
+max_conn=on
+heap=info

@@ -1,0 +1,35 @@
+{
+  "family": "D08",
+  "statuses": [
+    {
+      "file": "boot.img",
+      "status": "mismatch"
+    },
+    {
+      "file": "core.pkg",
+      "status": "ok"
+    },
+    {
+      "file": "diag.bin",
+      "status": "ok"
+    },
+    {
+      "file": "env.map",
+      "status": "ok"
+    },
+    {
+      "file": "firmware.sig",
+      "status": "missing"
+    },
+    {
+      "file": "grub.cfg",
+      "status": "ok"
+    },
+    {
+      "file": "initrd.gz",
+      "status": "unexpected"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

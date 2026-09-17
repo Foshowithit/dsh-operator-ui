@@ -1,0 +1,37 @@
+{
+  "family": "D05",
+  "lines": [
+    {
+      "order": "o100",
+      "item": "bracket",
+      "total": "79"
+    },
+    {
+      "order": "o101",
+      "item": "expansion-shell",
+      "total": "50"
+    },
+    {
+      "order": "o102",
+      "item": "coupler",
+      "total": "27"
+    },
+    {
+      "order": "o103",
+      "item": "anchor-bolt",
+      "total": "36"
+    },
+    {
+      "order": "o104",
+      "item": "hex-nut",
+      "total": "15"
+    },
+    {
+      "order": "o105",
+      "item": "bracket",
+      "total": "79"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

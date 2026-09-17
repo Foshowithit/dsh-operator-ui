@@ -1,0 +1,23 @@
+{
+  "family": "D14",
+  "totals": [
+    {
+      "region": "west",
+      "total": "1513"
+    },
+    {
+      "region": "north",
+      "total": "671"
+    },
+    {
+      "region": "gulf",
+      "total": "540"
+    },
+    {
+      "region": "east",
+      "total": "215"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

@@ -1,0 +1,10 @@
+# journal export
+
+debit 104
+debit 21
+debit 20
+credit 5
+credit 96
+credit 68
+
+# opening balance was 295

@@ -1,0 +1,1 @@
+Report every file in the workspace whose size is greater than 2000 bytes, in alphabetical path order, one per line, as RESULT file=<path> size=<bytes>. Search subdirectories too; report paths relative to the workspace.

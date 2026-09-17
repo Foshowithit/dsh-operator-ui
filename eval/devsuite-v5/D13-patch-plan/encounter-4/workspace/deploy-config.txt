@@ -1,0 +1,7 @@
+# current deployment values
+log_level=64
+timeout=512m
+interval_s=30
+jobs=4
+cache_mb=on
+retries=info

@@ -1,0 +1,16 @@
+{
+  "suite": "devsuite-v5 (BREADTH: 12 new families x 5 encounters; E4+E5 sacred terminals, both required for promotion)",
+  "seed": 17320508,
+  "generator_version": "3.0.0",
+  "generator_source_sha256": "sha256:ad81030ed93d76e2e00ace2c9f1a0aeb7bd64d058a65d4ed8897d6f3cb56b97c",
+  "manifest_sha256": "sha256:3e3ebfa6e59f9a3d074bf6e98adde79c8aab9a0b8711899f635bc35f022377e5",
+  "graders_v2_sha256": "sha256:2f98f2024e912d875251bcfb5217c16bae6fc337d4944661f1696d6fdcc8ce13",
+  "grader_controls_sha256": "sha256:3d73cf274559b78ef730ca3d16e95554a95d7624689af5bfa2cc936f8b3c6392",
+  "static_checks_sha256": "sha256:221d4d44ce5386c9bd2d65666b1affd706531abdf33f4d50e635558c3a8fd966",
+  "controls_result": "486/486 PASS (162 fixtures x golden/subtle-wrong/empty across all suite generations)",
+  "fixture_consistency": "all 60 v5 fixtures recomputed from workspace under family contract \u2014 consistent (checker caught D06 phantom-section, D08 missing-status, D14 zero-region/unexcluded-row defects; fixed pre-freeze); regenerated after config.txt\u2192deploy-config.txt corpus-collision rename",
+  "isolation_result": "clean",
+  "family_structures": "multi-file join, hierarchical outline, stateful ledger fold, cross-file validation, daily report aggregation, filesystem selection, normalization, dependency graph, structured patch planning, aggregation with exclusions, semver audit, duration binning",
+  "generated_at": "2026-09-17T00:49:27.332Z",
+  "freeze_note": "Per GPT breadth directive: staged architecture unchanged (ADMIT->DIAGNOSTIC->REGRESSION->SACRED TERMINAL), <=3 global revisions, redacted evidence, immutable provenance; TWO sacred terminals per family, both must pass in one candidate version, neither feeds revision. Devsuites v1-v4 remain frozen."
+}

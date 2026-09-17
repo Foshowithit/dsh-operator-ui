@@ -1,0 +1,23 @@
+{
+  "family": "D06",
+  "sections": [
+    {
+      "section": "electrical",
+      "items": "3"
+    },
+    {
+      "section": "cooling",
+      "items": "2"
+    },
+    {
+      "section": "drive",
+      "items": "3"
+    },
+    {
+      "section": "brakes",
+      "items": "3"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

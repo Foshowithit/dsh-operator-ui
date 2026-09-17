@@ -1,0 +1,27 @@
+{
+  "family": "D08",
+  "statuses": [
+    {
+      "file": "boot.img",
+      "status": "mismatch"
+    },
+    {
+      "file": "core.pkg",
+      "status": "ok"
+    },
+    {
+      "file": "diag.bin",
+      "status": "unexpected"
+    },
+    {
+      "file": "hash.txt",
+      "status": "ok"
+    },
+    {
+      "file": "initrd.gz",
+      "status": "ok"
+    }
+  ],
+  "encounter": 3,
+  "role": "regression"
+}

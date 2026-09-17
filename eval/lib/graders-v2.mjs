@@ -140,5 +140,116 @@ const F10 = (expected, evidence) => {
   return { satisfied: ok, detail: ok ? (want.length ? 'mismatch set matches' : 'zero mismatches declared') : `want [${fmt(want)}] got [${fmt(got)}]` };
 };
 
-export const GRADERS_V2 = { F01, F02, F03, F04, F05, F06, F07, F08, F09, F10, D01, D02, D03, D04 };
+
+// ---- v3.0.0 breadth families (D05–D16) ----
+
+// D05 — multi-file join: per-order totals in orders-file order.
+const D05 = (expected, evidence) => {
+  const want = expected.lines.map((l) => ({ order: l.order, item: l.item, total: l.total }));
+  const got = pairsOf(evidence, /RESULT\s+order=(\S+)\s+item=(\S+)\s+total=(\S+)/g, (m) => ({ order: m[1], item: m[2], total: m[3] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? `all ${want.length} joined orders in file order` : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D06 — hierarchical outline: sub-entry counts per top-level section.
+const D06 = (expected, evidence) => {
+  const want = expected.sections.map((x) => ({ section: x.section, items: String(x.items) }));
+  const got = pairsOf(evidence, /RESULT\s+section=(\S+)\s+items=(\d+)/g, (m) => ({ section: m[1], items: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'section counts match in file order' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D07 — stateful ledger fold: final and minimum running balance.
+const D07 = (expected, evidence) => {
+  const fin = evidence && evidence.match(/RESULT\s+final=(-?\d+)/);
+  const mn = evidence && evidence.match(/RESULT\s+min=(-?\d+)/);
+  const ok = !!fin && !!mn && fin[1] === expected.final && mn[1] === expected.min;
+  return { satisfied: ok, detail: ok ? 'ledger fold matches' : `final/min missing or wrong (want final=${expected.final} min=${expected.min})` };
+};
+
+// D08 — cross-file validation: per-file status, alphabetical order.
+const D08 = (expected, evidence) => {
+  const want = expected.statuses.map((x) => ({ file: x.file, status: x.status }));
+  const got = pairsOf(evidence, /RESULT\s+file=(\S+)\s+status=(\S+)/g, (m) => ({ file: m[1], status: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? `all ${want.length} statuses in alphabetical order` : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D09 — daily report: per-date counts, date ascending.
+const D09 = (expected, evidence) => {
+  const want = expected.days.map((x) => ({ date: x.date, count: String(x.count) }));
+  const got = pairsOf(evidence, /RESULT\s+date=(\d{4}-\d{2}-\d{2})\s+count=(\d+)/g, (m) => ({ date: m[1], count: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'per-date counts match, date order' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D10 — filesystem selection: files above threshold, alphabetical paths.
+const D10 = (expected, evidence, wsFiles) => {
+  // Grader verifies against the EXECUTION workspace when available: the
+  // reported sizes must match real file sizes (artifact-location honesty).
+  const want = expected.files.map((x) => ({ file: x.file, size: String(x.size) }));
+  const got = pairsOf(evidence, /RESULT\s+file=(\S+)\s+size=(\d+)/g, (m) => ({ file: m[1], size: m[2] }));
+  let ok = sameList(want, got);
+  let detail = ok ? 'selected files match, alphabetical' : `want [${fmt(want)}] got [${fmt(got)}]`;
+  if (ok && wsFiles && wsFiles.length) {
+    for (const g of got) {
+      const real = wsFiles.find((f) => f.path === g.file);
+      if (real && real.bytes !== null && Number(g.size) !== Number(real.bytes)) { ok = false; detail = `reported size ${g.size} but ${g.file} is ${real.bytes} bytes in the execution workspace`; break; }
+    }
+  }
+  return { satisfied: ok, detail };
+};
+
+// D11 — normalization: lowercase-hyphen name + 10-digit phone.
+const D11 = (expected, evidence) => {
+  const want = expected.contacts.map((x) => ({ name: x.name, phone: x.phone }));
+  const got = pairsOf(evidence, /RESULT\s+name=([a-z0-9-]+)\s+phone=(\d{10})/g, (m) => ({ name: m[1], phone: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'normalized contacts match' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D12 — dependency graph: per-component counts + heaviest component.
+const D12 = (expected, evidence) => {
+  const wantCounts = expected.counts.map((x) => ({ component: x.component, deps: String(x.deps) }));
+  const gotCounts = pairsOf(evidence, /RESULT\s+component=(\S+)\s+deps=(\d+)/g, (m) => ({ component: m[1], deps: m[2] }));
+  const hv = evidence && evidence.match(/RESULT\s+heaviest=(\S+)/);
+  const countsOk = sameList(wantCounts, gotCounts);
+  const hvOk = !!hv && hv[1] === expected.heaviest;
+  const ok = countsOk && hvOk;
+  return { satisfied: ok, detail: ok ? 'dependency counts and heaviest match' : `counts ${countsOk ? 'ok' : `want [${fmt(wantCounts)}] got [${fmt(gotCounts)}]`}; heaviest ${hvOk ? 'ok' : `want ${expected.heaviest}`}` };
+};
+
+// D13 — structured patching: applied changes in plan order.
+const D13 = (expected, evidence) => {
+  const want = expected.applied.map((x) => ({ key: x.key, from: x.from, to: x.to }));
+  const got = pairsOf(evidence, /RESULT\s+key=(\S+)\s+from=(\S+)\s+to=(\S+)/g, (m) => ({ key: m[1], from: m[2], to: m[3] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'patch plan applied in order' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D14 — aggregation with exclusions: per-region totals.
+const D14 = (expected, evidence) => {
+  const want = expected.totals.map((x) => ({ region: x.region, total: String(x.total) }));
+  const got = pairsOf(evidence, /RESULT\s+region=(\S+)\s+total=(\d+)/g, (m) => ({ region: m[1], total: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'region totals match' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D15 — version audit: per-component semver staleness.
+const D15 = (expected, evidence) => {
+  const want = expected.rows.map((x) => ({ name: x.name, version: x.version, status: x.status }));
+  const got = pairsOf(evidence, /RESULT\s+name=(\S+)\s+version=(\d+\.\d+\.\d+)\s+status=(\S+)/g, (m) => ({ name: m[1], version: m[2], status: m[3] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'version audit matches' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+// D16 — duration binning: fixed-bucket histogram in bucket order.
+const D16 = (expected, evidence) => {
+  const want = expected.buckets.map((x) => ({ bucket: x.bucket, count: String(x.count) }));
+  const got = pairsOf(evidence, /RESULT\s+bucket=(\S+)\s+count=(\d+)/g, (m) => ({ bucket: m[1], count: m[2] }));
+  const ok = sameList(want, got);
+  return { satisfied: ok, detail: ok ? 'bucket histogram matches' : `want [${fmt(want)}] got [${fmt(got)}]` };
+};
+
+export const GRADERS_V2 = { F01, F02, F03, F04, F05, F06, F07, F08, F09, F10, D01, D02, D03, D04, D05, D06, D07, D08, D09, D10, D11, D12, D13, D14, D15, D16 };
 export const FAMILY_CODES = Object.keys(GRADERS_V2);

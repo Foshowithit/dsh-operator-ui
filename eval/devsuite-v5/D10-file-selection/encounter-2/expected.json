@@ -1,0 +1,15 @@
+{
+  "family": "D10",
+  "files": [
+    {
+      "file": "alpha.dat",
+      "size": "2003"
+    },
+    {
+      "file": "charlie.cfg",
+      "size": "1516"
+    }
+  ],
+  "encounter": 2,
+  "role": "diagnostic-revision"
+}

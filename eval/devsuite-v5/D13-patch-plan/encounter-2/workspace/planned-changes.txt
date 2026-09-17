@@ -1,0 +1,4 @@
+timeout: 3
+jobs: info
+heap: 90
+keepalive: 90

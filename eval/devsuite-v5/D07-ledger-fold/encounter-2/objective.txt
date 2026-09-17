@@ -1,0 +1,1 @@
+A ledger starts at balance 312. Apply every transaction in transactions-journal.txt in order (credit adds, debit subtracts). Report the final balance and the lowest balance reached at any point (the opening balance counts as a point), one per line, as RESULT final=<balance> and RESULT min=<balance>.

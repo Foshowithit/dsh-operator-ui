@@ -1,0 +1,27 @@
+{
+  "family": "D13",
+  "applied": [
+    {
+      "key": "jobs",
+      "from": "4",
+      "to": "512m"
+    },
+    {
+      "key": "retries",
+      "from": "info",
+      "to": "90"
+    },
+    {
+      "key": "cache_mb",
+      "from": "on",
+      "to": "200"
+    },
+    {
+      "key": "log_level",
+      "from": "64",
+      "to": "512m"
+    }
+  ],
+  "encounter": 4,
+  "role": "terminal-promotion-a"
+}

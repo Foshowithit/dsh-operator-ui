@@ -1,0 +1,32 @@
+{
+  "family": "D15",
+  "rows": [
+    {
+      "name": "daemon",
+      "version": "2.9.5",
+      "status": "stale"
+    },
+    {
+      "name": "cli",
+      "version": "2.5.9",
+      "status": "stale"
+    },
+    {
+      "name": "exporter",
+      "version": "4.8.9",
+      "status": "current"
+    },
+    {
+      "name": "broker",
+      "version": "5.0.9",
+      "status": "ahead"
+    },
+    {
+      "name": "agent",
+      "version": "5.4.4",
+      "status": "ahead"
+    }
+  ],
+  "encounter": 1,
+  "role": "admission"
+}
