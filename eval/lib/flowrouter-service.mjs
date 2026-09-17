@@ -34,6 +34,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir, readdir, appendFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { verifyGenesis, replayChain, verifyPublication, recordDigest } from '../../lib/identity.js';
 
 const args = process.argv.slice(2);
 const argOf = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
@@ -42,6 +43,7 @@ const STORE = argOf('--store', '/tmp/flowrouter-R');
 const BLOBS = join(STORE, 'blobs');
 const PUBS = join(STORE, 'publications.jsonl');
 const INDEX = join(STORE, 'index.json');
+const PUBLISHERS = join(STORE, 'publishers');
 
 const sha256 = (b) => createHash('sha256').update(b).digest('hex');
 const nowIso = () => new Date().toISOString();
@@ -90,8 +92,18 @@ const VER = /^\d+\.\d+\.\d+$/;
 let publications = [];   // [{publisher_id, name, version, D, published_at}]
 let index = [];          // derived entries
 
+let publishers = {}; // publisher_id -> { genesis, events: [] }
 async function loadState() {
   await mkdir(BLOBS, { recursive: true });
+  await mkdir(PUBLISHERS, { recursive: true });
+  try {
+    const { readdir: rd } = await import('node:fs/promises');
+    for (const f of await rd(PUBLISHERS)) {
+      if (!f.endsWith('.json')) continue;
+      const rec = JSON.parse(await readFile(join(PUBLISHERS, f), 'utf8'));
+      publishers[rec.genesis.publisher_id] = rec;
+    }
+  } catch { publishers = {}; }
   try {
     publications = (await readFile(PUBS, 'utf8')).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   } catch { publications = []; }
@@ -116,7 +128,7 @@ function withPublishLock(fn) {
 async function writeIndex() {
   await writeFile(INDEX, JSON.stringify(index, null, 2) + '\n', 'utf8');
 }
-const findPub = (p, n, v) => publications.find((r) => r.publisher_id === p && r.name === n && r.version === v);
+const findPub = (p, n, v, scheme) => publications.find((r) => r.publisher_id === p && r.name === n && r.version === v && (scheme ? r.publisher_scheme === scheme : true));
 
 // rebuild the derived index from authoritative records (copies published_at)
 async function rebuildIndex() {
@@ -135,7 +147,7 @@ async function rebuildIndex() {
         evidence_summary: { verdicts: ((m.evidence || {}).verdicts || []).length, reported: true },
       };
     } catch { /* record without readable blob — index entry stays minimal */ }
-    out.push({ publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D, published_at: rec.published_at, ...meta });
+    out.push({ publisher_scheme: rec.publisher_scheme || 'p1-configured-v1', publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D, published_at: rec.published_at, publisher_auth: rec.publisher_auth || 'UNAUTHENTICATED', ...meta });
   }
   index = out;
   await writeIndex();
@@ -152,11 +164,27 @@ await rebuildIndex();
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
+    // ---------------- POST /publisher ----------------
+    if (req.method === 'POST' && url.pathname === '/publisher') {
+      const chunks2 = [];
+      for await (const c of req) { chunks2.push(c); if (Buffer.concat(chunks2).length > 400_000) return json(res, 413, { error: 'too large' }); }
+      const { genesis, events } = JSON.parse(Buffer.concat(chunks2).toString('utf8') || '{}');
+      try {
+        replayChain(genesis, events || []); // verify before storing
+      } catch (e) {
+        return json(res, 409, { error: e.code || 'IDENTITY_RECORD_INVALID', reason: String(e.message).slice(0, 200) });
+      }
+      publishers[genesis.publisher_id] = { genesis, events: events || [] };
+      await writeFile(join(PUBLISHERS, genesis.publisher_id + '.json'), JSON.stringify(publishers[genesis.publisher_id], null, 2) + '\n', 'utf8');
+      return json(res, 200, { publisher_id: genesis.publisher_id, head_sequence: (events || []).length + 1 });
+    }
+
     // ---------------- POST /publish ----------------
     if (req.method === 'POST' && url.pathname === '/publish') {
       const chunks = [];
       for await (const c of req) chunks.push(c);
       const body = Buffer.concat(chunks);
+      // (identity path handled below when publication material is present)
       let parsed;
       try { parsed = JSON.parse(body.toString('utf8')); } catch { return json(res, 400, { error: 'PUBLISH_INVALID', reason: 'body is not valid JSON' }); }
       const { publisher_id, name, version } = parsed;
@@ -172,27 +200,68 @@ const server = createServer(async (req, res) => {
       let D;
       try { D = artifactDigest(files); } catch (e) { return json(res, 400, { error: 'PACKAGE_MALFORMED', reason: String(e.message) }); }
 
-      // in-package identity must agree with the requested ref
-      try {
-        const m = JSON.parse(files.find((f) => f.path === 'capability.json').bytes.toString('utf8'));
-        const id = (m.identity || {}).id || '';
-        const ver = (m.identity || {}).version || '';
-        const expectedId = publisher_id + '/' + name;
-        if (id && id !== expectedId) return json(res, 409, { error: 'IDENTITY_VERSION_MISMATCH', reason: `package identity ${id} ≠ ${expectedId}` });
-        if (ver && ver !== version) return json(res, 409, { error: 'IDENTITY_VERSION_MISMATCH', reason: `package version ${ver} ≠ ${version}` });
-      } catch { return json(res, 400, { error: 'PACKAGE_MALFORMED', reason: 'capability.json unreadable' }); }
+      // in-package identity agreement: LEGACY scheme only. Under
+      // p2-selfcert-v1 the package's P0 identity.id is exporter metadata —
+      // the authenticated identity comes from the SIGNED assertion (§7),
+      // which is checked (incl. name/version) further below.
+      const reqScheme = parsed.publisher_scheme || 'p1-configured-v1';
+      if (reqScheme === 'p1-configured-v1') {
+        try {
+          const m = JSON.parse(files.find((f) => f.path === 'capability.json').bytes.toString('utf8'));
+          const id = (m.identity || {}).id || '';
+          const ver = (m.identity || {}).version || '';
+          const expectedId = publisher_id + '/' + name;
+          if (id && id !== expectedId) return json(res, 409, { error: 'IDENTITY_VERSION_MISMATCH', reason: `package identity ${id} ≠ ${expectedId}` });
+          if (ver && ver !== version) return json(res, 409, { error: 'IDENTITY_VERSION_MISMATCH', reason: `package version ${ver} ≠ ${version}` });
+        } catch { return json(res, 400, { error: 'PACKAGE_MALFORMED', reason: 'capability.json unreadable' }); }
+      } else {
+        try { JSON.parse(files.find((f) => f.path === 'capability.json').bytes.toString('utf8')); } catch { return json(res, 400, { error: 'PACKAGE_MALFORMED', reason: 'capability.json unreadable' }); }
+      }
 
       return await withPublishLock(async () => {
-        const existing = findPub(publisher_id, name, version);
+        const existing = findPub(publisher_id, name, version, reqScheme);
+
+        // ---- P2 authenticated binding (spec v3): verify BEFORE publishing.
+        // A supplied assertion is ALWAYS verified — even when the binding
+        // already exists — so an invalid assertion can never ride an
+        // idempotent/no-op path.
+        let auth = { publisher_auth: 'UNAUTHENTICATED', material: null };
+        if (reqScheme === 'p2-selfcert-v1') {
+          const assertion = parsed.publication;
+          if (assertion && (assertion.name !== name || assertion.version !== version)) {
+            await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
+            return json(res, 409, { error: 'SIGNED_STATEMENT_MISMATCH', reason: 'assertion name/version do not match the requested publication (no P2 binding created)' });
+          }
+          if (!assertion || assertion.D !== D) {
+            await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
+            return json(res, 409, { error: 'PUBLISHER_AUTH_INVALID', reason: 'missing publication assertion or D mismatch (no P2 binding created; raw blob retained)' });
+          }
+          const stored = publishers[assertion.publisher_id];
+          if (!stored) {
+            await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
+            return json(res, 409, { error: 'PUBLISHER_AUTH_INVALID', reason: 'unknown publisher (no P2 binding created; raw blob retained)' });
+          }
+          let chain, vp;
+          try {
+            chain = replayChain(stored.genesis, stored.events);
+            vp = verifyPublication(assertion, chain);
+          } catch (e) {
+            await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
+            return json(res, 409, { error: e.code || 'PUBLISHER_AUTH_INVALID', reason: String(e.message).slice(0, 200) });
+          }
+          auth = { publisher_auth: 'VERIFIED', material: { genesis: stored.genesis, events: stored.events, publication: assertion } };
+        }
+
         if (existing) {
-          if (existing.D === D) return json(res, 200, { publisher_id, name, version, D, idempotent: true });
+          if (existing.D === D) return json(res, 200, { publisher_scheme: reqScheme, publisher_id, name, version, D, publisher_auth: existing.publisher_auth || 'UNAUTHENTICATED', idempotent: true });
           return json(res, 409, { error: 'PUBLISH_CONFLICT', reason: `package_ref already bound to ${existing.D}` });
         }
+
         // blob FIRST, binding second (crash → orphan blob, never binding-to-absent)
         await writeFile(join(BLOBS, D + '.pkg'), artifactBytes);
-        await commitPublication({ publisher_id, name, version, D, published_at: nowIso() });
+        await commitPublication({ publisher_scheme: reqScheme, publisher_id, name, version, D, published_at: nowIso(), ...auth });
         await rebuildIndex();
-        return json(res, 200, { publisher_id, name, version, D });
+        return json(res, 200, { publisher_scheme: reqScheme, publisher_id, name, version, D, publisher_auth: auth.publisher_auth });
       });
     }
 
@@ -216,9 +285,10 @@ const server = createServer(async (req, res) => {
       if (!CANON.test(p1) || !CANON.test(n1) || !VER.test(v1)) {
         return json(res, 400, { error: 'IDENTITY_NONCANONICAL', reason: 'components must be canonical (reject-not-normalize)' });
       }
-      const rec = findPub(p1, n1, v1);
+      const schemeQ = url.searchParams.get('scheme') || null;
+      const rec = findPub(p1, n1, v1, schemeQ);
       if (!rec) return json(res, 404, { error: 'FETCH_UNAVAILABLE', reason: 'no publication record' });
-      return json(res, 200, { publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D });
+      return json(res, 200, { publisher_scheme: rec.publisher_scheme || 'p1-configured-v1', publisher_id: rec.publisher_id, name: rec.name, version: rec.version, D: rec.D, publisher_auth: rec.publisher_auth || 'UNAUTHENTICATED', material: rec.material || null });
     }
 
     // ---------------- GET /discover ----------------
@@ -259,14 +329,14 @@ const server = createServer(async (req, res) => {
         if (q.get('has_evidence') === 'true' && !e.evidence_summary) continue;
         if (compatList && !(e.compatibility || []).some((c) => compatList.includes(c))) continue;
         // §3 RECORDS AUTHORITATIVE: validate the binding before returning it
-        const rec = findPub(e.publisher_id, e.name, e.version);
+        const rec = findPub(e.publisher_id, e.name, e.version, e.publisher_scheme);
         if (!rec) {
           // ghost: diagnostic only — never expose a fetch-authorizing digest
           results.push({ ...e, D: null, truth: 'INDEX_METADATA_STALE', diagnostic: true, reason: 'no publication record — entry is not package truth' });
           continue;
         }
         if (rec.D !== e.D) { results.push({ ...e, D: rec.D, truth: 'INDEX_METADATA_STALE', reason: 'index digest disagreed with the immutable record — serving record truth' }); continue; }
-        results.push({ ...e, truth: 'RECORD' });
+        results.push({ ...e, truth: 'RECORD', publisher_auth: rec.publisher_auth || 'UNAUTHENTICATED', material: rec.material || null });
       }
       // frozen ordering: publisher_id, then name, then version (component-wise)
       results.sort((a, b) =>
