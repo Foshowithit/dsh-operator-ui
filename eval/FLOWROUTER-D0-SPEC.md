@@ -1,6 +1,9 @@
-# FlowRouter D0 — Untrusted Repository Possession Index (spec v2, for adjudication)
+# FlowRouter D0 — Untrusted Repository Possession Index (spec v3, for adjudication)
 
 Status: spec-only. No code until frozen.
+
+v3 fixes one off-by-one between §4 and acceptance case 13 (the truncation
+boundary is now stated identically in both and tested at exactly 256 / 257).
 
 v2 folds in the one v1 amendment: CANDIDATE IDENTITY IS THE EXACT P2 TUPLE
 ONLY. `claimed_D` may not participate in identity, deduplication, ordering, the
@@ -199,10 +202,14 @@ quietly acquire a version-choice policy merely to reach SHIP.
     simply unavailable.
 12. **No trust-state mutation**: querying and normalizing leaves pins, task
     evidence, quarantine records, registry and admissions byte-identical.
-13. **Flood bound**: 10,000 different fake D claims for ONE tuple consume
-    exactly one candidate slot; and 256 genuinely distinct tuple keys produce
-    the same canonical 256 candidates under every tested input ordering, with
-    `truncated: true`. No popularity or weight inference anywhere.
+13. **Flood bound, with the frozen edge conditions**: 10,000 different fake D
+    claims for ONE tuple consume exactly one candidate slot; MORE THAN 256
+    genuinely distinct tuple keys produce the same canonical first 256
+    candidates under every tested input ordering with `truncated: true`; and the
+    boundary is tested exactly —
+    `256 unique tuple keys → 256 retained, truncated: false` and
+    `257 unique tuple keys → the canonical first 256 retained, truncated: true`.
+    No popularity or weight inference anywhere.
 14. **Copy count adds nothing**: the same tuple appearing in 1, 2 or N known
     repository indexes yields no stronger authentication than one valid P2
     observation.
