@@ -290,6 +290,11 @@ step('property 1/2 positive mirror: R2 replicates from R1, stores the ORIGINAL m
   const stub = createServer(async (req, res) => {
     const u = new URL(req.url, 'http://x');
     const m = u.pathname.match(/^\/publication\/([^/]+)\/([^/]+)\/([^/]+)$/);
+    // Every stub response is DELAYED: with the network work of both racing
+    // requests genuinely in flight, a commit decision taken from a pre-network
+    // snapshot would double-commit deterministically — which is exactly the
+    // defect this case exists to catch.
+    if (req.method === 'GET') await new Promise((r) => setTimeout(r, 400));
     if (req.method === 'GET' && m) {
       const mode = process.env.__STUB_MODE;
       const rec = { publisher_scheme: 'p2-selfcert-v1', publisher_id: decodeURIComponent(m[1]), name: decodeURIComponent(m[2]), version: decodeURIComponent(m[3]), D: D0, publisher_auth: 'VERIFIED', material: MATERIAL };
@@ -299,12 +304,16 @@ step('property 1/2 positive mirror: R2 replicates from R1, stores the ORIGINAL m
       if (mode === 'bad_head') rec.material = { ...MATERIAL, events: [ev1], publication: signPublication({ privateKey: K1.privateKey, publisherId: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0, keyId: deriveKeyId(K1.publicKeyRaw), identitySequence: 7, identityHeadDigest: chain1.head_digest }) };
       if (mode === 'unauthorized') { const kX = generateKeypair(); rec.material = { ...MATERIAL, publication: signPublication({ privateKey: kX.privateKey, publisherId: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: D0, keyId: deriveKeyId(K1.publicKeyRaw), identitySequence: chain1.head_sequence, identityHeadDigest: chain1.head_digest }) }; }
       if (mode === 'different_D') rec.D = 'a'.repeat(64);
+      if (mode === 'alt_package') { rec.D = Dalt; rec.material = { genesis, events: [ev1], publication: altAssert }; }
+      if (mode === 'reissued') { rec.D = D0; rec.material = { genesis, events: [ev1], publication: reissuedAssert }; }
       res.writeHead(200, { 'content-type': 'application/json' });
       return res.end(JSON.stringify(rec));
     }
     if (req.method === 'GET' && /^\/fetch\/[a-f0-9]{64}$/.test(u.pathname)) {
+      const which = u.pathname.split('/')[2];
+      const src = which === Dalt ? altFiles : files0;
       res.writeHead(200, { 'content-type': 'application/octet-stream' });
-      return res.end(JSON.stringify({ files: files0.map((f) => ({ path: f.path, b64: f.bytes.toString('base64') })) }));
+      return res.end(JSON.stringify({ files: src.map((f) => ({ path: f.path, b64: f.bytes.toString('base64') })) }));
     }
     res.writeHead(404); res.end('{}');
   });
@@ -467,6 +476,117 @@ step('property 1/2 positive mirror: R2 replicates from R1, stores the ORIGINAL m
   const explicitRefused = refused.status === 409 && refused.body.error === 'REPLICATION_P1_NOT_FEDERATABLE';
   const implicitRefused = refusedImplicit.status === 409 && String(refusedImplicit.body.error || '').startsWith('REPLICATION_');
   step('property 14 P1 binding replication refused (explicit P1_NOT_FEDERATABLE; implicit 409); raw P0 caching by D still legal and authorizes nothing', p1.status === 200 && explicitRefused && implicitRefused && cached.body.cached === true && cached.body.binding_created === false && stateBeforeCache.publications === stateAfterCache.publications, { p1_publish: p1.status, p1_error: p1.body.error || null, explicit: refused.body.error, implicit: refusedImplicit.body.error, cache: cached.body.cached === true ? 'cached' : cached.body.error, binding_created: cached.body.binding_created, publications_unchanged: stateBeforeCache.publications === stateAfterCache.publications });
+}
+
+// ================= property 15: concurrent replication (transactional race) =================
+// The commit decision must be taken INSIDE the repository's mutation critical
+// section against the CURRENT binding — a snapshot taken before the network
+// work is stale by the time anything commits.
+{
+  // fixtures this case needs: an alternative-D package, and a reissued
+  // assertion for the same T+D (a compatible difference).
+  const alt = join(WORK, 'pkg-alt');
+  execFileSync('rm', ['-rf', alt]); execFileSync('cp', ['-R', A_PKG, alt]);
+  {
+    const wf = join(alt, 'workflows', 'csv-running-total-v0-1-0.yaml');
+    await writeFile(wf, (await readFile(wf, 'utf8')) + '\n# race-alt\n', 'utf8');
+    const capPath = join(alt, 'capability.json');
+    const cap = JSON.parse(await readFile(capPath, 'utf8'));
+    const wfBytes = await readFile(wf);
+    cap.implementation.bundle = { algorithm: 'sha256' };
+    const capBytes = Buffer.from(canonicalJson(cap), 'utf8');
+    cap.implementation.bundle.package_digest = packageDigest([{ path: 'capability.json', bytes: capBytes }, { path: cap.implementation.entrypoint, bytes: wfBytes }]);
+    cap.implementation.bundle.digest = sha(wfBytes);
+    await writeFile(capPath, canonicalJson(cap), 'utf8');
+  }
+  var altFiles = await artifactOf(alt);
+  var Dalt = p0DigestOfFiles(altFiles);
+  var altAssert = signPublication({ privateKey: K1.privateKey, publisherId: genesis.publisher_id, name: 'csv-running-total', version: '0.1.0', D: Dalt, keyId: deriveKeyId(K1.publicKeyRaw), identitySequence: chain1.head_sequence, identityHeadDigest: chain1.head_digest });
+  var reissuedAssert = assertAt(chain1); // same statement, freshly issued
+
+  const stubPort = 13134;
+  const stub = createServer(async (req, res) => {
+    const u = new URL(req.url, 'http://x');
+    const m = u.pathname.match(/^\/publication\/([^/]+)\/([^/]+)\/([^/]+)$/);
+    if (req.method === 'GET' && m) {
+      const mode = process.env.__STUB_MODE;
+      const rec = { publisher_scheme: 'p2-selfcert-v1', publisher_id: decodeURIComponent(m[1]), name: decodeURIComponent(m[2]), version: decodeURIComponent(m[3]), D: D0, publisher_auth: 'VERIFIED', material: { genesis, events: [ev1], publication: ASSERT1 } };
+      if (mode === 'alt_package') { rec.D = Dalt; rec.material = { genesis, events: [ev1], publication: altAssert }; }
+      if (mode === 'reissued') { rec.material = { genesis, events: [ev1], publication: reissuedAssert }; }
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(rec));
+    }
+    if (req.method === 'GET' && /^\/fetch\/[a-f0-9]{64}$/.test(u.pathname)) {
+      const which = u.pathname.split('/')[2];
+      const src = which === Dalt ? altFiles : files0;
+      res.writeHead(200, { 'content-type': 'application/octet-stream' });
+      return res.end(JSON.stringify({ files: src.map((f) => ({ path: f.path, b64: f.bytes.toString('base64') })) }));
+    }
+    res.writeHead(404); res.end('{}');
+  });
+  await new Promise((r) => stub.listen(stubPort, '127.0.0.1', r));
+  const stubEp = 'http://127.0.0.1:' + stubPort;
+
+  const freshMirror = async () => {
+    killListener(R_PORTS.r3);
+    await new Promise((r) => setTimeout(r, 600));
+    await rm(join(WORK, 'store-r3'), { recursive: true, force: true });
+    serviceStart('r3');
+    await waitUp('r3');
+  };
+  const records = async () => {
+    try { return (await readFile(join(WORK, 'store-r3', 'publications.jsonl'), 'utf8')).split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch { return []; }
+  };
+  const provenanceCount = async () => {
+    try { return (await readFile(join(WORK, 'store-r3', 'mirror.jsonl'), 'utf8')).split('\n').filter(Boolean).length; } catch { return 0; }
+  };
+
+  // --- race A: same tuple, two DIFFERENT Ds, both transactions in flight ---
+  await freshMirror();
+  process.env.__STUB_MODE = 'alt_package';
+  await restartFreshStore('r1');
+  await post(ep('r1'), '/publisher', { genesis, events: [ev1] });
+  await post(ep('r1'), '/publish', { ...pubBody(chain1, ASSERT1), publication: ASSERT1 });
+  const [a1, a2] = await Promise.all([
+    post(ep('r3'), '/replicate', { source_endpoint: ep('r1'), scheme: 'p2-selfcert-v1', ...TUPLE }),
+    post(ep('r3'), '/replicate', { source_endpoint: stubEp, scheme: 'p2-selfcert-v1', ...TUPLE }),
+  ]);
+  const recsA = await records();
+  const DsA = [...new Set(recsA.map((r) => r.D))];
+  const refusalsA = [a1, a2].filter((x) => x.status === 409 && x.body.error === 'REPLICATION_D_CONFLICT').length;
+  const successesA = [a1, a2].filter((x) => x.status === 200 && x.body.replicated === true).length;
+  const lookupA = await publicationOf('r3', TUPLE);
+  step('property 15a concurrent same-tuple / different-D replicas → exactly ONE binding, one conflict refusal, one unambiguous lookup', recsA.length === 1 && DsA.length === 1 && successesA === 1 && refusalsA === 1 && lookupA.status === 200 && lookupA.body.D === DsA[0] && (await provenanceCount()) === 1, { bindings: recsA.length, D: DsA.map((d) => d.slice(0, 10)), successes: successesA, refusals: refusalsA, provenance: await provenanceCount() });
+
+  // --- race B: same tuple+D, two DIFFERENT materials, in flight together ---
+  await freshMirror();
+  process.env.__STUB_MODE = 'reissued';
+  const [b1, b2] = await Promise.all([
+    post(ep('r3'), '/replicate', { source_endpoint: ep('r1'), scheme: 'p2-selfcert-v1', ...TUPLE }),
+    post(ep('r3'), '/replicate', { source_endpoint: stubEp, scheme: 'p2-selfcert-v1', ...TUPLE }),
+  ]);
+  const recsB = await records();
+  const refusalsB = [b1, b2].filter((x) => x.status === 409 && x.body.error === 'REPLICATION_MATERIAL_CONFLICT').length;
+  const successesB = [b1, b2].filter((x) => x.status === 200 && x.body.replicated === true).length;
+  const heldB = recsB.length === 1 ? materialDigest(recsB[0].material) : null;
+  const lookupB = await publicationOf('r3', TUPLE);
+  step('property 15b concurrent same T+D / different material → exactly ONE material persists, the other refused (immutability holds under concurrency)', recsB.length === 1 && successesB === 1 && refusalsB === 1 && lookupB.status === 200 && materialDigest(lookupB.body.material) === heldB && (await provenanceCount()) === 1, { bindings: recsB.length, successes: successesB, refusals: refusalsB, provenance: await provenanceCount() });
+
+  // --- race C: concurrent IDENTICAL requests → one binding, one provenance, other idempotent ---
+  await freshMirror();
+  process.env.__STUB_MODE = 'identity';
+  const [c1, c2] = await Promise.all([
+    post(ep('r3'), '/replicate', { source_endpoint: ep('r1'), scheme: 'p2-selfcert-v1', ...TUPLE }),
+    post(ep('r3'), '/replicate', { source_endpoint: stubEp, scheme: 'p2-selfcert-v1', ...TUPLE }),
+  ]);
+  const recsC = await records();
+  const outcomes = [c1, c2].map((x) => (x.body.idempotent ? 'idempotent' : x.body.replicated ? 'committed' : 'error:' + x.body.error));
+  step('property 15c concurrent identical requests → exactly one binding, one provenance record, the other idempotent', recsC.length === 1 && outcomes.filter((o) => o === 'committed').length === 1 && outcomes.filter((o) => o === 'idempotent').length === 1 && (await provenanceCount()) === 1 && (await publicationOf('r3', TUPLE)).status === 200, { bindings: recsC.length, outcomes, provenance: await provenanceCount() });
+
+  stub.close();
+  // leave a clean mirror at R3 for any later case
+  await freshMirror();
+  await post(ep('r3'), '/replicate', { source_endpoint: ep('r2'), scheme: 'p2-selfcert-v1', ...TUPLE }).catch(() => {});
 }
 
 const okAll = receipt.steps.every((s) => s.ok);
