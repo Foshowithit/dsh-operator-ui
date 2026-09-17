@@ -568,6 +568,25 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
     if (!hostSrc2.includes(must)) throw new Error('the F1 surface lost ' + must);
   }
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'equivocation.js')], { stdio: 'pipe' });
+
+  // R0 (spec 43ca378): authenticated mirror replication
+  const rep = readFileSync(join(root, 'lib', 'replication.js'), 'utf8');
+  for (const must of ['REPLICATION_P1_NOT_FEDERATABLE', 'REPLICATION_BYTES_SUBSTITUTED', 'REPLICATION_D_CONFLICT', 'REPLICATION_MATERIAL_CONFLICT', 'verifySourcePublication', 'replicationDecision', 'materialDigest']) {
+    if (!rep.includes(must)) throw new Error('lib/replication.js lost ' + must);
+  }
+  // a mirror must never re-attest: no signing/identity-creation primitives in
+  // the replication path at all
+  if (/signPublication|signRecord|createGenesis|createKeyEvent|generateKeypair|privateKey/.test(rep)) throw new Error('R0 replication must never re-attest — no signing primitive may appear');
+  // replication must never touch consumer-local trust state
+  if (/upsertTask|getTask|listTasks|tasks\.json|pin_|quarantine/i.test(rep)) throw new Error('R0 replication must not read or write consumer-local trust state');
+  // commit order is blob first, binding second (service wiring)
+  const svc = readFileSync(join(root, 'eval', 'lib', 'flowrouter-service.mjs'), 'utf8');
+  const blobWrite = svc.indexOf("await writeFile(join(BLOBS, plan.requested_D + '.pkg'), plan.wire_bytes)");
+  const bindWrite = svc.indexOf('await commitPublication({', blobWrite === -1 ? 0 : blobWrite);
+  if (blobWrite === -1 || bindWrite === -1 || blobWrite > bindWrite) throw new Error('R0 must commit the blob BEFORE the binding');
+  if (!/if \(rec\.custody && rec\.custody\.mirrored_from\) continue;/.test(svc)) throw new Error('mirrored bindings must stay out of the discovery index');
+  if (!svc.includes("url.pathname === '/replicate'") || !svc.includes("url.pathname === '/cache-blob'")) throw new Error('the repository lost its R0 replication surface');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'replication.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
