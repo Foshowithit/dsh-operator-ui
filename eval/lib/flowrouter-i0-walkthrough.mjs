@@ -110,7 +110,7 @@ const bOnce = (cmd, timeoutMs = 90000) => {
     try { return { status: 200, body: JSON.parse(out) }; } catch { return { status: 502, body: { error: 'BAD_ONESHOT_OUTPUT', raw: out.slice(0, 200) } }; }
   } catch (e) { return { status: 0, body: { error: String(e.message).slice(0, 160) } }; }
 };
-const bActorEvidence = () => bOnce({ op: 'actor', run_nonce: RUN_NONCE ? null : null });
+const bActorEvidence = () => bOnce({ op: 'actor', run_nonce: RUN_NONCE });
 const bState = () => bOnce({ op: 'bstate' });
 const bResolve = (peers, tuple) => bOnce({ op: 'resolve', peers, scheme: 'p2-selfcert-v1', ...tuple });
 const bFetch = (resolution_handle, D, bytes_from) => bOnce({ op: 'fetch', resolution_handle, D, bytes_from });
@@ -203,9 +203,10 @@ await mkdir(WORK, { recursive: true });
 await restartARepo(A_REPO_PORT, join(WORK, 'store-r1'), true);
 await restartARepo(A_FORK_PORT, join(WORK, 'store-fork'), true);
 {
+  // the one-shot process reports its own platform/node; the campaign nonce is
+  // carried in the command so the receipt can show which run produced it
   const actorB = await bActorEvidence();
-  const freshNonce = RUN_NONCE === null ? null : null;
-  receipt.actors.machine_B = actorB.status === 200 ? { role: actorB.body.role, platform: actorB.body.platform, release: actorB.body.release, node: actorB.body.node, process: 'one-shot (fresh process per operation)' , run_nonce: actorB.body.run_nonce } : { error: 'unreachable', status: actorB.status };
+  receipt.actors.machine_B = actorB.status === 200 ? { role: actorB.body.role, platform: actorB.body.platform, release: actorB.body.release, node: actorB.body.node, process: 'one-shot (fresh process per operation)', run_nonce: actorB.body.run_nonce } : { error: 'unreachable', status: actorB.status };
   const r2 = await get(B.r2, '/status');
   const r3 = await get(B.r3, '/status');
   const distinct = receipt.actors.machine_B && receipt.actors.machine_B.platform && receipt.actors.machine_B.platform !== platform();
