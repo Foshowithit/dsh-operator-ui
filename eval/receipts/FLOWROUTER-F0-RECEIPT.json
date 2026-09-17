@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T06:12:42.936Z",
+  "generated_at": "2026-09-17T06:25:46.767Z",
   "steps": [
     {
       "step": "four fresh repositories started on consumer-assigned endpoints",
@@ -45,11 +45,12 @@
       }
     },
     {
-      "step": "exact-D fetch from a VALID peer; D recomputed on receipt",
+      "step": "exact-D fetch via the B-authored resolution handle; D recomputed on receipt + canonical proof material returned",
       "ok": true,
       "result": {
         "from": "r1",
-        "recomputed": "f7c6c2bd44e4a766"
+        "recomputed": "f7c6c2bd44e4a766",
+        "proof_source": "r1"
       }
     },
     {
@@ -101,8 +102,8 @@
       "result": {
         "state": "CONSISTENT",
         "heads": [
-          "54f3e4a5",
-          "54f3e4a5"
+          "4a979eb7",
+          "4a979eb7"
         ]
       }
     },
@@ -132,20 +133,53 @@
       }
     },
     {
+      "step": "H1 caller-supplied resolve JSON, forged handle, mismatched D → all FETCH_NOT_PERMITTED",
+      "ok": true,
+      "result": {
+        "replay": "FETCH_NOT_PERMITTED",
+        "forged": "FETCH_NOT_PERMITTED",
+        "wrong_d": "FETCH_NOT_PERMITTED"
+      }
+    },
+    {
+      "step": "H2 bytes_from a peer not VALID for this exact tuple/D → FETCH_NOT_PERMITTED",
+      "ok": true,
+      "result": {
+        "error": "FETCH_NOT_PERMITTED",
+        "reason": "FETCH_NOT_PERMITTED: byte source r4 is not VALID for this exact tuple/D"
+      }
+    },
+    {
+      "step": "H3 peers stop carrying a previously VALID tuple → fetch fails closed on re-observation",
+      "ok": true,
+      "result": {
+        "error": "FETCH_UNAVAILABLE",
+        "reason": "FETCH_UNAVAILABLE: byte source r2 is not VALID for this exact tuple/D on re-observation"
+      }
+    },
+    {
+      "step": "H4 substituted bytes at the requested source are rejected; honest mirror serves instead",
+      "ok": true,
+      "result": {
+        "from": "r2",
+        "recomputed": "f7c6c2bd44e4a766"
+      }
+    },
+    {
       "step": "C1 peer-order permutation → identical aggregate + candidate",
       "ok": true,
       "result": {
-        "a": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1}}",
-        "b": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1}}"
+        "a": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1,\"source\":\"r1\",\"material\":\"6f72f3e3a7a15adc\"}}",
+        "b": "{\"s\":\"PARTIAL\",\"c\":{\"D\":\"f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c\",\"seq\":1,\"source\":\"r1\",\"material\":\"6f72f3e3a7a15adc\"}}"
       }
     },
     {
       "step": "C2 OBSERVE/RESOLVE leaves B registry/task store/pin byte-identical",
       "ok": true,
       "result": {
-        "registry_sha": "5471a81fc6cb6a43",
+        "registry_sha": "92a97f71e22a67e3",
         "registry_identical": true,
-        "taskstore_sha": "5d4f28272d3634e0",
+        "taskstore_sha": "974f452717a0fa96",
         "taskstore_identical": true,
         "pin_before": 1,
         "pin_after": 1,
@@ -168,6 +202,32 @@
       "result": {
         "state": "CONFLICT",
         "reason": "equal-sequence valid heads differ"
+      }
+    },
+    {
+      "step": "C3c bytes from the seq-4 mirror still stage with F0-selected seq-6 material → pin seq-6 in both orders",
+      "ok": true,
+      "result": {
+        "bytes_from": [
+          "r1",
+          "r2"
+        ],
+        "material_seq": [
+          6,
+          6
+        ],
+        "stage": [
+          "STAGED",
+          "STAGED"
+        ],
+        "stage_error": [
+          null,
+          null
+        ],
+        "pin_sequence": [
+          6,
+          6
+        ]
       }
     }
   ],
