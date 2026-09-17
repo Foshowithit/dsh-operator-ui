@@ -587,6 +587,31 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   if (!/if \(rec\.custody && rec\.custody\.mirrored_from\) continue;/.test(svc)) throw new Error('mirrored bindings must stay out of the discovery index');
   if (!svc.includes("url.pathname === '/replicate'") || !svc.includes("url.pathname === '/cache-blob'")) throw new Error('the repository lost its R0 replication surface');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'replication.js')], { stdio: 'pipe' });
+
+  // D0 (spec d0e935d): untrusted repository possession index
+  const disc = readFileSync(join(root, 'lib', 'discovery.js'), 'utf8');
+  for (const must of ['MAX_D0_CANDIDATES = 256', 'normalizeCandidateEntries', 'queryPossessionIndex', 'discoverCandidates', 'candidateKey', 'truncated']) {
+    if (!disc.includes(must)) throw new Error('lib/discovery.js lost ' + must);
+  }
+  // candidate identity is the exact tuple: claimed_D may not enter the key
+  if (!/const candidateKey = \(c\) => \[c\.publisher_scheme, c\.publisher_id, c\.name, c\.version\]/.test(disc)) throw new Error('D0 candidate identity must be the exact tuple only');
+  const keyLine = disc.split('\n').find((l) => l.includes('const candidateKey'));
+  if (/claimed_D/.test(keyLine)) throw new Error('claimed_D must never participate in candidate identity');
+  // discovery is read-only observation
+  if (/upsertTask|writeFile|mkdir|appendFile|rename/.test(disc)) throw new Error('D0 discovery must never write local state');
+  if (/latest|preferred|current|recommend|score|rank/.test(disc)) throw new Error('D0 must carry no version-selection or ranking semantics');
+  // the repository exposes the possession index as a SEPARATE surface
+  const svc2 = readFileSync(join(root, 'eval', 'lib', 'flowrouter-service.mjs'), 'utf8');
+  if (!svc2.includes("url.pathname === '/possession'")) throw new Error('the repository lost its possession index');
+  const possessionBlock = svc2.slice(svc2.indexOf("url.pathname === '/possession'"), svc2.indexOf("url.pathname === '/replicate'"));
+  if (!possessionBlock.includes("p2-selfcert-v1")) throw new Error('the possession index must be P2-only');
+  // the ENTRY FIELDS are exactly the five frozen ones — check the literal, not
+  // the prose (the block legitimately validates canonical names and explains
+  // that claimed_D is untrusted)
+  const entryLiteral = possessionBlock.slice(possessionBlock.indexOf('entries.push({'), possessionBlock.indexOf('entries.push({') + 400);
+  const entryFields = [...entryLiteral.matchAll(/^\s*([A-Za-z_]+):/gm)].map((m) => m[1]).sort().join(',');
+  if (entryFields !== 'claimed_D,name,publisher_id,publisher_scheme,version') throw new Error('possession entries must carry exactly the five frozen fields, got: ' + entryFields);
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'discovery.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
