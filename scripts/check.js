@@ -470,6 +470,8 @@ check('acquire: production acquisition — fail-closed, bounded, evaluate-then-c
   // never writes outside the configured teaching dirs, never reads credentials
   // from hardcoded paths (env only), never promotes itself
   if (/writeFile\([^)]*registry/.test(a)) throw new Error('acquisition must never write the registry — promotion is the operator click');
+  const teachSrc = readFileSync(join(root, 'lib', 'teach.js'), 'utf8');
+  if (/name:\s*'Workspace word count/.test(teachSrc)) throw new Error('promotion must derive the capability name from the candidate, never hardcode a demo name');
   if (new RegExp('chow' + '-secrets|\\/Users\\/').test(a)) throw new Error('acquisition must resolve credentials from env only');
   // static validation runs before any execute stage in the loop order
   const staticIdx = a.indexOf('staticValidate(parsed.yaml)');
