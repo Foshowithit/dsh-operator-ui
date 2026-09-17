@@ -520,6 +520,15 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
   if (!host.includes("GIT_ROUTE + '/flowrouter'")) throw new Error('host lost the /flowrouter route');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'flowrouter.js')], { stdio: 'pipe' });
+  // P2 zero-authority contract: publisher authentication must be provenance
+  // only — the eligibility/ routing code paths must never read it
+  const goal = readFileSync(join(root, 'lib', 'goal.js'), 'utf8');
+  if (/publisher_auth|publisher\./.test(goal)) throw new Error('goal.js (routing/eligibility) must never read publisher authentication');
+  const idn = readFileSync(join(root, 'lib', 'identity.js'), 'utf8');
+  for (const must of ['verifyGenesis', 'replayChain', 'verifyPublication', 'classifyFreshness', 'chainExtendsPin', 'SEQUENCE_ROLLBACK', 'IDENTITY_HISTORY_FORK', 'KEY_NOT_AUTHORIZED']) {
+    if (!idn.includes(must)) throw new Error('lib/identity.js lost ' + must);
+  }
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'identity.js')], { stdio: 'pipe' });
 });
 
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
