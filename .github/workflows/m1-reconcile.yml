@@ -24,6 +24,9 @@ jobs:
         run: node --test test/*.test.mjs
       - name: Existing contract check
         run: node scripts/check.js
-      - name: Confirm no task-store persistence regression
+      - name: Confirm task-store durability contract
         run: |
-          ! grep -E "writeFile|rename\(|tasks\.json" lib/tasks.js
+          grep -q 'tasks\.json' lib/tasks.js
+          grep -q 'writeFile' lib/tasks.js
+          grep -q 'rename' lib/tasks.js
+          grep -q 'getDshHome' lib/tasks.js
