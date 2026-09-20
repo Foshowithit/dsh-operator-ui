@@ -5,7 +5,7 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
 
@@ -682,6 +682,37 @@ check('memory: history read-model + named decay (no score) + lineage provenance'
   if (!m.memory || !m.memory.noScore) throw new Error('manifest lost the memory section');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'history.js')], { stdio: 'pipe' });
 });
+
+// 13. Module graph: every host-side module must LOAD, not just parse. The
+// syntax legs above run `node --check`, which passes on a module whose named
+// imports the target never exports — the defect only surfaces as an
+// undefined binding at call time (the evaluateObjective import bug this leg
+// now pins shut). The plugin entry is imported as a whole graph; each host
+// module is then imported individually so a failure names its module.
+// require() is unusable here (ESM): each load is a child
+// `node --input-type=module -e "await import(<fileURL>)"` so side effects and
+// failures stay out of this process.
+{
+  const libDir = join(root, 'lib');
+  const browserHalves = new Set(['client.js', 'browser.js']); // not node-loadable
+  const hostModules = readdirSync(libDir)
+    .filter((f) => f.endsWith('.js') && !browserHalves.has(f))
+    .sort();
+  const loadCmd = (file) =>
+    execFileSync(process.execPath,
+      ['--input-type=module', '-e', 'await import(' + JSON.stringify(pathToFileURL(file).href) + ')'],
+      { stdio: 'pipe' });
+  check('module graph: plugin entry loads as a whole graph', () => {
+    loadCmd(join(libDir, 'index.js'));
+  });
+  check('module graph: every host module loads individually (' + hostModules.length + ' modules)', () => {
+    const broken = [];
+    for (const f of hostModules) {
+      try { loadCmd(join(libDir, f)); } catch { broken.push(f); }
+    }
+    if (broken.length) throw new Error('failed to load: ' + broken.join(', '));
+  });
+}
 
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
