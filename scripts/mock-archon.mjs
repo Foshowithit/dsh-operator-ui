@@ -6,6 +6,18 @@
 // Slice 0: the default is DELIBERATELY not 3090 — the mock must never collide
 // with a real Archon on the default port. Point the plugin at the mock with
 // DSH_OPERATOR_UI_ARCHON=http://127.0.0.1:13090.
+//
+// S2-R (2026-09-20): additive conversation-lifecycle surface mirroring the
+// bundle-extracted real API — POST /api/conversations (strict body; pure row
+// creation without `message`, and message-bearing creation trips a 501 so the
+// S2-R contract never silently depends on it), GET/POST/DELETE
+// /api/conversations/{id}, GET /{id}/messages, and POST /{id}/message with
+// the deterministic `/setproject <name>` command — plus /api/_mock/* admin
+// routes (call log, run seeding, one-shot delay/drop of the next dispatch)
+// used by test/conversation.test.mjs. Dispatch now mirrors the real
+// best-effort conversation lookup (dispatch proceeds over an unknown id —
+// enforcement lives Mac-side) and stamps the conversation's effective cwd
+// (cwd ?? codebase.default_cwd) onto the run.
 
 import { createServer } from 'node:http';
 
@@ -14,6 +26,27 @@ const dynamicRuns = []; // runs created via POST …/run during this process
 const now = Date.now();
 const min = 60 * 1000;
 const hr = 60 * min;
+
+// S2-R fixtures: the real p1x-csv-fixture project row (id as registered on
+// the dev-host) plus a second project so a wrong-project binding is expressible.
+const codebases = new Map([
+  ['dc92aa5a4a569d452a2fa65a2a0e2053', { id: 'dc92aa5a4a569d452a2fa65a2a0e2053', name: 'p1x-csv-fixture', default_cwd: '/home/<redacted>/p1x-ws', ai_assistant_type: 'pi', kind: 'folder' }],
+  ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1', { id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1', name: 'p2x-wrong-fixture', default_cwd: '/home/<redacted>/p2x-ws', ai_assistant_type: 'pi', kind: 'folder' }],
+]);
+const projectsByName = new Map([...codebases.values()].map((c) => [c.name, c]));
+const conversations = new Map(); // platform conversation id → row (snake_case, like the real db)
+const convMessages = new Map(); // platform conversation id → [text]
+let dbSeq = 0;
+let seedSeq = 0;
+const callLog = []; // {at, method, path} — every request
+let delayNextDispatchMs = 0;
+let dropNextDispatch = false;
+
+const readBody = (req) => new Promise((resolve) => {
+  let body = '';
+  req.on('data', (d) => { body += d; if (body.length > 64000) req.destroy(); });
+  req.on('end', () => resolve(body));
+});
 
 const workflows = [
   { name: 'verify-echo-v1', description: 'SEEDED system-verification echo (zero-credential, deterministic)', category: 'seed', tags: ['seed', 'verify'] },
@@ -42,10 +75,15 @@ const runs = [
   { id: 'run-mock-012', workflow_name: 'example-video-prod-v1', user_message: 'retro cut for the space sim', status: 'completed', current_step_index: 5, started_at: now - 170 * hr, metadata: { model_bindings: { renderer: 'det-canvas', planner: 'muse-1.3' } }, receipt: { decision: 'ship', summary: '1080p60 delivered, filmstrip verified.', artifacts: ['CUT.mp4', 'EVAL.json', 'FINAL_REPORT.md'] } },
 ];
 
-createServer((req, res) => {
+createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
+  callLog.push({ at: Date.now(), method: req.method, path: url.pathname });
   const json = (body) => {
     res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(body));
+  };
+  const fail = (code, body) => {
+    res.writeHead(code, { 'content-type': 'application/json' });
     res.end(JSON.stringify(body));
   };
   // RC0: the mock mirrors the REAL v0.10.1 API contract as closely as the
@@ -73,24 +111,32 @@ createServer((req, res) => {
   const runDispatch = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)\/run$/);
   if (runDispatch && req.method === 'POST') {
     const wf = workflows.find((w) => w.name === runDispatch[1]);
-    if (!wf) {
-      res.writeHead(404, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ error: 'unknown workflow: ' + runDispatch[1] }));
+    if (!wf) return fail(404, { error: 'unknown workflow: ' + runDispatch[1] });
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch {}
+    if (typeof parsed.conversationId !== 'string' || parsed.conversationId.length === 0) {
+      return fail(400, { error: 'conversationId must be a non-empty string' });
     }
-    let body = '';
-    req.on('data', (d) => { body += d; if (body.length > 64000) req.destroy(); });
-    req.on('end', () => {
-      let parsed = {};
-      try { parsed = JSON.parse(body || '{}'); } catch {}
-      if (typeof parsed.conversationId !== 'string' || parsed.conversationId.length === 0) {
-        res.writeHead(400, { 'content-type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'conversationId must be a non-empty string' }));
-      }
-      const seeded = wf.name === 'verify-echo-v1';
+    // Real contract: conversation lookup is BEST-EFFORT — dispatch proceeds
+    // even over an unknown conversationId, so identity enforcement has to
+    // live entirely Mac-side. When the conversation IS known, persist the
+    // /workflow run message and stamp identity context onto the run.
+    const convRow = conversations.get(parsed.conversationId) || null;
+    const convCb = convRow ? codebases.get(convRow.codebase_id) : null;
+    const workingPath = convRow ? (convRow.cwd || (convCb ? convCb.default_cwd : null)) : null;
+    if (convRow) {
+      const msgs = convMessages.get(parsed.conversationId) || [];
+      msgs.push('/workflow run ' + wf.name + ' ' + (parsed.message || ''));
+      convMessages.set(parsed.conversationId, msgs);
+    }
+    const seeded = wf.name === 'verify-echo-v1';
+    const makeRun = () => {
       dynamicRuns.unshift({
         id: 'run-mock-verify-' + String(dynamicRuns.length + 1).padStart(3, '0'),
         conversation_id: parsed.conversationId,
-        codebase_id: null,
+        codebase_id: convRow ? convRow.codebase_id : null,
+        working_path: workingPath,
         workflow_name: wf.name,
         user_message: parsed.message || '',
         status: 'completed',
@@ -103,11 +149,163 @@ createServer((req, res) => {
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
       });
-      // Real dispatch answers an ACCEPTANCE, not the run.
-      json({ accepted: true, status: 'started' });
-    });
-    return;
+    };
+    if (dropNextDispatch) dropNextDispatch = false; // accepted, never materializes
+    else if (delayNextDispatchMs > 0) {
+      const ms = delayNextDispatchMs;
+      delayNextDispatchMs = 0;
+      setTimeout(makeRun, ms);
+    } else makeRun();
+    // Real dispatch answers an ACCEPTANCE, not the run.
+    return json({ accepted: true, status: 'started' });
   }
+
+  // ---- S2-R conversation surface (bundle-extracted contract) ----
+  if (url.pathname === '/api/conversations' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const known = new Set(['codebaseId', 'message']);
+    const unknown = Object.keys(parsed).filter((k) => !known.has(k));
+    if (unknown.length) return fail(400, { error: 'unsupported body keys: ' + unknown.join(', ') });
+    if ('message' in parsed) return fail(501, { error: 'mock: message-bearing creation is not part of the S2-R contract' });
+    let codebaseId = null;
+    if (parsed.codebaseId != null) {
+      if (typeof parsed.codebaseId !== 'string' || !codebases.has(parsed.codebaseId)) {
+        return fail(400, { error: 'Codebase not found: No codebase with id ' + String(parsed.codebaseId) });
+      }
+      codebaseId = parsed.codebaseId;
+    }
+    const platformId = 'web-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    const row = {
+      platform_conversation_id: platformId,
+      id: 'db-' + String(++dbSeq),
+      platform_type: 'web',
+      codebase_id: codebaseId,
+      cwd: null, // the real table persists NULL here; effective cwd = default_cwd
+      ai_assistant_type: codebaseId ? (codebases.get(codebaseId).ai_assistant_type || 'claude') : 'claude',
+      title: null,
+      created_at: Date.now(),
+    };
+    conversations.set(platformId, row);
+    convMessages.set(platformId, []);
+    return json({ conversationId: platformId, id: row.id });
+  }
+
+  const convMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
+  if (convMatch) {
+    const row = conversations.get(convMatch[1]) || null;
+    if (!row) return fail(404, { error: 'Conversation not found' });
+    if (req.method === 'GET') return json(row);
+    if (req.method === 'DELETE') {
+      conversations.delete(convMatch[1]);
+      convMessages.delete(convMatch[1]);
+      return json({ success: true });
+    }
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      let parsed = {};
+      try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+      const title = typeof parsed.title === 'string' ? parsed.title.trim() : '';
+      if (!title) return fail(400, { error: 'title must be a non-empty string' });
+      row.title = title.slice(0, 255);
+      return json({ success: true });
+    }
+    return fail(405, { error: 'method not allowed' });
+  }
+
+  const convMsgs = url.pathname.match(/^\/api\/conversations\/([^/]+)\/messages$/);
+  if (convMsgs && req.method === 'GET') {
+    const row = conversations.get(convMsgs[1]) || null;
+    if (!row) return fail(404, { error: 'Conversation not found' });
+    return json(convMessages.get(convMsgs[1]) || []);
+  }
+
+  const convMessage = url.pathname.match(/^\/api\/conversations\/([^/]+)\/message$/);
+  if (convMessage && req.method === 'POST') {
+    if (!/^[\w-]+$/.test(convMessage[1])) return fail(400, { error: 'Invalid conversation ID' });
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    if (typeof parsed.message !== 'string' || parsed.message.length === 0) {
+      return fail(400, { error: 'message must be a non-empty string' });
+    }
+    const row = conversations.get(convMessage[1]) || null;
+    if (!row) return fail(404, { error: 'Conversation not found' });
+    const msgs = convMessages.get(convMessage[1]) || [];
+    msgs.push(parsed.message);
+    if (parsed.message.startsWith('/setproject')) {
+      // Deterministic project selection (am7): validate BY NAME, then the
+      // binding write is {codebase_id: …, cwd: null, isolation_env_id: null}.
+      const projectName = parsed.message.replace(/^\/setproject\s+/, '').trim();
+      const project = projectsByName.get(projectName) || null;
+      if (project) {
+        row.codebase_id = project.id;
+        msgs.push('Project set to **' + projectName + '**\nWorking directory: ' + project.default_cwd);
+      } else {
+        msgs.push('Unknown project: ' + projectName);
+      }
+    }
+    convMessages.set(convMessage[1], msgs);
+    return json({ accepted: true, status: 'ok' });
+  }
+
+  // ---- /api/_mock admin routes (test-only; never present on real Archon) ----
+  if (url.pathname === '/api/_mock/calls' && req.method === 'GET') {
+    const dispatchRe = /^\/api\/workflows\/([a-z0-9-]+)\/run$/;
+    return json({
+      calls: callLog,
+      count: callLog.length,
+      createPosts: callLog.filter((c) => c.method === 'POST' && c.path === '/api/conversations').length,
+      dispatchPosts: callLog.filter((c) => c.method === 'POST' && dispatchRe.test(c.path)).length,
+    });
+  }
+  if (url.pathname === '/api/_mock/seed-run' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    if (typeof parsed.conversationId !== 'string' || parsed.conversationId.length === 0) {
+      return fail(400, { error: 'conversationId must be a non-empty string' });
+    }
+    if (typeof parsed.workflowName !== 'string' || parsed.workflowName.length === 0) {
+      return fail(400, { error: 'workflowName must be a non-empty string' });
+    }
+    const id = typeof parsed.id === 'string' && parsed.id ? parsed.id : 'run-mock-seed-' + String(++seedSeq).padStart(3, '0');
+    const materialize = () => {
+      dynamicRuns.unshift({
+        id,
+        conversation_id: parsed.conversationId,
+        codebase_id: null,
+        workflow_name: parsed.workflowName,
+        user_message: '(mock-seeded)',
+        status: typeof parsed.status === 'string' && parsed.status ? parsed.status : 'completed',
+        outcome: null,
+        current_step_index: 2,
+        started_at: Date.now(),
+        metadata: { seeded: true },
+        ...(typeof parsed.output === 'string' && parsed.output ? { output: parsed.output } : {}),
+        receipt: { decision: 'ship', summary: 'Seeded by mock admin route.', artifacts: [] },
+      });
+    };
+    const delayMs = Number(parsed.delayMs || 0);
+    if (delayMs > 0) setTimeout(materialize, delayMs);
+    else materialize();
+    return json({ seeded: true, id, delayedMs: delayMs });
+  }
+  if (url.pathname === '/api/_mock/delay-next-dispatch' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const ms = Number(parsed.ms || 0);
+    if (!(ms > 0)) return fail(400, { error: 'ms must be a positive number' });
+    delayNextDispatchMs = ms;
+    return json({ armed: true, ms });
+  }
+  if (url.pathname === '/api/_mock/drop-next-dispatch' && req.method === 'POST') {
+    dropNextDispatch = true;
+    return json({ armed: true });
+  }
+
   res.writeHead(404);
   res.end('not found');
 }).listen(port, '127.0.0.1', () => console.log(`mock archon on :${port}`));
