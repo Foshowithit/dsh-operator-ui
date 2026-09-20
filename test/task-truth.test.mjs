@@ -33,6 +33,27 @@ test('output-lines evaluator earns SATISFIED only with every declared token', ()
   assert.equal(bad.status, 'NOT_SATISFIED');
 });
 
+test('output-lines does not accept a required line as a prefix of a different line', () => {
+  const required = [
+    'row=1 total=23',
+    'row=2 total=28',
+    'row=3 total=69',
+    'row=4 total=81',
+    'row=5 total=88',
+    'row=6 total=118',
+  ];
+  const evaluator = { kind: 'output-lines', required };
+  const prefix = evaluateObjective({
+    executionCompleted: true,
+    capabilityValidation: { pass: true },
+    evaluator,
+    evidenceText: required.slice(0, -1).join('\n') + '\nRESULT row=6 total=1180',
+  });
+  assert.equal(prefix.status, 'NOT_SATISFIED');
+  assert.equal(prefix.pass, false);
+  assert.equal(prefix.checks.at(-1).pass, false);
+});
+
 test('claim support order is objective then capability then execution', () => {
   const claim = buildClaim({ kind: 'goal-satisfied', label: 'Goal satisfied', objectiveEvaluation: { status: 'SATISFIED', pass: true }, capabilityValidation: { pass: true }, execution: { completed: true, runId: 'run-1' } });
   assert.deepEqual(claim.supportedBy.map((x) => x.kind), ['objective-evaluation', 'capability-validation', 'execution']);
