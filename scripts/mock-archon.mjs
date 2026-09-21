@@ -20,6 +20,9 @@
 // (cwd ?? codebase.default_cwd) onto the run.
 
 import { createServer } from 'node:http';
+import { randomBytes } from 'node:crypto';
+import { stat } from 'node:fs/promises';
+import { basename, resolve as resolvePath } from 'node:path';
 
 const port = Number(process.argv[2] || 13090);
 const dynamicRuns = []; // runs created via POST …/run during this process
@@ -103,8 +106,8 @@ const runs = [
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   callLog.push({ at: Date.now(), method: req.method, path: url.pathname });
-  const json = (body) => {
-    res.writeHead(200, { 'content-type': 'application/json' });
+  const json = (body, code = 200) => {
+    res.writeHead(code, { 'content-type': 'application/json' });
     res.end(JSON.stringify(body));
   };
   const fail = (code, body) => {
@@ -118,6 +121,84 @@ createServer(async (req, res) => {
   // The version string is deliberately suffix-marked so a mock-backed
   // receipt can never pose as a versioned real-Archon receipt.
   if (url.pathname === '/api/health') return json({ status: 'ok', version: '0.10.1-mock', adapter: 'web' });
+  // P2 codebase surface, mirroring packages/server/src/routes/api.ts @ v0.10.1:
+  // the wire row carries `commands` as an OBJECT and ISO-string timestamps; the
+  // list is a BARE ARRAY (not an envelope) and rows without a repository_url
+  // skip the URL dedupe; POST takes exactly one of url|path and zod strips
+  // unknown keys, so a `name` in the body is IGNORED — the name is always the
+  // basename of the registered path.
+  const toApiCodebase = (row) => ({
+    ...row,
+    repository_url: row.repository_url ?? null,
+    default_branch: row.default_branch ?? null,
+    ai_assistant_type: row.ai_assistant_type ?? 'claude',
+    kind: row.kind || 'folder',
+    commands: row.commands || {},
+    created_at: new Date(row.created_at ?? Date.now()).toISOString(),
+    updated_at: new Date(row.updated_at ?? Date.now()).toISOString(),
+  });
+  if (url.pathname === '/api/codebases' && req.method === 'GET') {
+    const seen = new Map();
+    const deduped = [];
+    for (const cb of codebases.values()) {
+      if (!cb.repository_url) { deduped.push(cb); continue; }
+      seen.set(String(cb.repository_url).replace(/\.git$/, ''), cb);
+    }
+    deduped.push(...seen.values());
+    deduped.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return json(deduped.map(toApiCodebase));
+  }
+  if (url.pathname === '/api/codebases' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const hasUrl = parsed.url !== undefined;
+    const hasPath = parsed.path !== undefined;
+    if (hasUrl === hasPath || (hasPath && (typeof parsed.path !== 'string' || parsed.path.length === 0))) {
+      return fail(400, { error: 'Provide either "url" or "path", not both and not neither' });
+    }
+    if (hasUrl) {
+      // The real server clones. The mock has no network and must not fabricate
+      // a repository row it could not have cloned.
+      return fail(500, { error: 'Failed to add codebase: mock cannot clone a repository (register a "path" instead)' });
+    }
+    const resolvedPath = resolvePath(parsed.path);
+    let st = null;
+    try { st = await stat(resolvedPath); } catch (err) {
+      return fail(500, { error: 'Failed to add codebase: ' + ((err && err.message) || String(err)) });
+    }
+    if (!st.isDirectory()) {
+      return fail(500, { error: 'Failed to add codebase: Path is not a directory: ' + resolvedPath });
+    }
+    const existing = [...codebases.values()].find((cb) => cb.default_cwd === resolvedPath) || null;
+    if (existing) return json(toApiCodebase(existing)); // 200 = already existed
+    const row = {
+      id: randomBytes(16).toString('hex'),
+      name: basename(resolvedPath),
+      repository_url: null,
+      default_cwd: resolvedPath,
+      default_branch: null,
+      ai_assistant_type: 'claude',
+      kind: 'folder',
+      commands: {},
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    };
+    codebases.set(row.id, row);
+    projectsByName.set(row.name, row); // /setproject resolves the binding BY NAME
+    return json(toApiCodebase(row), 201);
+  }
+  const cbMatch = url.pathname.match(/^\/api\/codebases\/([^/]+)$/);
+  if (cbMatch && req.method === 'GET') {
+    const row = codebases.get(cbMatch[1]) || null;
+    if (!row) return fail(404, { error: 'Codebase not found' });
+    return json(toApiCodebase(row));
+  }
+  if (cbMatch && req.method === 'DELETE') {
+    const existed = codebases.delete(cbMatch[1]);
+    for (const [name, cb] of [...projectsByName.entries()]) if (cb.id === cbMatch[1]) projectsByName.delete(name);
+    return json({ success: existed });
+  }
   if (url.pathname === '/api/workflows') return json({ workflows: workflows.map((w) => ({ workflow: w })) });
   if (url.pathname === '/api/workflows/runs') {
     const limit = Number(url.searchParams.get('limit') || 20);
@@ -325,6 +406,8 @@ createServer(async (req, res) => {
       count: callLog.length,
       createPosts: callLog.filter((c) => c.method === 'POST' && c.path === '/api/conversations').length,
       dispatchPosts: callLog.filter((c) => c.method === 'POST' && dispatchRe.test(c.path)).length,
+      codebasePosts: callLog.filter((c) => c.method === 'POST' && c.path === '/api/codebases').length,
+      setProjectPosts: callLog.filter((c) => c.method === 'POST' && /^\/api\/conversations\/[^/]+\/message$/.test(c.path)).length,
     });
   }
   if (url.pathname === '/api/_mock/seed-run' && req.method === 'POST') {
