@@ -56,6 +56,9 @@ function goalReport(goal) {
     failureCodes: goal.failureCodes || [],
     error: goal.error || null,
     runId: (last && last.runId) || null,
+    adoption: (last && last.adoption) || null,
+    childConversationId: (last && last.childConversationId) || null,
+    discovery: (last && last.discovery) || null,
     conversationId: goal.conversationId || null,
     workflow: (goal.route && goal.route.selected && goal.route.selected.workflow) || null,
     attempts: goal.attempts ? goal.attempts.length : 0,
@@ -95,20 +98,34 @@ const cases = {
   },
 
   // Provision half of the two-child T1 flows (parent needs the conversation
-  // id BEFORE arming decoys/strays against it).
+  // id BEFORE arming decoys/strays against it). dbId is the persisted Archon
+  // db-namespace id — T1 compares run.parent_conversation_id against THIS,
+  // never against the platform id.
   'provision-only': async () => {
     const taskId = arg.taskId;
     await seedEnvelope(taskId);
     const r = await provision(taskId);
-    return { ok: true, conversationId: r.conversationId, codebaseId: r.codebaseId };
+    return { ok: true, conversationId: r.conversationId, dbId: r.dbId, codebaseId: r.codebaseId };
   },
 
   // Dispatch half of the two-child T1 flows: envelope + association already
-  // persisted by the provision child; no seed, no provision here.
+  // persisted by the provision child; no seed, no provision here. The
+  // persisted association is reported back so the parent can prove adoption
+  // never overwrote the durable task→parent binding.
   'dispatch-only': async () => {
     const taskId = arg.taskId;
     const goal = await runGoal({ objective: OBJECTIVE, retryOf: taskId, approved: true });
-    return { ok: true, ...goalReport(goal) };
+    const persisted = await getTask(taskId);
+    return {
+      ok: true,
+      ...goalReport(goal),
+      persistedConversation: persisted && persisted.conversation
+        ? {
+            archonConversationId: persisted.conversation.archonConversationId || null,
+            dbId: persisted.conversation.dbId || null,
+          }
+        : null,
+    };
   },
 
   // Case 3: bound + approved → dispatch exactly once, ships.

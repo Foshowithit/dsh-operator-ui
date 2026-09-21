@@ -41,12 +41,37 @@ let seedSeq = 0;
 const callLog = []; // {at, method, path} — every request
 let delayNextDispatchMs = 0;
 let dropNextDispatch = false;
+// OP-4R: monotonic dispatch/fork identity + armed fork count. Direct-dispatch
+// ids come from ++dispatchRunSeq (never dynamicRuns.length, so seeded decoys
+// can neither shift nor collide with dispatch ids); forked children mint from
+// ++forkSeq under a DISTINCT prefix so id-pinning tests can tell them apart.
+let dispatchRunSeq = 0;
+let forkSeq = 0;
+let forkNextDispatchCount = 0;
 
 const readBody = (req) => new Promise((resolve) => {
   let body = '';
   req.on('data', (d) => { body += d; if (body.length > 64000) req.destroy(); });
   req.on('end', () => resolve(body));
 });
+
+// OP-4R: list-vs-detail projection for the run-detail-retrieval proof.
+// A run carrying __project.listHidesParent strips every parent_* leg from
+// LIST entries; DETAIL merges __project.detailOnly over the stored row. The
+// __project envelope itself is NEVER exposed on either surface. Mac-side
+// revised T1 must therefore succeed on LIST-hidden legs via the detail GET
+// and must refuse a run whose DETAIL legs fail even when the list looks right.
+const publicRun = (r, { forDetail = false } = {}) => {
+  const { __project, ...rest } = r || {};
+  if (!__project) return { ...rest };
+  if (forDetail) return { ...rest, ...(__project.detailOnly || {}) };
+  if (__project.listHidesParent) {
+    const out = { ...rest };
+    for (const k of Object.keys(out)) if (k.startsWith('parent_')) delete out[k];
+    return out;
+  }
+  return { ...rest };
+};
 
 const workflows = [
   { name: 'verify-echo-v1', description: 'SEEDED system-verification echo (zero-credential, deterministic)', category: 'seed', tags: ['seed', 'verify'] },
@@ -97,15 +122,16 @@ createServer(async (req, res) => {
   if (url.pathname === '/api/workflows/runs') {
     const limit = Number(url.searchParams.get('limit') || 20);
     const all = [...dynamicRuns, ...runs];
-    return json({ runs: all.slice(0, limit) });
+    return json({ runs: all.slice(0, limit).map((r) => publicRun(r)) });
   }
   const runMatch = url.pathname.match(/^\/api\/workflows\/runs\/(.+)$/);
   if (runMatch) {
     const run = [...dynamicRuns, ...runs].find((r) => r.id === runMatch[1]);
     if (!run) return json({ error: 'not found' });
+    const pub = publicRun(run, { forDetail: true });
     return json({
-      run,
-      events: (run.output ? [{ id: 'ev-1', event_type: 'node_output', step_name: 'emit', data: { output: run.output } }] : []),
+      run: pub,
+      events: (pub.output ? [{ id: 'ev-1', event_type: 'node_output', step_name: 'emit', data: { output: pub.output } }] : []),
     });
   }
   const runDispatch = url.pathname.match(/^\/api\/workflows\/([a-z0-9-]+)\/run$/);
@@ -131,9 +157,9 @@ createServer(async (req, res) => {
       convMessages.set(parsed.conversationId, msgs);
     }
     const seeded = wf.name === 'verify-echo-v1';
-    const makeRun = () => {
+    const makeDirectRun = () => {
       dynamicRuns.unshift({
-        id: 'run-mock-verify-' + String(dynamicRuns.length + 1).padStart(3, '0'),
+        id: 'run-mock-verify-' + String(++dispatchRunSeq).padStart(3, '0'),
         conversation_id: parsed.conversationId,
         codebase_id: convRow ? convRow.codebase_id : null,
         working_path: workingPath,
@@ -150,12 +176,53 @@ createServer(async (req, res) => {
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
       });
     };
+    // OP-4R: parent-linked child mint. conversation_id is an UNREGISTERED
+    // child platform id (never added to `conversations`, so a child GET 404s
+    // exactly like the real child that no conversation row exists for);
+    // linkage lives on the run record: parent_conversation_id = parent DB id,
+    // parent_platform_id = parent platform id. Same output/receipt tail as a
+    // direct run so verification + objective evaluation behave identically.
+    const makeForkedChild = () => {
+      const childPlatformId = 'web-child-' + Date.now().toString(36) + '-' + String(++forkSeq).padStart(2, '0');
+      dynamicRuns.unshift({
+        id: 'run-mock-child-' + String(forkSeq).padStart(3, '0'),
+        conversation_id: childPlatformId,
+        parent_conversation_id: convRow ? convRow.id : null,
+        parent_platform_id: parsed.conversationId,
+        codebase_id: convRow ? convRow.codebase_id : null,
+        working_path: workingPath,
+        workflow_name: wf.name,
+        user_message: parsed.message || '',
+        status: 'completed',
+        outcome: null,
+        current_step_index: 2,
+        started_at: Date.now(),
+        metadata: { seeded: wf.category === 'seed', forked: true },
+        ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        receipt: seeded
+          ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
+          : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
+      });
+    };
+    // OP-4R: fork consumption takes precedence over the direct run — when N
+    // children are armed the dispatch materializes ONLY those N children (no
+    // direct run), forcing the parent-linked discovery path. Zero forks keeps
+    // today's direct-exact shape byte-identical apart from the id sequence.
+    const materialize = () => {
+      const n = forkNextDispatchCount;
+      forkNextDispatchCount = 0;
+      if (n > 0 && convRow) {
+        for (let i = 0; i < n; i++) makeForkedChild();
+        return;
+      }
+      makeDirectRun();
+    };
     if (dropNextDispatch) dropNextDispatch = false; // accepted, never materializes
     else if (delayNextDispatchMs > 0) {
       const ms = delayNextDispatchMs;
       delayNextDispatchMs = 0;
-      setTimeout(makeRun, ms);
-    } else makeRun();
+      setTimeout(materialize, ms);
+    } else materialize();
     // Real dispatch answers an ACCEPTANCE, not the run.
     return json({ accepted: true, status: 'started' });
   }
@@ -275,15 +342,23 @@ createServer(async (req, res) => {
       dynamicRuns.unshift({
         id,
         conversation_id: parsed.conversationId,
-        codebase_id: null,
+        codebase_id: typeof parsed.codebaseId === 'string' && parsed.codebaseId ? parsed.codebaseId : null,
         workflow_name: parsed.workflowName,
-        user_message: '(mock-seeded)',
+        user_message: typeof parsed.message === 'string' && parsed.message ? parsed.message : '(mock-seeded)',
+        ...(typeof parsed.parentConversationId === 'string' && parsed.parentConversationId ? { parent_conversation_id: parsed.parentConversationId } : {}),
+        ...(typeof parsed.parentPlatformId === 'string' && parsed.parentPlatformId ? { parent_platform_id: parsed.parentPlatformId } : {}),
         status: typeof parsed.status === 'string' && parsed.status ? parsed.status : 'completed',
         outcome: null,
         current_step_index: 2,
         started_at: Date.now(),
         metadata: { seeded: true },
         ...(typeof parsed.output === 'string' && parsed.output ? { output: parsed.output } : {}),
+        // OP-4R: projection legs for the run-detail-retrieval proof. Stored
+        // server-side only, never exposed; list strips parent_* when
+        // listHidesParent is set, detail merges detailOnly over the row.
+        ...((parsed.listHidesParent === true || (parsed.detailOnly && typeof parsed.detailOnly === 'object'))
+          ? { __project: { ...(parsed.listHidesParent === true ? { listHidesParent: true } : {}), ...(parsed.detailOnly && typeof parsed.detailOnly === 'object' ? { detailOnly: parsed.detailOnly } : {}) } }
+          : {}),
         receipt: { decision: 'ship', summary: 'Seeded by mock admin route.', artifacts: [] },
       });
     };
@@ -304,6 +379,19 @@ createServer(async (req, res) => {
   if (url.pathname === '/api/_mock/drop-next-dispatch' && req.method === 'POST') {
     dropNextDispatch = true;
     return json({ armed: true });
+  }
+  // OP-4R: arm the next dispatch to materialize ONLY `count` parent-linked
+  // children (no direct run), forcing the revised-T1 parent-linked path.
+  // Range-capped 1..8: 2 exercises run-ambiguous, more would only burn wall
+  // time inside the 10s adoption deadline. Never touches delay/drop state.
+  if (url.pathname === '/api/_mock/fork-next-dispatch' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const count = Number(parsed.count || 0);
+    if (!Number.isInteger(count) || count < 1 || count > 8) return fail(400, { error: 'count must be an integer 1..8' });
+    forkNextDispatchCount = count;
+    return json({ armed: true, count });
   }
 
   res.writeHead(404);
