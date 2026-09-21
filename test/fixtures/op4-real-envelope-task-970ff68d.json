@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "source": "/Users/adam26/.dsh/operator-ui/tasks.json (Adam's real operator task store)",
+    "source": "$DSH_HOME/operator-ui/tasks.json (a real operator task store, read-only copy; absolute path scrubbed for the shared repository)",
     "capturedAt": "2026-09-21 (OP-4R Phase C non-dispatch inspection; read-only copy, original unmodified)",
     "tasksVersion": 2,
     "note": "Durable operator-side envelope for the ONE real dispatch (task-970ff68d). Persisted BEFORE the T1 parent-linked repair: attempts[0].runId is null because adoption missed the forked child under the original strict rule. This null is the honest historical record and is preserved verbatim by these tests.",
