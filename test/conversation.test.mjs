@@ -268,6 +268,9 @@ test('case 9a: T1 — the run adopted is the exact bound-conversation + workflow
   assert.notEqual(r.runId, decoyA.id);
   assert.notEqual(r.runId, decoyB.id);
   assert.match(r.runId, /^run-mock-verify-/);
+  assert.equal(r.adoption.mode, 'direct-exact');
+  assert.equal(r.adoption.verifiedFrom, 'run-detail');
+  assert.equal(r.adoption.childConversationId, convId);
   const detail = await (await fetch(BASE + '/api/workflows/runs/' + r.runId)).json();
   assert.equal(detail.run.conversation_id, convId);
   assert.equal(detail.run.workflow_name, 'verify-echo-v1');
@@ -293,10 +296,370 @@ test('case 9b: T1 — a wrong-workflow run on the bound conversation is refused 
   assert.equal(r.ok, true);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['workflow-name-mismatch']);
+  assert.equal(r.runId, null);
+  assert.equal(r.adoption, null);
   assert.match(r.error, new RegExp(stray.id));
   assert.match(r.error, /example-echo-ground-v1/);
   assert.match(r.error, /verify-echo-v1/);
   const calls1 = await mockCalls();
   assert.equal(calls1.createPosts - calls0.createPosts, 1);
   assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1); // accepted, but no run ever appeared
+});
+
+// ---- OP-4R Phase A: revised-T1 adoption controls ----
+//
+// The dispatch POST returns an acceptance, not a run. These cases prove the
+// adoption modes and every failure shape the work order required: parent-linked
+// adoption verified from run detail alone, the ambiguity refusal, per-leg
+// rejection naming, the pre-dispatch snapshot boundary (history is never
+// adopted), list-vs-detail projection trust, and a durable association that is
+// never overwritten by a child id.
+
+const OBJECTIVE_TEXT = 'verify echo running total seed values';
+const taskMsg = (taskId) => 'task ' + taskId + ': ' + OBJECTIVE_TEXT;
+const SEED_OUTPUT = 'rcos-verify-seed:rcos-verify-echo-v1';
+
+// A fork-style seeded child: linkage lives ON the run record (parent legs),
+// exactly like the real OP-4 child whose conversation row does not exist.
+// delayMs 2500 lands it AFTER the case child's pre-dispatch snapshot but well
+// inside the 10s adoption deadline.
+const seedChild = (over) => postJson('/api/_mock/seed-run', {
+  status: 'completed',
+  output: SEED_OUTPUT,
+  workflowName: 'verify-echo-v1',
+  delayMs: 2500,
+  ...over,
+});
+
+const waitRow = async (runId, timeoutMs = 8000) => {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const b = await (await fetch(BASE + '/api/workflows/runs?limit=50')).json();
+    const row = (b.runs || []).find((x) => x && x.id === runId);
+    if (row) return row;
+    if (Date.now() > deadline) throw new Error('run ' + runId + ' never appeared in the list');
+    await new Promise((r) => setTimeout(r, 150));
+  }
+};
+
+test('case 9c: T1 — a parent-linked child is adopted on five verified legs, association intact', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-parent-linked');
+  const p = await runCase('provision-only', home, { taskId: 'task-9c0a1111' });
+  assert.equal(p.ok, true);
+  assert.equal(typeof p.dbId, 'string');
+  assert.match(p.dbId, /^db-/);
+
+  // The dispatch materializes ONLY a child whose conversation row does not
+  // exist — linkage is provable from the run detail alone.
+  await postJson('/api/_mock/fork-next-dispatch', { count: 1 });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9c0a1111' }, 90000);
+  assert.equal(r.ok, true);
+  assert.equal(r.verdict, 'SHIP');
+  assert.equal(r.adoption.mode, 'parent-linked');
+  assert.equal(r.adoption.verifiedFrom, 'run-detail');
+  assert.match(r.runId, /^run-mock-child-/);
+  assert.equal(r.runId, r.adoption.runId);
+  assert.match(r.childConversationId, /^web-child-/);
+  assert.notEqual(r.childConversationId, p.conversationId);
+  assert.equal(r.adoption.boundConversationId, p.conversationId);
+  assert.equal(r.adoption.parentConversationId, p.dbId);
+  assert.equal(r.adoption.parentPlatformId, p.conversationId);
+  assert.equal(r.adoption.codebaseId, P1_ID);
+  assert.equal(r.adoption.userMessage, taskMsg('task-9c0a1111'));
+  assert.equal(r.adoption.candidatesConsidered, 1);
+  assert.match(r.adoption.detailSha256, /^sha256:[0-9a-f]{64}$/);
+  assert.deepEqual(r.adoption.evidence.map((e) => e.id),
+    ['workflow-name', 'parent-conversation-id', 'parent-platform-id', 'codebase-id', 'user-message']);
+  assert.ok(r.adoption.evidence.every((e) => e.pass === true));
+
+  // Independent retrieval: the detail carries every leg, and the child
+  // conversation genuinely has no row (404), like the real child.
+  const detail = await (await fetch(BASE + '/api/workflows/runs/' + r.runId)).json();
+  assert.equal(detail.run.conversation_id, r.childConversationId);
+  assert.equal(detail.run.parent_conversation_id, p.dbId);
+  assert.equal(detail.run.parent_platform_id, p.conversationId);
+  const childRes = await fetch(BASE + '/api/conversations/' + r.childConversationId);
+  assert.equal(childRes.status, 404);
+
+  // The durable association is still the PARENT in both namespaces.
+  assert.equal(r.persistedConversation.archonConversationId, p.conversationId);
+  assert.equal(r.persistedConversation.dbId, p.dbId);
+
+  const calls1 = await mockCalls();
+  assert.equal(calls1.createPosts - calls0.createPosts, 1);
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9d: T1 — two runs both proving the dispatch refuse adoption as ambiguous', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-ambiguous');
+  const p = await runCase('provision-only', home, { taskId: 'task-9d0a2222' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/fork-next-dispatch', { count: 2 });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9d0a2222' }, 90000);
+  assert.equal(r.ok, true);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-ambiguous']);
+  assert.equal(r.runId, null);
+  assert.equal(r.adoption, null);
+  assert.equal(new Set(r.error.match(/run-mock-child-\d+/g) || []).size, 2);
+  // The durable association survives the refusal untouched.
+  assert.equal(r.persistedConversation.archonConversationId, p.conversationId);
+  assert.equal(r.persistedConversation.dbId, p.dbId);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.createPosts - calls0.createPosts, 1);
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9e: T1 — a child with a wrong parent db id is refused, leg named', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-wrong-parent-db');
+  const p = await runCase('provision-only', home, { taskId: 'task-9e0a3333' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-wrongdb',
+    parentConversationId: 'db-not-ours',
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: taskMsg('task-9e0a3333'),
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9e0a3333' }, 90000);
+  assert.equal(r.ok, true);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.runId, null);
+  assert.equal(r.adoption, null);
+  const rej = ((r.discovery && r.discovery.rejected) || []).find((x) => x.id === seed.id);
+  assert.ok(rej, 'the poisoned child was never considered');
+  assert.match(rej.reason, /parent-conversation-id/);
+  assert.equal(rej.childConversationId, 'rcos-child-wrongdb');
+  const calls1 = await mockCalls();
+  assert.equal(calls1.createPosts - calls0.createPosts, 1);
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9f: T1 — a child with a wrong parent platform id is refused, leg named', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-wrong-platform');
+  const p = await runCase('provision-only', home, { taskId: 'task-9f0a4444' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-wrongplat',
+    parentConversationId: p.dbId,
+    parentPlatformId: 'web-wrongplatform',
+    codebaseId: P1_ID,
+    message: taskMsg('task-9f0a4444'),
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9f0a4444' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  const rej = ((r.discovery && r.discovery.rejected) || []).find((x) => x.id === seed.id);
+  assert.ok(rej, 'the poisoned child was never considered');
+  assert.match(rej.reason, /parent-platform-id/);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9g: T1 — a child from the wrong project is refused, leg named', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-wrong-project-child');
+  const p = await runCase('provision-only', home, { taskId: 'task-9g0a5555' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-wrongproj',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+    message: taskMsg('task-9g0a5555'),
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9g0a5555' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  const rej = ((r.discovery && r.discovery.rejected) || []).find((x) => x.id === seed.id);
+  assert.ok(rej, 'the poisoned child was never considered');
+  assert.match(rej.reason, /codebase-id/);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9h: T1 — a wrong-workflow child of the correct parent is never adoptable', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-wrongwf-child');
+  const p = await runCase('provision-only', home, { taskId: 'task-9h0a6666' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  await seedChild({
+    conversationId: 'rcos-child-wrongwf',
+    workflowName: 'example-echo-ground-v1',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: taskMsg('task-9h0a6666'),
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9h0a6666' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  // Excluded by the workflow-name filter BEFORE linkage: nothing reached the
+  // leg checks (9b's mismatch diagnostic does not fire — the stray is on a
+  // CHILD conversation, not ours).
+  assert.equal(r.discovery.rejected.length, 0);
+  assert.equal(r.error, 'dispatch accepted but no run appeared');
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9i: T1 — a child carrying a different user_message is refused, leg named', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-wrong-message');
+  const p = await runCase('provision-only', home, { taskId: 'task-9i0a7777' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-wrongmsg',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: 'task task-9i0a7777: something else entirely',
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9i0a7777' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  const rej = ((r.discovery && r.discovery.rejected) || []).find((x) => x.id === seed.id);
+  assert.ok(rej, 'the poisoned child was never considered');
+  assert.match(rej.reason, /user-message/);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9j: T1 — a provably-linked run that predates the dispatch is never adopted', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-historical');
+  const p = await runCase('provision-only', home, { taskId: 'task-9j0a8888' });
+  assert.equal(p.ok, true);
+
+  // Land BEFORE the child's pre-dispatch snapshot, with every leg correct —
+  // the snapshot boundary is the ONLY thing excluding it.
+  const seed = await seedChild({
+    conversationId: 'rcos-child-historical',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: taskMsg('task-9j0a8888'),
+    delayMs: 0,
+  });
+  await waitRow(seed.id);
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9j0a8888' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  assert.equal(r.discovery.rejected.length, 0);
+  // The run was genuinely there and genuinely linked — history, not identity,
+  // is what excluded it.
+  const detail = await (await fetch(BASE + '/api/workflows/runs/' + seed.id)).json();
+  assert.equal(detail.run.parent_conversation_id, p.dbId);
+  assert.equal(detail.run.parent_platform_id, p.conversationId);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9k: T1 — dispatch accepted, nothing materializes: run-not-found, nothing considered', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-pure-none');
+  const p = await runCase('provision-only', home, { taskId: 'task-9k0a9999' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9k0a9999' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.runId, null);
+  assert.equal(r.adoption, null);
+  assert.equal(r.discovery.rejected.length, 0);
+  assert.equal(r.discovery.candidates.length, 0);
+  assert.equal(r.error, 'dispatch accepted but no run appeared');
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9l: T1 — parent legs hidden from LIST are recovered from the detail GET', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-list-hides');
+  const p = await runCase('provision-only', home, { taskId: 'task-9l0aaaaa' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-hidden',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: taskMsg('task-9l0aaaaa'),
+    listHidesParent: true,
+  });
+  // The seed must be FRESH when the child snapshots: projection assertions
+  // happen after the case, not before it (a pre-dispatch waitRow would push
+  // the seed into the snapshot, making it history by construction).
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9l0aaaaa' }, 90000);
+  assert.equal(r.verdict, 'SHIP');
+  assert.equal(r.adoption.mode, 'parent-linked');
+  assert.equal(r.runId, seed.id);
+  assert.equal(r.adoption.parentConversationId, p.dbId);
+  assert.equal(r.adoption.parentPlatformId, p.conversationId);
+  // The LIST projection hid both parent legs the whole time; adoption could
+  // only have come from the detail GET.
+  const row = await waitRow(seed.id);
+  assert.equal(row.parent_conversation_id, undefined);
+  assert.equal(row.parent_platform_id, undefined);
+  const detail = await (await fetch(BASE + '/api/workflows/runs/' + seed.id)).json();
+  assert.equal(detail.run.parent_conversation_id, p.dbId);
+  assert.equal(detail.run.parent_platform_id, p.conversationId);
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
+});
+
+test('case 9m: T1 — a detail-poisoned leg refuses adoption even when the list looks right', async () => {
+  const calls0 = await mockCalls();
+  const home = await newHome('t1-detail-poison');
+  const p = await runCase('provision-only', home, { taskId: 'task-9m0abbbb' });
+  assert.equal(p.ok, true);
+
+  await postJson('/api/_mock/drop-next-dispatch', {});
+  const seed = await seedChild({
+    conversationId: 'rcos-child-detailpoison',
+    parentConversationId: p.dbId,
+    parentPlatformId: p.conversationId,
+    codebaseId: P1_ID,
+    message: taskMsg('task-9m0abbbb'),
+    detailOnly: { parent_platform_id: 'web-poisoned-detail' },
+  });
+  const r = await runCase('dispatch-only', home, { taskId: 'task-9m0abbbb' }, 90000);
+  assert.equal(r.verdict, 'FAILED');
+  assert.deepEqual(r.failureCodes, ['run-not-found']);
+  assert.equal(r.adoption, null);
+  const rej = ((r.discovery && r.discovery.rejected) || []).find((x) => x.id === seed.id);
+  assert.ok(rej, 'the poisoned child was never considered');
+  assert.match(rej.reason, /parent-platform-id/);
+  // The projections disagree, and adoption trusted the poisoned one: the LIST
+  // looked right the whole time, the DETAIL is what refused.
+  const row = await waitRow(seed.id);
+  assert.equal(row.parent_platform_id, p.conversationId);
+  const detail = await (await fetch(BASE + '/api/workflows/runs/' + seed.id)).json();
+  assert.equal(detail.run.parent_platform_id, 'web-poisoned-detail');
+  const calls1 = await mockCalls();
+  assert.equal(calls1.dispatchPosts - calls0.dispatchPosts, 1);
 });
