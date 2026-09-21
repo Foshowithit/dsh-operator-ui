@@ -29,6 +29,12 @@ const fixture = JSON.parse(await readFile(FIXTURE_URL, 'utf8'));
 const { run, associationFromPersistedEnvelope } = JSON.parse(await readFile(RUN_FIXTURE_URL, 'utf8'));
 const realTask = fixture.tasks[0];
 
+// This file exercises the DURABLE envelope (disk hydrate, restart, idempotent
+// upsert), not Archon reads — pin the read boundary to a deterministic outage
+// so getTask always returns the marked copy and never a network-dependent
+// projection. Tests that need Archon responses stub their own fetch.
+globalThis.fetch = async () => { throw new Error('fetch failed (op4-integration pins an outage)'); };
+
 // Canonical form: recursively key-sorted, compact separators (matches the
 // fixture's recorded provenance sha).
 function canonicalize(v) {
@@ -88,10 +94,15 @@ test('op4c durable identity: the real envelope hydrates and survives a restart v
     assert.equal(t1.status, 'closed');
     assert.equal(t1.sealedBy, 'goal-runner-m1');
 
-    // Restart: fresh module record, empty cache, hydrate from disk.
+    // Restart: fresh module record, empty cache, hydrate from disk. The read
+    // is a pinned outage, so getTask hands back a marked COPY — the durable
+    // envelope behind the marker must be untouched.
     const modB = await import('../lib/tasks.js?bust=' + bust + '-b');
     const t2 = await modB.getTask(TASK_ID);
-    assert.deepEqual(t2, realTask, 'restart must not mutate the historical envelope');
+    assert.equal(t2.archonRead, 'unavailable', 'outage must be explicit on the response copy');
+    assert.equal(typeof t2.archonReadReason, 'string');
+    const { archonRead: _m1, archonReadReason: _r1, ...cleanT2 } = t2;
+    assert.deepEqual(cleanT2, realTask, 'restart must not mutate the historical envelope');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -151,7 +162,9 @@ test('op4c retry idempotence: re-upsert never duplicates attempts; unrelated chu
     const other = { ...realTask, taskId: 'task-unrelated0', status: 'running', verdict: 'PENDING', attempts: [], checks: [], sealedBy: null };
     await modA.upsertTask(other);
     after = await modA.getTask(TASK_ID);
-    assert.deepEqual(after, realTask, 'churn must not mutate the historical envelope');
+    assert.equal(after.archonRead, 'unavailable', 'outage marker is per-read cosmetics, never durable');
+    const { archonRead: _m2, archonReadReason: _r2, ...cleanAfter } = after;
+    assert.deepEqual(cleanAfter, realTask, 'churn must not mutate the historical envelope');
 
     // And across a restart.
     const modB = await import('../lib/tasks.js?bust=' + bust + '-b');
