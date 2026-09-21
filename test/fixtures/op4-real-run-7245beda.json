@@ -1,0 +1,155 @@
+{
+  "_provenance": {
+    "capturedVia": "GET http://203.0.113.1:3090/api/workflows/runs/7245beda-c754-4862-af56-ae2e72e11d15",
+    "capturedAt": "2026-09-21 (OP-4R Phase A finish; read-only GET, no dispatch)",
+    "note": "Actual parent-child execution record from the ONE authorized live run (failed). Vendored executor subset does not include the run-detail serializer; the live API is the source of truth for field names.",
+    "runSha256_of_run_object": "5d2d5c0f7abdc2bcc206ab8094ac1dac84c2eeaaf952e99129d415fcd541a66e"
+  },
+  "run": {
+    "id": "7245beda-c754-4862-af56-ae2e72e11d15",
+    "conversation_id": "cadfdd377f089e980b2558f348196a29",
+    "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+    "workflow_name": "csv-running-total-v1",
+    "user_message": "task task-970ff68d: Process values.csv in order and report running total after each row",
+    "status": "failed",
+    "current_step_index": null,
+    "metadata": {
+      "model_bindings": {
+        "overrides": {},
+        "effective": {
+          "defaultProvider": "pi",
+          "aliases": {
+            "small": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "medium": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "large": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "@macqwen": {
+              "provider": "mac-qwen",
+              "model": "mtplist-qwen38-27b-optimized-speed"
+            },
+            "@merge": {
+              "provider": "merge",
+              "model": "moonshot/kimi-k3"
+            },
+            "@merge-flash": {
+              "provider": "merge",
+              "model": "deepseek/deepseek-v4-flash"
+            },
+            "@merge-glm": {
+              "provider": "merge",
+              "model": "zai/glm-5.3"
+            },
+            "@ox": {
+              "provider": "ox-1",
+              "model": "x-preview-f-free"
+            },
+            "@rue-flash": {
+              "provider": "tunnel-rue",
+              "model": "cbcn/deepseek-v4-flash"
+            },
+            "@rue-mid": {
+              "provider": "tunnel-rue",
+              "model": "qwen/qwen3.6-27b"
+            },
+            "@rue-prem": {
+              "provider": "tunnel-rue",
+              "model": "grok-4.5"
+            },
+            "@qwen170hx": {
+              "provider": "qwen170hx",
+              "model": "qwen3.8-27b"
+            },
+            "@gpu-abl": {
+              "provider": "qwen170hx",
+              "model": "qwen3.8-27b"
+            },
+            "@current": {
+              "provider": "tunnel-rue",
+              "model": "cbcn/deepseek-v4-flash"
+            },
+            "@flash": {
+              "provider": "pi",
+              "model": "deepseek/deepseek-v4-flash"
+            },
+            "@smart": {
+              "provider": "pi",
+              "model": "opencode-go/glm-5.3-flash"
+            },
+            "@free": {
+              "provider": "pi",
+              "model": "minimax/minimax-m3:free"
+            },
+            "@glm53": {
+              "provider": "pi",
+              "model": "command-code/z-ai/glm-5.3-flash"
+            },
+            "@qwen38f": {
+              "provider": "pi",
+              "model": "command-code/Qwen/Qwen3.8-Flash"
+            },
+            "@m3-r9": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "@video-flash": {
+              "provider": "pi",
+              "model": "zen-responses/muse-spark-1.3-contributor-free"
+            },
+            "@muse-paid": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "@muse": {
+              "provider": "pi",
+              "model": "opencode-go-responses/muse-spark-1.3-contributor"
+            },
+            "@muse-1.2": {
+              "provider": "pi",
+              "model": "command-code/meta/muse-spark-1.2-contributor"
+            }
+          }
+        }
+      },
+      "workflow_source": {
+        "version": 1,
+        "root": "/home/<redacted>/.archon/workspaces/_folder/p1x-csv-fixture/artifacts/runs/7245beda-c754-4862-af56-ae2e72e11d15/workflow-source",
+        "origin": "/home/<redacted>/p1x-ws",
+        "captured_at": "2026-09-21T00:30:53.115Z",
+        "digest": "6c4b220ed1843859943006b5f792057a05bc17973dd1f4c097d838c3cbeb57d0",
+        "file_count": 1181,
+        "byte_count": 12026536
+      },
+      "error": "DAG workflow 'csv-running-total-v1' failed: node compute failed. 0 downstream nodes were skipped."
+    },
+    "parent_conversation_id": "fc764d99b8f0d7ba3426df409ea63540",
+    "user_id": null,
+    "started_at": "2026-09-21T00:30:53.000Z",
+    "completed_at": "2026-09-21T00:30:54.000Z",
+    "last_activity_at": "2026-09-21T00:30:53.000Z",
+    "working_path": "/home/<redacted>/p1x-ws",
+    "parent_run_id": null,
+    "output_root": "/home/<redacted>/.archon/workspaces/_folder/p1x-csv-fixture",
+    "adopted_from_run_id": null,
+    "outcome": null,
+    "worker_platform_id": "web-worker-1789950652980-e9pd3f",
+    "parent_platform_id": "web-1789946601072-wa6vlx",
+    "conversation_platform_id": null
+  },
+  "associationFromPersistedEnvelope": {
+    "taskId": "task-970ff68d",
+    "archonConversationId": "web-1789946601072-wa6vlx",
+    "dbId": "fc764d99b8f0d7ba3426df409ea63540",
+    "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+    "projectName": "p1x-csv-fixture",
+    "dispatchedMessage": "task task-970ff68d: Process values.csv in order and report running total after each row",
+    "workflowName": "csv-running-total-v1"
+  }
+}
