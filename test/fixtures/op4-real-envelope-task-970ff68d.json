@@ -1,0 +1,120 @@
+{
+  "_provenance": {
+    "source": "/Users/<redacted>/.dsh/operator-ui/tasks.json (operator's real operator task store)",
+    "capturedAt": "2026-09-21 (OP-4R Phase C non-dispatch inspection; read-only copy, original unmodified)",
+    "tasksVersion": 2,
+    "note": "Durable operator-side envelope for the ONE real dispatch (task-970ff68d). Persisted BEFORE the T1 parent-linked repair: attempts[0].runId is null because adoption missed the forked child under the original strict rule. This null is the honest historical record and is preserved verbatim by these tests.",
+    "taskSha256_of_sorted_keys": "67e5110c55717077c6ef9be6946bf42fafb25e48f834ac1827964c988037c14f",
+    "taskSha256_definition": "sha256 of UTF-8 bytes of JSON with recursively key-sorted objects, compact separators, raw (unescaped) non-ASCII"
+  },
+  "tasksVersion": 2,
+  "tasks": [
+    {
+      "taskId": "task-970ff68d",
+      "tasksVersion": 2,
+      "kind": "goal",
+      "objective": "Process values.csv in order and report running total after each row",
+      "status": "closed",
+      "createdAt": "2026-09-21T00:30:50.777Z",
+      "endedAt": "2026-09-21T00:31:01.789Z",
+      "route": {
+        "selected": {
+          "id": "csv-running-total",
+          "version": "0.1.0",
+          "workflow": "csv-running-total-v1",
+          "lifecycle": "promoted"
+        },
+        "considered": [
+          {
+            "id": "csv-running-total",
+            "score": 1,
+            "reasons": [
+              "implements workflow csv-running-total-v1",
+              "matched 10/10 objective terms"
+            ]
+          }
+        ],
+        "reason": "implements workflow csv-running-total-v1; matched 10/10 objective terms"
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "workflow": "csv-running-total-v1",
+          "runId": null,
+          "status": null,
+          "outputs": [],
+          "startedAt": "2026-09-21T00:30:50.922Z",
+          "endedAt": "2026-09-21T00:31:01.789Z"
+        }
+      ],
+      "checks": [],
+      "execution": null,
+      "capabilityValidation": null,
+      "objectiveEvaluation": null,
+      "claim": null,
+      "trust": {
+        "rungs": [
+          "Observed",
+          "Executed",
+          "Validated",
+          "Objective satisfied"
+        ],
+        "index": 0,
+        "label": "Observed",
+        "truth": null
+      },
+      "nextAction": {
+        "kind": "retry",
+        "label": "Retry (same task)",
+        "reason": "dispatch was accepted but no run appeared — a retry may let discovery catch up",
+        "ladder": "Observed"
+      },
+      "verdict": "FAILED",
+      "verdictDetail": {
+        "decision": "FAILED",
+        "scope": "execution",
+        "failureCodes": [
+          "run-not-found"
+        ],
+        "error": "dispatch accepted but no run appeared"
+      },
+      "failureCodes": [
+        "run-not-found"
+      ],
+      "error": "dispatch accepted but no run appeared",
+      "evidence": null,
+      "authority": {
+        "preset": "ASK_BEFORE_ACTION",
+        "requires": [
+          "filesystem:read",
+          "shell:execute"
+        ],
+        "granted": [
+          "filesystem:read"
+        ],
+        "missing": [
+          "shell:execute"
+        ],
+        "mode": "approval",
+        "reason": "ASK_BEFORE_ACTION does not pre-authorize Run commands — approval required",
+        "approvedAt": "2026-09-21T00:30:50.780Z"
+      },
+      "conversation": {
+        "provisioningState": "associated",
+        "archonConversationId": "web-1789946601072-wa6vlx",
+        "dbId": "fc764d99b8f0d7ba3426df409ea63540",
+        "provisionedAt": "2026-09-20T23:23:21.055Z",
+        "provisionedVia": "POST /api/conversations",
+        "projectName": "p1x-csv-fixture",
+        "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+        "boundAt": "2026-09-20T23:23:21.133Z",
+        "boundProjectName": "p1x-csv-fixture",
+        "verifiedAt": "2026-09-20T23:23:21.133Z",
+        "verifiedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+        "bindError": null
+      },
+      "lineage": null,
+      "sealedBy": "goal-runner-m1"
+    }
+  ]
+}
