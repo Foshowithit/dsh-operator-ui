@@ -51,6 +51,11 @@ let dropNextDispatch = false;
 let dispatchRunSeq = 0;
 let forkSeq = 0;
 let forkNextDispatchCount = 0;
+// P3A: the execution provider the NEXT materialized run will CLAIM on its own
+// record. null = the run claims nothing at all (no field), which is what every
+// pre-P3A test relies on: an absent claim is `not-claimed`, never a mismatch.
+// Armed only by the admin route, so no existing case can be perturbed.
+let nextDispatchProvider = null;
 
 const readBody = (req) => new Promise((resolve) => {
   let body = '';
@@ -238,7 +243,12 @@ createServer(async (req, res) => {
       convMessages.set(parsed.conversationId, msgs);
     }
     const seeded = wf.name === 'verify-echo-v1';
-    const makeDirectRun = () => {
+    // P3A: `provider` is the claim the ARMED dispatch carries (null = the run
+    // record carries no claim field at all). Stamped verbatim when armed —
+    // including the empty string, which is exactly the case a receipt must
+    // normalize to "nothing was claimed" rather than to a provider name.
+    const claimField = (provider) => (provider === null ? {} : { execution_provider: provider });
+    const makeDirectRun = (provider = null) => {
       dynamicRuns.unshift({
         id: 'run-mock-verify-' + String(++dispatchRunSeq).padStart(3, '0'),
         conversation_id: parsed.conversationId,
@@ -252,6 +262,7 @@ createServer(async (req, res) => {
         started_at: Date.now(),
         metadata: { seeded: wf.category === 'seed' },
         ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        ...claimField(provider),
         receipt: seeded
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
@@ -263,7 +274,7 @@ createServer(async (req, res) => {
     // linkage lives on the run record: parent_conversation_id = parent DB id,
     // parent_platform_id = parent platform id. Same output/receipt tail as a
     // direct run so verification + objective evaluation behave identically.
-    const makeForkedChild = () => {
+    const makeForkedChild = (provider = null) => {
       const childPlatformId = 'web-child-' + Date.now().toString(36) + '-' + String(++forkSeq).padStart(2, '0');
       dynamicRuns.unshift({
         id: 'run-mock-child-' + String(forkSeq).padStart(3, '0'),
@@ -280,6 +291,7 @@ createServer(async (req, res) => {
         started_at: Date.now(),
         metadata: { seeded: wf.category === 'seed', forked: true },
         ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        ...claimField(provider),
         receipt: seeded
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
@@ -292,11 +304,15 @@ createServer(async (req, res) => {
     const materialize = () => {
       const n = forkNextDispatchCount;
       forkNextDispatchCount = 0;
+      // P3A: the armed claim is consumed by the SAME dispatch that consumes the
+      // fork count — one arm, one dispatch, never leaked onto a later run.
+      const provider = nextDispatchProvider;
+      nextDispatchProvider = null;
       if (n > 0 && convRow) {
-        for (let i = 0; i < n; i++) makeForkedChild();
+        for (let i = 0; i < n; i++) makeForkedChild(provider);
         return;
       }
-      makeDirectRun();
+      makeDirectRun(provider);
     };
     if (dropNextDispatch) dropNextDispatch = false; // accepted, never materializes
     else if (delayNextDispatchMs > 0) {
@@ -436,6 +452,10 @@ createServer(async (req, res) => {
         started_at: Date.now(),
         metadata: { seeded: true },
         ...(typeof parsed.output === 'string' && parsed.output ? { output: parsed.output } : {}),
+        // P3A: an explicit claim for a STATIC seeded row (no dispatch to arm).
+        // A string — including '' — is stamped verbatim; anything else means
+        // the row claims nothing, which is what every other seeded row does.
+        ...(typeof parsed.executionProvider === 'string' ? { execution_provider: parsed.executionProvider } : {}),
         // OP-4R: projection legs for the run-detail-retrieval proof. Stored
         // server-side only, never exposed; list strips parent_* when
         // listHidesParent is set, detail merges detailOnly over the row.
@@ -475,6 +495,22 @@ createServer(async (req, res) => {
     if (!Number.isInteger(count) || count < 1 || count > 8) return fail(400, { error: 'count must be an integer 1..8' });
     forkNextDispatchCount = count;
     return json({ armed: true, count });
+  }
+  // P3A: arm the NEXT materialized run (direct OR forked children) to CLAIM an
+  // execution provider on its own record. `{ provider: null }` disarms. A
+  // non-string, non-null provider is refused rather than coerced: the claim is
+  // what the receipt compares against the environment's declaration, so a mock
+  // that silently coerced it would make the negative legs unfalsifiable.
+  if (url.pathname === '/api/_mock/claim-next-dispatch' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const provider = 'provider' in parsed ? parsed.provider : null;
+    if (provider !== null && typeof provider !== 'string') {
+      return fail(400, { error: 'provider must be a string or null' });
+    }
+    nextDispatchProvider = provider;
+    return json({ armed: provider !== null, provider });
   }
 
   res.writeHead(404);
