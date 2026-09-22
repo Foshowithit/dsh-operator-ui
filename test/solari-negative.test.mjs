@@ -21,6 +21,7 @@ import {
   normalizeSolariBudget,
   normalizeSolariCommand,
   scopedEnvironmentFor,
+  effectiveEnvAllowlist,
   verifySolariEvidence,
   setSolariClientFactory,
   SOLARI_DOCUMENTED_LIMITS,
@@ -40,7 +41,12 @@ const ENV = {
   workspaceScope: { owners: ['*'] },
 };
 
-const CONFIG = { solari: { budgetCaps: { cpu: 2, memMb: 1024, timeoutMs: 600000 }, maxConcurrent: 1 } };
+const CONFIG = { solari: {
+  budgetCaps: { cpu: 2, memMb: 1024, timeoutMs: 600000 },
+  maxConcurrent: 1,
+  // The operator's declaration: the only env NAMES a run may request.
+  envAllowlist: ['E2E_ALLOWED_ONE', 'E2E_ALLOWED_MISSING'],
+} };
 
 // A fake sandbox handle that answers commands until killed, then refuses —
 // the documented lifecycle (kill is idempotent; a dead sandbox answers no
@@ -109,9 +115,11 @@ test('protocol: a scoped run produces evidence the operator verifies independent
   const { factory, calls } = fakeFactory({ files: { 'out/report.txt': 'report body ' + TOKEN_VALUE } });
   setSolariClientFactory(factory);
   try {
-    await withToken(async () => {
+    process.env.E2E_ALLOWED_ONE = 'allowed-one-value-01';
+    try {
+      await withToken(async () => {
       const r = await executeScoped(baseRequest({
-        envNames: [TOKEN_VAR, 'DEFINITELY_NOT_SET_XYZ'],
+        envNames: ['E2E_ALLOWED_ONE', 'E2E_ALLOWED_MISSING'],
         artifactPaths: ['out/report.txt'],
         expect: { exitStatus: 0, outputContains: ['fake-ok'] },
       }));
@@ -120,7 +128,7 @@ test('protocol: a scoped run produces evidence the operator verifies independent
       assert.equal(r.run.exitCode, 0);
       assert.equal(r.run.stdout, 'fake-ok\n');
       assert.equal(r.run.stdoutSha256, sha256('fake-ok\n'), 'the recorded digest is over the captured bytes');
-      assert.deepEqual(r.run.envMissing, ['DEFINITELY_NOT_SET_XYZ'], 'missing env names are reported, never invented');
+      assert.deepEqual(r.run.envMissing, ['E2E_ALLOWED_MISSING'], 'missing env names are reported, never invented');
 
       // The create call is pinned to the documented, kill-safe shape.
       assert.equal(calls.create.length, 1);
@@ -154,6 +162,9 @@ test('protocol: a scoped run produces evidence the operator verifies independent
       assert.equal(r.artifacts.items[0].sha256, sha256('report body [redacted:' + TOKEN_VAR + ']'), 'artifact digests are over the SCRUBBED retrieved bytes');
       assert.equal(r.artifacts.items[0].redactions, 1);
     });
+    } finally {
+      delete process.env.E2E_ALLOWED_ONE;
+    }
   } finally {
     setSolariClientFactory(null);
   }
@@ -386,12 +397,99 @@ test('normalizers: scoped env carries NAMES, reads values at request time, refus
   assert.throws(() => scopedEnvironmentFor({ envNames: ['not a name'] }), (e) => e.code === 'solari-env-names-invalid');
   assert.throws(() => scopedEnvironmentFor({ envNames: new Array(17).fill('A') }), (e) => e.code === 'solari-env-names-invalid');
 
+  // The allowlist is the second argument; with none, nothing is forwardable.
+  assert.throws(() => scopedEnvironmentFor({ envNames: ['OK_NAME'] }, []), (e) => e.code === 'solari-env-not-allowed');
+  // A privileged name is refused even when the operator (wrongly) allowlisted
+  // it — an allowlisted privileged name is a dead entry.
+  assert.throws(() => scopedEnvironmentFor({ envNames: ['RCOS_INFRA_TOKEN'] }, ['RCOS_INFRA_TOKEN']), (e) => e.code === 'solari-env-privileged');
+
   process.env.DSH_E2E_SCOPED_PROBE = 'probe-value-7c21';
   try {
-    const scoped = scopedEnvironmentFor({ envNames: ['DSH_E2E_SCOPED_PROBE', 'DSH_E2E_ABSENT_PROBE'] });
+    const scoped = scopedEnvironmentFor(
+      { envNames: ['DSH_E2E_SCOPED_PROBE', 'DSH_E2E_ABSENT_PROBE'] },
+      ['DSH_E2E_SCOPED_PROBE', 'DSH_E2E_ABSENT_PROBE'],
+    );
     assert.equal(scoped.env.DSH_E2E_SCOPED_PROBE, 'probe-value-7c21', 'values come from THIS process at request time');
     assert.deepEqual(scoped.missing, ['DSH_E2E_ABSENT_PROBE']);
   } finally {
     delete process.env.DSH_E2E_SCOPED_PROBE;
   }
+});
+
+test('protocol: a privileged env name refuses before any client exists, even while the variable is set', async () => {
+  const { factory, calls } = fakeFactory({});
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      // TOKEN_VAR is both the configured credential var AND a TOKEN-pattern
+      // match, and its value IS set in this process — the strongest form of
+      // GPT's requirement: refuse even when the variable exists server-side.
+      const r = await executeScoped(baseRequest({ envNames: [TOKEN_VAR] }));
+      assert.equal(r.ok, false, JSON.stringify(r));
+      assert.equal(r.code, 'solari-env-privileged');
+      assert.equal(calls.constructed, 0, 'no client was ever constructed');
+      assert.ok(!JSON.stringify(r).includes(TOKEN_VALUE), 'the privileged value never crosses into the response');
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: an undeclared env name refuses even though the variable exists in this process', async () => {
+  const { factory, calls } = fakeFactory({});
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      process.env.E2E_UNDECLARED_PRESENT = 'present-but-forbidden-9d2f';
+      try {
+        const r = await executeScoped(baseRequest({ envNames: ['E2E_UNDECLARED_PRESENT'] }));
+        assert.equal(r.ok, false, JSON.stringify(r));
+        assert.equal(r.code, 'solari-env-not-allowed');
+        assert.equal(calls.constructed, 0, 'no client was ever constructed');
+        assert.ok(!JSON.stringify(r).includes('present-but-forbidden-9d2f'), 'the existing value never crosses into the response');
+      } finally {
+        delete process.env.E2E_UNDECLARED_PRESENT;
+      }
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: no allowlist configured means nothing is forwardable', async () => {
+  const { factory, calls } = fakeFactory({});
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      const bareConfig = { solari: { budgetCaps: CONFIG.solari.budgetCaps, maxConcurrent: 1 } };
+      const r = await executeScoped(baseRequest({ config: bareConfig, envNames: ['E2E_ALLOWED_ONE'] }));
+      assert.equal(r.ok, false, JSON.stringify(r));
+      assert.equal(r.code, 'solari-env-not-allowed');
+      assert.equal(calls.constructed, 0, 'no client was ever constructed');
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: the environment override replaces the deployment allowlist and privileged entries are dead', () => {
+  // Per-environment scoping: the override REPLACES config.solari.envAllowlist —
+  // it does not merge — so a capability sees only its own declaration.
+  const envScoped = {
+    ...ENV,
+    adapter: { ...ENV.adapter, transport: { tokenVar: TOKEN_VAR, envAllowlist: ['E2E_OVERRIDE_ONLY_OK'] } },
+  };
+  assert.deepEqual(effectiveEnvAllowlist(envScoped, CONFIG), ['E2E_OVERRIDE_ONLY_OK'], 'the environment override wins');
+  assert.deepEqual(effectiveEnvAllowlist(ENV, CONFIG), ['E2E_ALLOWED_ONE', 'E2E_ALLOWED_MISSING'], 'without an override, the deployment allowlist applies');
+  assert.deepEqual(effectiveEnvAllowlist(ENV, {}), [], 'nothing configured means nothing is forwardable');
+  // Malformed entries are dead, not fatal — the effective list stays clean.
+  assert.deepEqual(effectiveEnvAllowlist({ adapter: { transport: { envAllowlist: ['ok_name', 'not a name', 42, null] } } }, {}), ['ok_name']);
+
+  const scoped = scopedEnvironmentFor({ envNames: ['E2E_OVERRIDE_ONLY_OK'] }, effectiveEnvAllowlist(envScoped, CONFIG), TOKEN_VAR);
+  assert.deepEqual(scoped.env, {}, 'an allowlisted but unset name lands in missing, not invented');
+  assert.deepEqual(scoped.missing, ['E2E_OVERRIDE_ONLY_OK']);
+  // The same name under the deployment allowlist is refused — scoping is real.
+  assert.throws(() => scopedEnvironmentFor({ envNames: ['E2E_OVERRIDE_ONLY_OK'] }, effectiveEnvAllowlist(ENV, CONFIG), TOKEN_VAR), (e) => e.code === 'solari-env-not-allowed');
+  // tokenVar is denied by identity, allowlist notwithstanding.
+  assert.throws(() => scopedEnvironmentFor({ envNames: [TOKEN_VAR] }, [TOKEN_VAR], TOKEN_VAR), (e) => e.code === 'solari-env-privileged');
 });

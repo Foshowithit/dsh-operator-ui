@@ -271,6 +271,14 @@ cases['solari-route'] = async () => {
   const runNoReason = await call('POST', '/solari?op=run' + envQ, { argv: ['true'] });
   const runShell = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', command: 'true && echo hi' });
   const runEnvValues = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['printenv', 'X'], env: { X: 'v' } });
+  // The undeclared name EXISTS in this server process — the refusal must be
+  // about the allowlist, not the variable's absence (GPT P6A ruling §1).
+  process.env.DSH_E2E_UNDECLARED_PRESENT = 'present-but-forbidden-9d2f';
+  const runEnvNotAllowed = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['printenv', 'X'], envNames: ['DSH_E2E_UNDECLARED_PRESENT'] });
+  delete process.env.DSH_E2E_UNDECLARED_PRESENT;
+  // The token var name is privileged by identity — refused even though it is
+  // also the credential var the adapter itself reads.
+  const runEnvPrivileged = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['printenv', 'X'], envNames: ['DSH_E2E_SOLARI_TOKEN'] });
   const runOverCap = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'], budget: { cpu: 16 } });
   const runCustomTpl = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'], budget: { template: 'gpu-big' } });
   const runNoToken = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'] });
@@ -290,12 +298,16 @@ cases['solari-route'] = async () => {
       tokenConfigured: rd.tokenConfigured,
       tokenVar: rd.tokenVar,
       documentedBaseUrl: rd.documentedBaseUrl,
+      envAllowlistConfigured: !!(rd.envAllowlist && rd.envAllowlist.configured),
+      envAllowlistCount: rd.envAllowlist ? rd.envAllowlist.count : null,
       carriesCredential: Object.prototype.hasOwnProperty.call(rd, 'apiKey') || Object.prototype.hasOwnProperty.call(rd, 'token'),
     } : null,
     defaultOp: s(defaultOp),
     runNoReason: s(runNoReason),
     runShell: s(runShell),
     runEnvValues: s(runEnvValues),
+    runEnvNotAllowed: s(runEnvNotAllowed),
+    runEnvPrivileged: s(runEnvPrivileged),
     runOverCap: s(runOverCap),
     runCustomTpl: s(runCustomTpl),
     runNoToken: s(runNoToken),

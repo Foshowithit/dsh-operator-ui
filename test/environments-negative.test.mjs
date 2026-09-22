@@ -108,7 +108,7 @@ const CONFIGS = {
   'solari-route': {
     environments: {
       list: [
-        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: { tokenVar: TOKEN_SOLARI } } },
+        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: { tokenVar: TOKEN_SOLARI, envAllowlist: ['DSH_E2E_ALLOWED_ONE', 'DSH_E2E_ALLOWED_MISSING'] } } },
         archonHttp('archon-remote', { environmentId: 'env-remote' }),
       ],
     },
@@ -379,6 +379,10 @@ test('solari route: readiness is a pure read and every run refusal is free', asy
   assert.equal(r.runNoReason, '400:solari-reason-required');
   assert.equal(r.runShell, '400:solari-capability-unsupported', 'a raw shell string is refused, naming the documented argv form');
   assert.equal(r.runEnvValues, '400:solari-env-values-forbidden', 'inline env values are refused outright');
+  assert.equal(r.readiness.envAllowlistConfigured, true, 'readiness reports that an allowlist is configured');
+  assert.equal(r.readiness.envAllowlistCount, 2, 'readiness reports the allowlist shape — names stay server-side');
+  assert.equal(r.runEnvNotAllowed, '400:solari-env-not-allowed', 'an undeclared name refuses even though the variable EXISTS in the server process');
+  assert.equal(r.runEnvPrivileged, '403:solari-env-privileged', 'the credential var\'s own name is privileged and never forwardable');
   assert.equal(r.runOverCap, '403:solari-budget-over-cap', 'over-cap budget refuses before readiness — no token needed to be refused');
   assert.equal(r.runCustomTpl, '400:solari-capability-unsupported', 'custom templates sit behind the documented paid-plan gate');
   assert.equal(r.runNoToken, '409:solari-token-missing', 'the token refusal is the last free one — nothing was ever constructed');
