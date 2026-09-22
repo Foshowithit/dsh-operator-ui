@@ -61,10 +61,12 @@ function fakeFactory(opts = {}) {
       id: 'sbx-e2e-fake',
       connect: async () => { if (opts.connectError) throw opts.connectError; },
       commands: {
-        run: async (argv, runOpts) => {
-          calls.run.push({ argv, runOpts });
+        // SDK 0.1.3 signature: run(cmd, opts) with opts.args — the guest runs
+        // cmd with args, NOT via a shell.
+        run: async (cmd, runOpts) => {
+          calls.run.push({ cmd, runOpts });
           if (state.killed && !opts.leak) throw new Error('sandbox is dead');
-          if (opts.runImpl) return await opts.runImpl(argv, runOpts);
+          if (opts.runImpl) return await opts.runImpl(cmd, runOpts);
           return { exitCode: 0, stdout: 'fake-ok\n', stderr: '', execution_provider: 'solari-dev' };
         },
       },
@@ -81,14 +83,15 @@ function fakeFactory(opts = {}) {
         state.killed = true;
       },
     };
+    // SDK 0.1.3 SandboxClient surface: create/connect/kill are direct methods.
     return {
-      sandboxes: {
-        create: async (req) => {
-          calls.create.push(req);
-          if (opts.createError) throw opts.createError;
-          return handle;
-        },
+      create: async (req) => {
+        calls.create.push(req);
+        if (opts.createError) throw opts.createError;
+        return handle;
       },
+      connect: async (sandboxId) => handle,
+      kill: async (sandboxId) => { calls.kills += 1; },
     };
   };
   return { factory, calls };
@@ -129,6 +132,13 @@ test('protocol: a scoped run produces evidence the operator verifies independent
       assert.equal(r.run.stdout, 'fake-ok\n');
       assert.equal(r.run.stdoutSha256, sha256('fake-ok\n'), 'the recorded digest is over the captured bytes');
       assert.deepEqual(r.run.envMissing, ['E2E_ALLOWED_MISSING'], 'missing env names are reported, never invented');
+
+      // The documented run signature: argv[0] is the program, the rest are
+      // args — the guest does not shell-interpret them.
+      assert.equal(calls.run.length, 2, 'the real command, then the post-kill death probe');
+      assert.equal(calls.run[0].cmd, 'echo');
+      assert.deepEqual(calls.run[0].runOpts.args, ['hi']);
+      assert.equal(calls.run[1].cmd, 'true', 'the death probe runs the documented no-op argv');
 
       // The create call is pinned to the documented, kill-safe shape.
       assert.equal(calls.create.length, 1);
