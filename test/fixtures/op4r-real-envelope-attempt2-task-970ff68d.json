@@ -1,0 +1,170 @@
+{
+  "_provenance": {
+    "source": "~/.dsh/operator-ui/tasks.json",
+    "capturedAt": "2026-09-22T10:22:24.184Z",
+    "taskSha256_of_sorted_keys": "d6a53b7264d0d25b53d2c9d731f13399b17d2adbc780c2b31322da26b093c1f6",
+    "definition": "verbatim task-970ff68d envelope (attempt 2 recorded + attempt-2 observation correction) from the live Mac store, wrapped as a hydratable tasks.json snapshot for the Phase B integration harness"
+  },
+  "tasksVersion": 2,
+  "tasks": [
+    {
+      "taskId": "task-970ff68d",
+      "tasksVersion": 2,
+      "kind": "goal",
+      "objective": "Process values.csv in order and report running total after each row",
+      "status": "closed",
+      "createdAt": "2026-09-22T04:02:17.768Z",
+      "endedAt": "2026-09-22T04:02:28.510Z",
+      "route": {
+        "selected": {
+          "id": "csv-running-total",
+          "version": "0.1.0",
+          "workflow": "csv-running-total-v1",
+          "lifecycle": "promoted"
+        },
+        "considered": [
+          {
+            "id": "csv-running-total",
+            "score": 1,
+            "reasons": [
+              "implements workflow csv-running-total-v1",
+              "matched 10/10 objective terms"
+            ]
+          }
+        ],
+        "reason": "implements workflow csv-running-total-v1; matched 10/10 objective terms"
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "workflow": "csv-running-total-v1",
+          "runId": null,
+          "status": null,
+          "outputs": [],
+          "startedAt": "2026-09-21T00:30:50.922Z",
+          "endedAt": "2026-09-21T00:31:01.789Z",
+          "adoption": null,
+          "childConversationId": null,
+          "failureCode": "run-not-found",
+          "error": "dispatch accepted but no run appeared",
+          "dispatch": null,
+          "discovery": null
+        },
+        {
+          "attempt": 2,
+          "workflow": "csv-running-total-v1",
+          "runId": null,
+          "status": null,
+          "outputs": [],
+          "startedAt": "2026-09-22T04:02:17.913Z",
+          "endedAt": "2026-09-22T04:02:28.510Z",
+          "adoption": null,
+          "childConversationId": null,
+          "failureCode": "run-not-found",
+          "error": "dispatch accepted but no run appeared",
+          "dispatch": {
+            "accepted": true,
+            "status": "started",
+            "runId": null,
+            "responseSha256": "sha256:80ab7ec856357c69cbdfcf0b5e771d26fd39855936d64afd78c8c340a274b43b"
+          },
+          "discovery": {
+            "candidates": [],
+            "dispatchToken": null,
+            "rejected": [],
+            "elapsedMs": 10458
+          },
+          "observation": {
+            "observedAt": "2026-09-22T07:40:05.275Z",
+            "kind": "prior-run-menu",
+            "sqliteRowId": 33758,
+            "match": "Found a prior failed run of **csv-running-total-v1**",
+            "summary": "Archon accepted the request and asked for a prior-failed-run decision; no execution was started.",
+            "evidence": [
+              "archon.db remote_agent_messages rowid 33757 (user dispatch) + rowid 33758 (assistant: \"Starting workflow: csv-running-total-v1\" + \"Found a prior failed run of …\" menu) in conversation fc764d99b8f0d7ba3426df409ea63540 at 2026-09-22T04:02:19Z",
+              "zero workflow run rows created in the dispatch window: TOTAL_RUNS stayed 3561; csv-running-total runs stayed 1 (historical 7245beda-c754-4862-af56-ae2e72e11d15 only)",
+              "source: dispatchOrchestratorWorkflowOwned — without options.force the prior-failed-run guard short-circuits before run creation and buildFailedRunResumePrompt returns the 3-option menu"
+            ],
+            "correction": "Attempt 2 remains historically recorded as FAILED / run-not-found. Independently observed correction: Archon accepted the request and asked for a prior-failed-run decision; no execution was started.",
+            "notProofOf": "execution",
+            "recordedBy": "op4r-attempt2-observation-20260922"
+          }
+        }
+      ],
+      "checks": [],
+      "execution": null,
+      "capabilityValidation": null,
+      "objectiveEvaluation": null,
+      "claim": null,
+      "trust": {
+        "rungs": [
+          "Observed",
+          "Executed",
+          "Validated",
+          "Objective satisfied"
+        ],
+        "index": 0,
+        "label": "Observed",
+        "truth": null
+      },
+      "nextAction": {
+        "kind": "operator-action",
+        "label": "Resolve the prior-run decision menu",
+        "reason": "the dispatch returned a prior-run decision menu and created no run — an ordinary retry returns the same menu; use the explicitly authorized fresh-run path",
+        "ladder": "Observed"
+      },
+      "verdict": "FAILED",
+      "verdictDetail": {
+        "decision": "FAILED",
+        "scope": "execution",
+        "failureCodes": [
+          "run-not-found"
+        ],
+        "error": "dispatch accepted but no run appeared"
+      },
+      "failureCodes": [
+        "run-not-found"
+      ],
+      "error": "dispatch accepted but no run appeared",
+      "evidence": null,
+      "authority": {
+        "preset": "ASK_BEFORE_ACTION",
+        "requires": [
+          "filesystem:read",
+          "shell:execute"
+        ],
+        "granted": [
+          "filesystem:read"
+        ],
+        "missing": [
+          "shell:execute"
+        ],
+        "mode": "approval",
+        "reason": "ASK_BEFORE_ACTION does not pre-authorize Run commands — approval required",
+        "approvedAt": "2026-09-21T00:30:50.780Z",
+        "approvedFrom": "carried-from-prior-attempt",
+        "retryAuthorization": {
+          "authorizedAt": "2026-09-22T04:02:17.769Z",
+          "carriedApprovalAt": "2026-09-21T00:30:50.780Z",
+          "via": "gpt-op4r-gate2b-step4"
+        }
+      },
+      "conversation": {
+        "provisioningState": "associated",
+        "archonConversationId": "web-1789946601072-wa6vlx",
+        "dbId": "fc764d99b8f0d7ba3426df409ea63540",
+        "provisionedAt": "2026-09-20T23:23:21.055Z",
+        "provisionedVia": "POST /api/conversations",
+        "projectName": "p1x-csv-fixture",
+        "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+        "boundAt": "2026-09-20T23:23:21.133Z",
+        "boundProjectName": "p1x-csv-fixture",
+        "verifiedAt": "2026-09-20T23:23:21.133Z",
+        "verifiedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+        "bindError": null
+      },
+      "lineage": null,
+      "sealedBy": "goal-runner-m1"
+    }
+  ]
+}

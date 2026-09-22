@@ -18,6 +18,22 @@
 // best-effort conversation lookup (dispatch proceeds over an unknown id —
 // enforcement lives Mac-side) and stamps the conversation's effective cwd
 // (cwd ?? codebase.default_cwd) onto the run.
+//
+// OP-4R Phase B (2026-09-22): attempt-scoped fresh-run support surface. The
+// mock now (1) stores conversation tails as real MessageRow-shaped objects so
+// the role-aware prior-run-menu detector runs against it, (2) emulates the
+// real v0.10.1 prior-failed-run guard — an ordinary dispatch that matches a
+// linked failed run with a working_path answers acceptance WITHOUT
+// materializing a run and appends the combined Starting-workflow + 3-option
+// decision menu assistant row, while a wire carrying a standalone `--force`
+// token bypasses the guard exactly like the real `options.force` path,
+// (3) force-strips the wire before persisting user_message (the real command
+// handler does this, so the user-message linkage leg sees the plain prompt),
+// (4) logs every dispatch wire to GET /api/_mock/dispatches for byte-level
+// wire assertions, and (5) adds POST /api/_mock/seed-conversation to register
+// a conversation with known platform/db ids plus two provisioning rows so the
+// detector's pre-dispatch snapshot is never empty. Seed-run additionally
+// accepts workingPath so a guard-matching failed run can be expressed.
 
 import { createServer } from 'node:http';
 
@@ -35,10 +51,31 @@ const codebases = new Map([
 ]);
 const projectsByName = new Map([...codebases.values()].map((c) => [c.name, c]));
 const conversations = new Map(); // platform conversation id → row (snake_case, like the real db)
-const convMessages = new Map(); // platform conversation id → [text]
+// OP-4R Phase B: conversation tails are now MESSAGE ROWS mirroring the real
+// MessageRow shape ({id, conversation_id, role, content, ...}) so the
+// prior-run-menu detector (role-aware, id-keyed) can run against the mock.
+const convMessages = new Map(); // platform conversation id → [message row]
+let msgSeq = 0;
+const pushMsg = (convId, role, content) => {
+  const rows = convMessages.get(convId) || [];
+  rows.push({
+    id: String(++msgSeq),
+    conversation_id: convId,
+    role,
+    content,
+    metadata: null,
+    user_id: null,
+    created_at: new Date().toISOString(),
+  });
+  convMessages.set(convId, rows);
+  return rows;
+};
 let dbSeq = 0;
 let seedSeq = 0;
 const callLog = []; // {at, method, path} — every request
+// OP-4R: every workflow dispatch records its raw wire message here so tests
+// can assert exactly what crossed the boundary (force token present/absent).
+const dispatchWires = [];
 let delayNextDispatchMs = 0;
 let dropNextDispatch = false;
 // OP-4R: monotonic dispatch/fork identity + armed fork count. Direct-dispatch
@@ -83,7 +120,17 @@ const workflows = [
   { name: 'example-tts-prod-v1', description: 'Voiceover production lane', category: 'media', tags: ['tts', 'audio'] },
   { name: 'example-canvas-prod-v1', description: 'Canvas render pipeline', category: 'media', tags: ['canvas'] },
   { name: 'example-echo-ground-v1', description: 'Ground-truth echo verification', category: 'qa', tags: ['verify'] },
+  { name: 'csv-running-total-v1', description: 'Deterministic CSV running total over values.csv (seeded mock)', category: 'seed', tags: ['csv', 'running', 'total'] },
 ];
+
+// OP-4R Phase B: explicit per-workflow seeded outputs. Keying by workflow
+// name (rather than a shared constant) so the csv fixture's expectation
+// ('rcos-verify-seed:csv-running-total-v1') and the pre-existing verify-echo
+// expectation stay byte-exact and independent.
+const SEEDED_OUTPUT = {
+  'verify-echo-v1': 'rcos-verify-seed:rcos-verify-echo-v1',
+  'csv-running-total-v1': 'rcos-verify-seed:csv-running-total-v1',
+};
 
 const runs = [
   { id: 'run-mock-001', workflow_name: 'example-research-search-v1', user_message: 'research MCP SDK changes for the connector plan', status: 'completed', current_step_index: 3, started_at: now - 2 * hr, metadata: { model_bindings: { planner: 'muse-1.3', worker: 'det-flash' } }, receipt: { decision: 'ship', summary: 'Brief verified against 6 sources; artifact set complete.', artifacts: ['RESEARCH_BRIEF.md', 'SEARCH_RESULTS.json', 'CHOW_CONTEXT.json'] } },
@@ -151,12 +198,15 @@ createServer(async (req, res) => {
     const convRow = conversations.get(parsed.conversationId) || null;
     const convCb = convRow ? codebases.get(convRow.codebase_id) : null;
     const workingPath = convRow ? (convRow.cwd || (convCb ? convCb.default_cwd : null)) : null;
-    if (convRow) {
-      const msgs = convMessages.get(parsed.conversationId) || [];
-      msgs.push('/workflow run ' + wf.name + ' ' + (parsed.message || ''));
-      convMessages.set(parsed.conversationId, msgs);
-    }
-    const seeded = wf.name === 'verify-echo-v1';
+    // OP-4R: parse the wire like the real command handler — a standalone
+    // `--force` token sets force, and user_message persists the FORCE-STRIPPED
+    // plain prompt (real handleWorkflowRunCommand filters the token before it
+    // reaches run.user_message, so the user-message linkage leg matches).
+    const wire = String(parsed.message || '');
+    const force = wire.split(/\s+/).includes('--force');
+    const plain = force ? wire.split(/\s+/).filter((t) => t !== '--force').join(' ') : wire;
+    if (convRow) pushMsg(parsed.conversationId, 'user', '/workflow run ' + wf.name + ' ' + wire);
+    const seeded = wf.name in SEEDED_OUTPUT;
     const makeDirectRun = () => {
       dynamicRuns.unshift({
         id: 'run-mock-verify-' + String(++dispatchRunSeq).padStart(3, '0'),
@@ -164,13 +214,13 @@ createServer(async (req, res) => {
         codebase_id: convRow ? convRow.codebase_id : null,
         working_path: workingPath,
         workflow_name: wf.name,
-        user_message: parsed.message || '',
+        user_message: plain,
         status: 'completed',
         outcome: null,
         current_step_index: 2,
         started_at: Date.now(),
         metadata: { seeded: wf.category === 'seed' },
-        ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        ...(seeded ? { output: SEEDED_OUTPUT[wf.name] } : {}),
         receipt: seeded
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
@@ -192,13 +242,13 @@ createServer(async (req, res) => {
         codebase_id: convRow ? convRow.codebase_id : null,
         working_path: workingPath,
         workflow_name: wf.name,
-        user_message: parsed.message || '',
+        user_message: plain,
         status: 'completed',
         outcome: null,
         current_step_index: 2,
         started_at: Date.now(),
         metadata: { seeded: wf.category === 'seed', forked: true },
-        ...(seeded ? { output: 'rcos-verify-seed:rcos-verify-echo-v1' } : {}),
+        ...(seeded ? { output: SEEDED_OUTPUT[wf.name] } : {}),
         receipt: seeded
           ? { decision: 'ship', summary: 'Deterministic echo matched the seeded expectation (mock).', artifacts: ['EVAL.json'] }
           : { decision: 'ship', summary: 'Mock run completed.', artifacts: [] },
@@ -217,6 +267,38 @@ createServer(async (req, res) => {
       }
       makeDirectRun();
     };
+    // OP-4R: emulate the real v0.10.1 prior-failed-run guard. An ordinary
+    // dispatch matching a LINKED failed run that carries a working_path answers
+    // the combined Starting-workflow + 3-option decision menu and materializes
+    // NOTHING (arms untouched); a wire carrying `--force` skips the guard the
+    // same way options.force nulls resumableRun Mac-side.
+    let guard = false;
+    if (convRow && !force) {
+      const prior = [...dynamicRuns, ...runs].find((r) => r
+        && r.workflow_name === wf.name
+        && r.status === 'failed'
+        && r.working_path
+        && (r.parent_platform_id === parsed.conversationId
+          || r.parent_conversation_id === convRow.id
+          || r.conversation_id === parsed.conversationId));
+      if (prior) {
+        guard = true;
+        pushMsg(parsed.conversationId, 'assistant',
+          'Starting workflow: `' + wf.name + '`\n---\n'
+          + 'Found a prior failed run of **' + wf.name + '** (run `' + prior.id + '`).\n\n'
+          + '**Run prompt was:**\n> ' + plain.slice(0, 160) + '\n\n'
+          + '**Choose how to proceed:**\n'
+          + '1. Inspect the prior run\n'
+          + '2. Resume the prior run\n'
+          + '3. Start a fresh run: /workflow run ' + wf.name + ' --force "' + plain.replace(/[\\\"`]/g, '\\$&') + '"');
+      }
+    }
+    // UNCONDITIONAL wire log (after guard determination, before any
+    // materialize/return) so tests can assert the exact boundary bytes —
+    // including a guard hit whose dispatch materialized nothing.
+    dispatchWires.push({ at: Date.now(), workflow: wf.name, conversationId: parsed.conversationId, wire, force, plain, guard });
+    if (guard) return json({ accepted: true, status: 'started' });
+    if (convRow) pushMsg(parsed.conversationId, 'assistant', 'Starting workflow: `' + wf.name + '`');
     if (dropNextDispatch) dropNextDispatch = false; // accepted, never materializes
     else if (delayNextDispatchMs > 0) {
       const ms = delayNextDispatchMs;
@@ -299,8 +381,7 @@ createServer(async (req, res) => {
     }
     const row = conversations.get(convMessage[1]) || null;
     if (!row) return fail(404, { error: 'Conversation not found' });
-    const msgs = convMessages.get(convMessage[1]) || [];
-    msgs.push(parsed.message);
+    pushMsg(convMessage[1], 'user', parsed.message);
     if (parsed.message.startsWith('/setproject')) {
       // Deterministic project selection (am7): validate BY NAME, then the
       // binding write is {codebase_id: …, cwd: null, isolation_env_id: null}.
@@ -308,12 +389,11 @@ createServer(async (req, res) => {
       const project = projectsByName.get(projectName) || null;
       if (project) {
         row.codebase_id = project.id;
-        msgs.push('Project set to **' + projectName + '**\nWorking directory: ' + project.default_cwd);
+        pushMsg(convMessage[1], 'assistant', 'Project set to **' + projectName + '**\nWorking directory: ' + project.default_cwd);
       } else {
-        msgs.push('Unknown project: ' + projectName);
+        pushMsg(convMessage[1], 'assistant', 'Unknown project: ' + projectName);
       }
     }
-    convMessages.set(convMessage[1], msgs);
     return json({ accepted: true, status: 'ok' });
   }
 
@@ -343,6 +423,9 @@ createServer(async (req, res) => {
         id,
         conversation_id: parsed.conversationId,
         codebase_id: typeof parsed.codebaseId === 'string' && parsed.codebaseId ? parsed.codebaseId : null,
+        // OP-4R: seed-run can now stamp working_path so a guard-matching
+        // failed run (failed + working_path + linked) can be expressed.
+        ...(typeof parsed.workingPath === 'string' && parsed.workingPath ? { working_path: parsed.workingPath } : {}),
         workflow_name: parsed.workflowName,
         user_message: typeof parsed.message === 'string' && parsed.message ? parsed.message : '(mock-seeded)',
         ...(typeof parsed.parentConversationId === 'string' && parsed.parentConversationId ? { parent_conversation_id: parsed.parentConversationId } : {}),
@@ -366,6 +449,44 @@ createServer(async (req, res) => {
     if (delayMs > 0) setTimeout(materialize, delayMs);
     else materialize();
     return json({ seeded: true, id, delayedMs: delayMs });
+  }
+  // OP-4R: byte-level wire log — every workflow dispatch this process saw.
+  if (url.pathname === '/api/_mock/dispatches' && req.method === 'GET') {
+    return json({ count: dispatchWires.length, wires: dispatchWires });
+  }
+  // OP-4R: register a conversation under KNOWN platform/db ids (the real
+  // lifecycle mints these at provisioning) and push two provisioning rows so
+  // the prior-run-menu detector's pre-dispatch snapshot is never empty.
+  if (url.pathname === '/api/_mock/seed-conversation' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    if (typeof parsed.platformId !== 'string' || !parsed.platformId) return fail(400, { error: 'platformId must be a non-empty string' });
+    if (typeof parsed.dbId !== 'string' || !parsed.dbId) return fail(400, { error: 'dbId must be a non-empty string' });
+    let cb = null;
+    if (parsed.codebaseId != null) {
+      if (typeof parsed.codebaseId !== 'string' || !codebases.has(parsed.codebaseId)) {
+        return fail(400, { error: 'Codebase not found: No codebase with id ' + String(parsed.codebaseId) });
+      }
+      cb = codebases.get(parsed.codebaseId);
+    }
+    const row = {
+      platform_conversation_id: parsed.platformId,
+      id: parsed.dbId,
+      platform_type: 'web',
+      codebase_id: parsed.codebaseId || null,
+      cwd: null,
+      ai_assistant_type: cb ? (cb.ai_assistant_type || 'claude') : 'claude',
+      title: null,
+      created_at: Date.now(),
+    };
+    conversations.set(parsed.platformId, row);
+    convMessages.set(parsed.platformId, []);
+    if (cb) {
+      pushMsg(parsed.platformId, 'user', '/setproject ' + cb.name);
+      pushMsg(parsed.platformId, 'assistant', 'Project set to **' + cb.name + '**\nWorking directory: ' + cb.default_cwd);
+    }
+    return json({ conversationId: parsed.platformId, id: parsed.dbId });
   }
   if (url.pathname === '/api/_mock/delay-next-dispatch' && req.method === 'POST') {
     const body = await readBody(req);
