@@ -15,7 +15,7 @@ An operator console for the [RCOS](https://github.com/Foshowithit/rcos) capabili
 It is a side-loaded DSH plugin (a Cordis bundle patch), not a fork:
 
 - **No upstream changes.** One package, installed into a profile; removing it restores stock DSH exactly.
-- **No duplicate state.** Every rendered fact is authoritative Host state, read through the services the web profile already mounts (`ctx.sessions` list + projections + jobs) plus the Archon API and the capability registry. Nothing is polled from the renderer, nothing is inferred from chat text, and the plugin persists nothing of its own.
+- **No duplicate state.** Every rendered fact is authoritative Host state, read through the services the web profile already mounts (`ctx.sessions` list + projections + jobs) plus the Archon API and the capability registry. Nothing is polled from the renderer and nothing is inferred from chat text; the plugin's own durable state is limited to named files under the active `DSH_HOME` — the task store at `operator-ui/tasks.json`, the sealed `operator-ui/receipt.json`, and teaching workflow/eval paths only where configured.
 - **Additive seats.** It registers into the `conversation.view` list beside Conversation and Trajectory and into the shell's overlay slot. It never replaces shipped UI, and an installation that prefers the old tabs can stay on them.
 
 ## The RCOS control surface
@@ -32,9 +32,9 @@ On an installation that has not yet earned its receipt, the whole UI is the gate
 
 Select a task and you get its spine — REQUEST → ROUTE → EXECUTION → EVIDENCE → VERDICT — with the dots (Observed / Executed / Validated / Objective satisfied) as the at-a-glance state, the authority line ("Ask before acting"), and the next step spelled out. From there, **evidence →** opens the drawer a reviewer would ask for:
 
-![The evidence drawer: the claim, what supports it, and the observed outputs](docs/evidence.png)
+![The evidence drawer: Claim, Supported by, Execution, Observed outputs, Provenance](docs/evidence.png)
 
-Nothing is dressed up. A goal the installation cannot route is refused **before** execution — no Archon run, no fabricated evidence, spine columns reading "— (refused before execution)", verdict `FAILED · no-route` — and the surface offers bounded acquisition instead of pretending:
+Nothing is dressed up. A goal the installation cannot route is refused **before** execution — no Archon run, no fabricated evidence, verdict `FAILED · no-route`, objective evaluation reported as `not evaluated — refusal or legacy run`, and a bounded **Acquire capability** offer instead of pretending:
 
 ![A refused goal: no capability matched, so nothing ran](docs/work-refusal.png)
 
@@ -46,7 +46,7 @@ Nothing is dressed up. A goal the installation cannot route is refused **before*
 
 ![System: verified state, receipt hash, component inventory](docs/system.png)
 
-Every screenshot above comes from a sanitized demo home — one promoted capability (`word-count 1.0.0 → workflow word-count-v1`) executing over a scratch workspace. No real workspace data, paths or session titles.
+Every screenshot above comes from a sanitized fixture home — a demo capability registry of eight named capabilities, `example-*` workflows over a scratch workspace, and a mock Archon. No real workspace paths or credentials appear in these shots.
 
 ## The legacy tabs
 
@@ -143,9 +143,10 @@ The surfaces stay honest instead of pretending to work:
   execution with `registry not configured — set registry.path`
   (`registry-not-configured`); no run is dispatched, nothing is fabricated.
 - **Registry configured, nothing matches** — the goal is refused before
-  execution: the spine reads `— (refused before execution)`, the verdict is
-  `FAILED · no-route`, and the surface offers a bounded **Acquire capability**
-  step instead of a fake attempt (screenshot above).
+  execution: the verdict is `FAILED · no-route`, the objective evaluation
+  reads `not evaluated — refusal or legacy run`, and the surface offers a
+  bounded **Acquire capability** step instead of a fake attempt (screenshot
+  above).
 - **Intelligence** reports the truth: `No capabilities installed — add
   intelligence to give RCOS more to do.`
 
@@ -187,8 +188,13 @@ Two known issues are published deliberately:
 ## Layout
 
 ```
-lib/index.js    host half  — status route, config, verification, registry + Archon reads
-lib/client.js   client half — gate, Work, Intelligence, System, legacy tabs, palette
+lib/            24 modules — index.js boots the host half (status route,
+                config, verification, registry + Archon reads); client.js is
+                the client half (gate, Work, Intelligence, System, legacy
+                tabs, palette); the rest cover the durable task store,
+                evidence/authority, teaching, FlowRouter/federation,
+                history/status/sync, the supervised browser, and
+                config/discovery
 cordis.patch.yml bundle patch — one self-insert row
 ```
 
