@@ -142,6 +142,10 @@
     "DSH_OPERATOR_UI_MARKETPLACE_WORKFLOWS": {
       "winsOver": "marketplace.workflowsDir",
       "example": "/path/to/marketplace-install-target"
+    },
+    "DSH_OPERATOR_UI_WORKSPACES_ROOT": {
+      "winsOver": "workspaces.root",
+      "example": "/path/to/isolated-workspace-root"
     }
   },
   "statusRoute": {

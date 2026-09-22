@@ -13,8 +13,8 @@ No second control plane, no competing marketplace, no vNext contract change.
   in the official reference is skills.sh (Claude-native skills), and
   `archon workflow install <slug>` is a roadmap item. Therefore the ONLY honest
   integration is **feature detection against the documented `GET /api/openapi.json`**,
-  with an explicit unavailable state when the namespace is absent. Production Dell
-  (v0.10.x) will report *unavailable* and remain fully operational — which is exactly
+  with an explicit unavailable state when the namespace is absent. The production
+  Archon host (v0.10.x) will report *unavailable* and remain fully operational — which is exactly
   the older-install compatibility the order demands.
 - Promotion = a registry entry (`status: 'promoted'`) written by
   `teach.js promoteCandidate` after an explicit operator click on a CANDIDATE
@@ -157,7 +157,7 @@ assertions pin at zero.
 
 ## Verification honesty (GPT gate)
 
-No marketplace-capable Archon exists to authorize against the production Dell, so
+No marketplace-capable Archon exists to authorize against the production host, so
 the live-import claim is labeled **protocol-verified** (full flow exercised against
 the isolated compatible mock): never "live-verified". Real-host behavior for
 v0.10.x is additionally covered by the unsupported-detection leg against the

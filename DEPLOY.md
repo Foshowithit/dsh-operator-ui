@@ -72,6 +72,9 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 # Environment=DSH_OPERATOR_UI_TEACH_WORKSPACE=/path/to/archon-registered-workspace
 # Marketplace import target (P4) — the ONLY directory imports may write (empty = imports refuse NOT_CONFIGURED):
 # Environment=DSH_OPERATOR_UI_MARKETPLACE_WORKFLOWS=/path/to/marketplace-install-target
+# Guided workspace creation (P5) — the ONLY root server-generated beginner workspace paths may live under
+#   (empty = guided creation refuses workspace-root-not-configured; the advanced path-supplied flow is unchanged):
+# Environment=DSH_OPERATOR_UI_WORKSPACES_ROOT=/path/to/isolated-workspace-root
 ```
 
 ```sh

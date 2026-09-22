@@ -5,3 +5,4 @@ eval/records/
 
 # eval staging copies (fixture duplicates + run logs) never belong in the tree
 eval/records/*/stage/
+.DS_Store
