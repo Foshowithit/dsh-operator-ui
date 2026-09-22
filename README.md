@@ -67,8 +67,9 @@ The **⌘K / Ctrl+K command palette** works from anywhere, including inside the 
 
 ## Install
 
-Requires DSH `0.1.0-rc.6` (the version this was built and verified against —
-see COMPAT.md for the full tested pin: DSH + peers + Archon API shape).
+Requires DSH `0.1.0-rc.6` and an Archon `0.10.1`-shaped workflow API (the
+versions this was built and verified against — see COMPAT.md for the full
+tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 
 ### Requirements
 
@@ -77,6 +78,9 @@ see COMPAT.md for the full tested pin: DSH + peers + Archon API shape).
 - **Node:** ≥ 22 (`engines` enforced; the Browser tab uses Node's native WebSocket).
 - **git** on PATH (read-only usage, Git/Files tabs).
 - **DSH** `0.1.0-rc.6` with the `web` profile in use.
+- **Archon** `0.10.1` at the configured endpoint (default
+  `http://127.0.0.1:3090`, the local `archon serve` port). Migrated workflows
+  need the `env@1` transport — see Compatibility notes.
 - **Optional:** Chrome/Chromium on the host (Browser tab human-driving works
   without it only if a binary is found; override with `DSH_OPERATOR_UI_CHROME`).
 - **Optional:** Python 3 (only for RCOS registry schema checks, later slices).
@@ -95,7 +99,55 @@ node scripts/check.js                 # must PASS before proceeding
 dsh plugin --profile web add "$PWD"
 ```
 
-No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form). Restart (or live-reload) the web profile and open the UI. On a machine with no valid receipt you land on the gate; verify once and you get the RCOS surfaces above, with the legacy tabs one click away.
+No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form).
+
+**Then restart the web profile completely** — stop the process running the
+`web` profile and start it again (DEPLOY.md shows the systemd unit form).
+This is required after every install and upgrade, not a suggestion: the host
+half (`lib/`) is imported once at boot into the module cache and the client
+bundle's `?rev=` cache-buster is fixed at boot, so a live-reload does not pick
+up the new plugin half — only a full restart puts it in front of browsers
+(this is a tested contract fact in COMPAT.md). On a machine with no valid
+receipt you land on the gate; verify once and you get the RCOS surfaces above,
+with the legacy tabs one click away.
+
+### A clean installation vs. this repository's own deployment
+
+Nothing that ships points at the maintainer's machines. On a clean install:
+
+- **Archon** defaults to `http://127.0.0.1:3090` — the local endpoint a stock
+  `archon serve` listens on. It is a documented local default; this repository
+  packages no address of any other host.
+- **Registry** starts unconfigured (`registry.path: ""`) — you supply your own
+  `capability-registry.json` path via the config file or env vars (DEPLOY.md).
+- **No secrets** ship: `archon.tokenVar` names an env var (presence only,
+  never the value) and provider credentials stay in their own stores.
+
+To point at a different Archon (remote, token-protected, non-default port),
+copy `fixtures/operator-ui.config.example.json` to
+`$DSH_HOME/operator-ui.config.json` and edit it, or override through env.
+This repository's own development deployment is exactly that shape — DSH on
+one machine, Archon on a second machine over a private network — configured
+only in the maintainer's out-of-repo `$DSH_HOME/operator-ui.config.json` and
+never packaged. `node scripts/check.js` enforces the boundary: it fails on
+private machine/ecosystem names or user home paths in any tracked file, and on
+tailnet addresses anywhere outside the historical `eval/` evidence receipts
+(two-machine receipts that are not part of the distributable — the `package.json`
+`files` list ships only `lib/`, `cordis.patch.yml`, `README.md`, `LICENSE`).
+
+### When no executable capabilities are installed
+
+The surfaces stay honest instead of pretending to work:
+
+- **Registry not configured** — Work refuses every objective *before*
+  execution with `registry not configured — set registry.path`
+  (`registry-not-configured`); no run is dispatched, nothing is fabricated.
+- **Registry configured, nothing matches** — the goal is refused before
+  execution: the spine reads `— (refused before execution)`, the verdict is
+  `FAILED · no-route`, and the surface offers a bounded **Acquire capability**
+  step instead of a fake attempt (screenshot above).
+- **Intelligence** reports the truth: `No capabilities installed — add
+  intelligence to give RCOS more to do.`
 
 ## Uninstall / disable
 
@@ -107,10 +159,30 @@ Slot entries, the style tag, and the host-half service are all fiber-owned effec
 
 ## Compatibility notes
 
-- Verified against DSH `0.1.0-rc.6` (Cordis 4.x, web profile). The client half targets the `conversation.view` slot contract as served by that version.
+- Verified against DSH `0.1.0-rc.6` (Cordis 4.x, web profile) with the Archon `0.10.1` API shape. The client half targets the `conversation.view` slot contract as served by that version.
+- **`env@1` requirement.** Workflows migrated into this repository use the `env@1` transport: they run only on an Archon whose loader admits a literal `env@1` (the verified `0.10.1` build on the tested pin), and admission fails closed on anything else. The patched CSV workflow is therefore **not** claimed to run on every stock Archon installation — check your Archon's loader before expecting migrated workflows to schedule.
 - **COMPAT.md is the tested pin** — RCOS owns the exact known-good DSH + plugin + Archon combination; upgrades move through verification before the pin changes. The `peerDependencies` range in `package.json` stays truthful but is not the support claim.
 - Styling is scoped under `.opui-*` classes and keyed off DSH design tokens (`--dsw-*`) with fallbacks — it does not depend on build-specific CSS-module hashes.
 - Unknown projection fields degrade to blanks, never crashes: the surfaces guard every field they read.
+
+## Security disclosures
+
+Two known issues are published deliberately:
+
+1. **Legacy source-splicing remains unsafe for arbitrary message content.**
+   The legacy path that splices source/context material directly into messages
+   must not carry content you do not control — anything spliced in can be
+   interpreted as instructions, and anything that reaches a shell can be
+   interpreted by the shell. Routing through the registry-routed Work path is
+   **not** by itself protection from unsafe shell substitution: safety depends
+   on the selected workflow and its actual argument-transport contract —
+   whether values travel as structured arguments rather than being spliced
+   into a command line. Read that workflow's transport contract before
+   trusting it with untrusted content.
+2. **Archon persists dispatch messages.** Anything dispatched to Archon — goal
+   text, payloads, conversation material — is durably stored by Archon (runs,
+   logs, artifacts). Retention is Archon's behavior, not this plugin's; do not
+   dispatch secrets or personal data expecting ephemerality.
 
 ## Layout
 

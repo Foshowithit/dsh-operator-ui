@@ -260,22 +260,32 @@ test('discoverRun: the pre-existing failed historical run is never adopted as a 
 
 test('attempt-2 visibility correction: append-only on a stripped copy, verdict/identity preserved, idempotent', () => {
   const here = dirname(fileURLToPath(import.meta.url));
-  const script = join(here, '..', '..', 'p1-staged', 'op4r-attempt2-observation-20260922.mjs');
+  const script = join(here, 'fixtures', 'op4r-attempt2-observation-20260922.mjs');
   assert.ok(existsSync(script), 'correction script exists at ' + script);
 
-  const realPath = join(process.env.HOME, '.dsh', 'operator-ui', 'tasks.json');
-  const doc = JSON.parse(readFileSync(realPath, 'utf8'));
-  const realTask = (doc.tasks || []).find((t) => t && t.taskId === 'task-970ff68d');
-  assert.ok(realTask, 'the real store holds task-970ff68d');
-  assert.equal(realTask.verdict, 'FAILED');
-  assert.deepEqual(realTask.failureCodes, ['run-not-found']);
-
-  // Strip only the already-applied live correction so the script exercises its
-  // append path against a byte-faithful copy of the real envelope.
-  if (realTask.attempts[1] && realTask.attempts[1].observation) delete realTask.attempts[1].observation;
+  // Section 4 (host-specific test data): the fixture IS the store. A declared
+  // FAILED historical envelope (verdict FAILED, run-not-found, attempt-2
+  // dispatch receipt, no observation yet) written into a throwaway $DSH_HOME —
+  // no read of this Mac's live ~/.dsh store and no dependency on operator's
+  // deployment. The assertions below declare exactly this fixture.
   const tmpB = mkdtempSync(join(tmpdir(), 'op4r-corr-'));
   mkdirSync(join(tmpB, 'operator-ui'), { recursive: true });
   const storeCopy = join(tmpB, 'operator-ui', 'tasks.json');
+  const realTask = {
+    taskId: 'task-970ff68d',
+    tasksVersion: 2,
+    kind: 'goal',
+    objective: 'Process values.csv in order and report running total after each row',
+    status: 'closed',
+    verdict: 'FAILED',
+    failureCodes: ['run-not-found'],
+    nextAction: { kind: 'retry', label: 'Retry (same task)' },
+    attempts: [
+      { attempt: 1, workflow: 'csv-running-total-v1', runId: '7245beda-0000-4000-8000-000000000000', status: 'failed', startedAt: '2026-09-21T00:30:53.000Z', endedAt: '2026-09-21T00:31:40.000Z' },
+      { attempt: 2, workflow: 'csv-running-total-v1', runId: null, status: 'refused', failureCode: 'run-not-found', dispatch: { accepted: true, at: '2026-09-21T00:30:50.780Z' } },
+    ],
+  };
+  const doc = { tasksVersion: 2, tasks: [realTask] };
   writeFileSync(storeCopy, JSON.stringify(doc, null, 2) + '\n', 'utf8');
 
   const attempt1Before = JSON.stringify(realTask.attempts[0]);

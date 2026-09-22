@@ -336,6 +336,12 @@ check('hygiene: no private names or machine paths in tracked files', () => {
     for (const banned of [/chow-[a-z]/i, /\/Users\/[a-z0-9]+\//i, /\bDell\b/i]) {
       if (banned.test(body)) hits.push(f);
     }
+    // Tailnet literals are private-network endpoints. They may appear ONLY
+    // under eval/ (historical two-machine evidence receipts — not packaged,
+    // not examples, screenshots, install docs or tests); every other tracked
+    // file ships address-free so a clean installation never points at the
+    // maintainer's machines.
+    if (!f.startsWith('eval/') && /\b100\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(body)) hits.push(f);
   }
   if (hits.length) throw new Error('private references in tracked files: ' + [...new Set(hits)].join(', '));
 });

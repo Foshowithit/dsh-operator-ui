@@ -7,15 +7,15 @@ Upgrades move through verification before the known-good pin changes.
 The plugin's `peerDependencies` range in `package.json` stays truthful (what the
 plugin code imports against), but it is NOT the support claim — this file is.
 
-## Known-good pin (verified 2026-09-15)
+## Known-good pin (DSH + peers verified 2026-09-15; plugin 0.11.0 against Archon 0.10.1 re-verified 2026-09-22)
 
 | Component | Version | Source of truth |
 |---|---|---|
 | DSH (`@deepseek-ai/dsh`) | `0.1.0-rc.6` | `npx --yes @deepseek-ai/dsh@0.1.0-rc.6 web` |
-| dsh-operator-ui (this repo) | `0.7.0` + Slice 0 | `git log`, `package.json` |
+| dsh-operator-ui (this repo) | `0.11.0` | `package.json` |
 | `@deepseek-ai/dsh-tools` (peer, OPTIONAL) | `0.1.0-rc.8` | resolved from the DSH rc.6 install tree |
 | `@deepseek-ai/cordis` (peer) | `4.0.2` | resolved from the DSH rc.6 install tree |
-| Archon | v0.10.1 API shape | workflow YAML + `/api/workflows*` routes |
+| Archon | v0.10.1 API shape + `env@1` transport admission | workflow YAML + `/api/workflows*` routes |
 | Node | ≥ 22 (dev box: v24.15.0) | `engines` field; native WebSocket in `lib/browser.js` |
 
 ## What OPTIONAL means here

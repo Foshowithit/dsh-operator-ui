@@ -1,6 +1,6 @@
 {
   "_provenance": {
-    "capturedVia": "GET http://203.0.113.1:3090/api/workflows/runs/7245beda-c754-4862-af56-ae2e72e11d15",
+    "capturedVia": "GET /api/workflows/runs/7245beda-c754-4862-af56-ae2e72e11d15 (Archon host redacted)",
     "capturedAt": "2026-09-21 (OP-4R Phase A finish; read-only GET, no dispatch)",
     "note": "Actual parent-child execution record from the ONE authorized live run (failed). Vendored executor subset does not include the run-detail serializer; the live API is the source of truth for field names.",
     "runSha256_of_run_object": "5d2d5c0f7abdc2bcc206ab8094ac1dac84c2eeaaf952e99129d415fcd541a66e"

@@ -32,8 +32,8 @@ const A = 'http://127.0.0.1:8412';                      // local plugin (artifac
 const WORK = '/tmp/flowrouter-i0';
 const A_REPO_PORT = 13141;                              // R1 origin (this host)
 const A_FORK_PORT = 13145;                              // second origin branch (this host)
-const B_HOST = process.env.I0_B_HOST || '203.0.113.1'; // independent machine (role B)
-const A_HOST = process.env.I0_A_HOST || '203.0.113.2'; // this machine's routable address
+const B_HOST = process.env.I0_B_HOST || '<redacted-tailnet>'; // independent machine (role B)
+const A_HOST = process.env.I0_A_HOST || '<redacted-tailnet>'; // this machine's routable address
 const B = {
   r2: `http://${B_HOST}:13142`,
   r3: `http://${B_HOST}:13143`,
@@ -94,7 +94,7 @@ const step = (name, ok, result) => { receipt.steps.push({ step: name, ok, result
 // process must never be able to hold the channel open and stall the campaign.
 const sshRun = (cmd, timeoutMs = 45000) => {
   try {
-    return execFileSync('ssh', ['-o', 'ConnectTimeout=10', `chow@${B_HOST}`, cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }).trim();
+    return execFileSync('ssh', ['-o', 'ConnectTimeout=10', `<redacted>@${B_HOST}`, cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }).trim();
   } catch (e) { return 'SSH_ERROR: ' + String(e.message).slice(0, 120); }
 };
 
@@ -104,7 +104,7 @@ const sshRun = (cmd, timeoutMs = 45000) => {
 // exits immediately, so every consumer step reads its durable state from disk.
 const bOnce = (cmd, timeoutMs = 90000) => {
   try {
-    const out = execFileSync('ssh', ['-o', 'ConnectTimeout=10', `chow@${B_HOST}`,
+    const out = execFileSync('ssh', ['-o', 'ConnectTimeout=10', `<redacted>@${B_HOST}`,
       'cd /home/<redacted>/rcos-p1x && DSH_HOME=/tmp/i0-b/actor-home P1X_REPO=/home/<redacted>/rcos-p1x node eval/lib/i0-b-oneshot.mjs'],
       { input: JSON.stringify(cmd), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: timeoutMs, maxBuffer: 32 * 1024 * 1024 }).trim();
     try { return { status: 200, body: JSON.parse(out) }; } catch { return { status: 502, body: { error: 'BAD_ONESHOT_OUTPUT', raw: out.slice(0, 200) } }; }
@@ -180,7 +180,7 @@ await mkdir(WORK, { recursive: true });
 {
   const remoteDir = join(root, 'eval', 'lib', 'i0-remote');
   for (const f of await readdir(remoteDir)) {
-    execFileSync('scp', ['-q', join(remoteDir, f), `chow@${B_HOST}:/tmp/${f}`], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000 });
+    execFileSync('scp', ['-q', join(remoteDir, f), `<redacted>@${B_HOST}:/tmp/${f}`], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000 });
   }
 }
 // machine B: bootstrap the campaign's independent services (fresh consumer

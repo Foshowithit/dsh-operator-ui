@@ -120,6 +120,6 @@
     "wfName": "package-dependency-lock-compare-v0-1-0",
     "runStatus": "completed",
     "class": "needs-grader",
-    "evidence": "Inspecting workspace files\n-rw-r--r--@ 1 operator  wheel   98 Sep 16 16:13 package-lock.json\n-rw-r--r--@ 1 operator  wheel  104 Sep 16 16:13 package.json\n"
+    "evidence": "Inspecting workspace files\n-rw-r--r--@ 1 <user>  wheel   98 Sep 16 16:13 package-lock.json\n-rw-r--r--@ 1 <user>  wheel  104 Sep 16 16:13 package.json\n"
   }
 ]

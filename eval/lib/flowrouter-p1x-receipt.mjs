@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // eval/lib/flowrouter-p1x-receipt.mjs — P1-X INDEPENDENT-EXECUTOR REPETITION
-// (GPT directive). B is the DELL (chow), a genuinely independent machine:
+// (GPT directive). B is a genuinely independent machine (host redacted for publication):
 // Linux x86_64, own RCOS home/registry/task store, own executor process.
 // The capability artifact crosses ONLY over the network (independent machine B fetches from
 // R on the Mac by digest); no scp/rsync/shared mount carries it.
@@ -22,9 +22,9 @@ import { canonicalJson, packageDigest } from '../../lib/flowrouter.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const A = 'http://127.0.0.1:8412';
-const B = 'http://203.0.113.1:8415';                 // the independent machine B
-const MAC_TS = '203.0.113.2';                       // Mac's Tailscale IP
-const R_URL_ON_DELL = 'http://' + MAC_TS + ':13093';   // how the DELL reaches R
+const B = 'http://<redacted-tailnet>:8415';                 // the independent machine B
+const MAC_TS = '<redacted-tailnet>';                       // Mac's Tailscale IP
+const R_URL_ON_B = 'http://' + MAC_TS + ':13093';   // how the machine B reaches R
 const R_URL_LOCAL = 'http://127.0.0.1:13093';
 const WORK = '/tmp/flowrouter-p1x';
 const R_STORE = '/tmp/flowrouter-R';
@@ -52,7 +52,7 @@ try {
   };
 } catch {}
 const bMachine = (await get(B, '/machine')).body;
-receipt.machines = { A: aMachine, R: { host: 'mac', store: R_STORE, endpoint_for_B: R_URL_ON_DELL }, B: bMachine };
+receipt.machines = { A: aMachine, R: { host: 'mac', store: R_STORE, endpoint_for_B: R_URL_ON_B }, B: bMachine };
 step('P1-X actors are independent machines', aMachine.hostname && bMachine.hostname && aMachine.hostname !== bMachine.hostname, { A: aMachine.hostname, B: bMachine.hostname, B_platform: bMachine.platform });
 
 // ============ fresh R on the Mac ============
@@ -71,7 +71,7 @@ spawn(process.execPath, [join(root, 'eval', 'lib', 'flowrouter-service.mjs'), '-
   }
   step('R is a FRESH actor on the Mac (zero publications)', ok, (await get(R_URL_LOCAL, '/status')).body);
 }
-step('independent machine B reaches R over the network (Tailscale)', (await (await fetch(R_URL_ON_DELL + '/status')).json()).publications === 0, { from: 'independent machine B', to: R_URL_ON_DELL });
+step('independent machine B reaches R over the network (Tailscale)', (await (await fetch(R_URL_ON_B + '/status')).json()).publications === 0, { from: 'independent machine B', to: R_URL_ON_B });
 
 // ============ B starts fresh ============
 {
@@ -139,13 +139,13 @@ step('PUBLISH 0.1.1 → D1 (≠ D0)', pub1.status === 200 && pub1.body.D === D1 
 
 // ============ independent machine B discovery → fetch → stage (all B-side, via network) ============
 const before = (await get(B, '/bstate')).body;
-const disc = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total' });
+const disc = await post(B, '/discover', { rUrl: R_URL_ON_B, publisher: 'mac-a', name: 'csv-running-total' });
 const e10 = (disc.body.results || []).find((x) => x.version === '0.1.0');
 step('independent machine B discover (over the network) returns 0.1.0 = D0, record truth', !!e10 && e10.D === D0 && e10.truth === 'RECORD', { discovered_from: disc.body.discovered_from, entry: e10 ? { D: e10.D.slice(0, 16), truth: e10.truth } : null });
 const afterDisc = (await get(B, '/bstate')).body;
 step('N5a independent machine B state unchanged after discovery', afterDisc.registry_sha === before.registry_sha && afterDisc.taskstore_sha === before.taskstore_sha, {});
 
-const fs1 = await post(B, '/fetch-stage', { rUrl: R_URL_ON_DELL, D: D0 });
+const fs1 = await post(B, '/fetch-stage', { rUrl: R_URL_ON_B, D: D0 });
 step('independent machine B fetch-stage: network fetch + B-side recompute + B-side staging', fs1.status === 200 && fs1.body.import?.verdict === 'STAGED' && fs1.body.fetch?.recomputed_D === D0, { fetch: fs1.body.fetch, local: fs1.body.import?.local });
 const afterStage = (await get(B, '/bstate')).body;
 step('N5b independent machine B registry unchanged after stage (one staging record appears)', afterStage.registry_sha === before.registry_sha && afterStage.import_tasks === before.import_tasks + 1, { import_tasks: afterStage.import_tasks });
@@ -200,7 +200,7 @@ const rfDigest = (() => {
 step('N1 republish conflict; D0 intact', n1.status === 409 && n1.body.error === 'PUBLISH_CONFLICT' && rfDigest === D0, n1.body);
 
 // N2 corrupt transport before stage (fetched on the independent machine B, corrupted on the independent machine B)
-const n2 = await post(B, '/fetch-corrupt-stage', { rUrl: R_URL_ON_DELL, D: D0 });
+const n2 = await post(B, '/fetch-corrupt-stage', { rUrl: R_URL_ON_B, D: D0 });
 step('N2 corrupt transport → independent machine B-side recompute refuses BEFORE stage', n2.body.error === 'FETCH_DIGEST_MISMATCH' && n2.body.stage?.refused_before_stage === true && n2.body.stage_calls_delta === 0 && n2.body.corrupted_on === 'B', { requested: String(n2.body.requested_D).slice(0, 16), recomputed: String(n2.body.recomputed_D).slice(0, 16), stage_calls_delta: n2.body.stage_calls_delta });
 
 // N3 forged valid-D index substitution (forge R's index on the Mac)
@@ -209,13 +209,13 @@ step('N2 corrupt transport → independent machine B-side recompute refuses BEFO
   const idx = JSON.parse(await readFile(idxPath, 'utf8'));
   idx.find((e) => e.version === '0.1.0').D = D1;
   await writeFile(idxPath, JSON.stringify(idx, null, 2) + '\n', 'utf8');
-  const d3 = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
+  const d3 = await post(B, '/discover', { rUrl: R_URL_ON_B, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
   const e3 = (d3.body.results || [])[0] || {};
   step('N3 forged valid-D substitution: independent machine B is served D0 (record truth), never D1', e3.D === D0 && e3.truth === 'INDEX_METADATA_STALE' && e3.D !== D1, { served: String(e3.D).slice(0, 16), truth: e3.truth });
   const idx2 = JSON.parse(await readFile(idxPath, 'utf8'));
   idx2.find((e) => e.version === '0.1.0').D = 'f'.repeat(64);
   await writeFile(idxPath, JSON.stringify(idx2, null, 2) + '\n', 'utf8');
-  const d3b = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
+  const d3b = await post(B, '/discover', { rUrl: R_URL_ON_B, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
   const e3b = (d3b.body.results || [])[0] || {};
   step('N3 companion: forged nonexistent D never served', e3b.D === D0 && e3b.truth === 'INDEX_METADATA_STALE', { served: String(e3b.D).slice(0, 16) });
 }
@@ -226,17 +226,17 @@ step('N2 corrupt transport → independent machine B-side recompute refuses BEFO
   const blob = join(R_STORE, 'blobs', D0 + '.pkg');
   const hidden = blob + '.hidden';
   await rename(blob, hidden);
-  const n4 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_DELL, D: D0 });
+  const n4 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_B, D: D0 });
   step('N4 unavailable blob → honest FETCH_UNAVAILABLE from the independent machine B, no substitution', n4.status === 404 && n4.body.error === 'FETCH_UNAVAILABLE', { status: n4.status, error: n4.body.error });
   await rename(hidden, blob);
 }
 
 // N6 exact versions through the network
 {
-  const d10 = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
-  const d11 = await post(B, '/discover', { rUrl: R_URL_ON_DELL, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.1' });
-  const f10 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_DELL, D: (d10.body.results || [])[0]?.D });
-  const f11 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_DELL, D: (d11.body.results || [])[0]?.D });
+  const d10 = await post(B, '/discover', { rUrl: R_URL_ON_B, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.0' });
+  const d11 = await post(B, '/discover', { rUrl: R_URL_ON_B, publisher: 'mac-a', name: 'csv-running-total', version: '0.1.1' });
+  const f10 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_B, D: (d10.body.results || [])[0]?.D });
+  const f11 = await post(B, '/fetch-digest', { rUrl: R_URL_ON_B, D: (d11.body.results || [])[0]?.D });
   step('N6 exact versions over the network: 0.1.0→D0, 0.1.1→D1, no latest', f10.body.recomputed_D === D0 && f11.body.recomputed_D === D1 && D0 !== D1, { d0: String(f10.body.recomputed_D).slice(0, 16), d1: String(f11.body.recomputed_D).slice(0, 16) });
 }
 

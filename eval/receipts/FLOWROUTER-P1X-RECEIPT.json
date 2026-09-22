@@ -6,7 +6,7 @@
       "ok": true,
       "result": {
         "A": "Mac",
-        "B": "chow",
+        "B": "<redacted>",
         "B_platform": "linux"
       }
     },
@@ -23,7 +23,7 @@
       "ok": true,
       "result": {
         "from": "independent machine B",
-        "to": "http://203.0.113.2:13093"
+        "to": "http://<redacted-tailnet>:13093"
       }
     },
     {
@@ -63,7 +63,7 @@
       "step": "independent machine B discover (over the network) returns 0.1.0 = D0, record truth",
       "ok": true,
       "result": {
-        "discovered_from": "http://203.0.113.2:13093",
+        "discovered_from": "http://<redacted-tailnet>:13093",
         "entry": {
           "D": "f7c6c2bd44e4a766",
           "truth": "RECORD"
@@ -80,7 +80,7 @@
       "ok": true,
       "result": {
         "fetch": {
-          "fetched_from": "http://203.0.113.2:13093",
+          "fetched_from": "http://<redacted-tailnet>:13093",
           "requested_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
           "recomputed_D": "f7c6c2bd44e4a766e9bb13c632e9b00d288090ee78e904680cc3365e36d2895c",
           "extracted_to": "/home/<redacted>/p1x-home/incoming/f7c6c2bd44e4a766"
@@ -106,7 +106,7 @@
       "result": {
         "fixtureDir": "/home/<redacted>/p1x-home/fixtures/p1x-8780b616",
         "hash": "5f5875784d64eb892e877289bc4ac384d2d313945a75d5d479d5bb13fc49d64b",
-        "computed_on": "chow"
+        "computed_on": "<redacted>"
       }
     },
     {
@@ -212,16 +212,16 @@
   "machines": {
     "A": {
       "hostname": "Mac",
-      "computer_name": "adam’s MacBook Pro",
+      "computer_name": "<redacted> MacBook Pro",
       "platform": "darwin arm64"
     },
     "R": {
       "host": "mac",
       "store": "/tmp/flowrouter-R",
-      "endpoint_for_B": "http://203.0.113.2:13093"
+      "endpoint_for_B": "http://<redacted-tailnet>:13093"
     },
     "B": {
-      "hostname": "chow",
+      "hostname": "<redacted>",
       "platform": "linux",
       "release": "7.0.0-31-generic",
       "node": "v22.23.2",

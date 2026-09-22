@@ -415,7 +415,7 @@ let forkCore, forkDigest;
   // Independent MACHINE: the same core crosses to a second host over the
   // network and is verified there by the production module with no peers
   // configured, no registry, no pin — byte-identical digest and verdict.
-  const REMOTE = process.env.F1_REMOTE_ACTOR || 'http://203.0.113.1:8415';
+  const REMOTE = process.env.F1_REMOTE_ACTOR || 'http://<redacted-tailnet>:8415';
   let remote = null;
   try {
     const res = await fetch(REMOTE + '/f1-verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ proof_core: forkCore }), signal: AbortSignal.timeout(10000) });
