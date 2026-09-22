@@ -1,0 +1,92 @@
+{
+  "schema": "rcos-candidate-revision/1",
+  "phase": "P6B",
+  "ruling_ref": "P6B v2 Ruling — OFFLINE ACCEPTED · LIVE HOLD, unit A (bounded offline preparation only)",
+  "created_at": "2026-09-22",
+  "candidate": {
+    "name": "rcos-kernel-subset-v2",
+    "version": "0.2.0-candidate.1",
+    "branch": "rcos-cloud-path-v1",
+    "worktree_isolated": true,
+    "base_source_revision": "9bd484999fd2d4b23d2141bd45ccb85559b37488",
+    "commit": "5cad2530763e3a65812f011648aab7d32162c4e4",
+    "tree": "0368ce7e1f71bf981261bb2c7a58e6040fc6e459",
+    "files_changed": 191,
+    "note": "This commit is the complete immutable identity of the v2 candidate: the 'base revision + uncommitted candidate working tree' description is superseded by this commit sha for identification purposes. PACKAGE-IDENTITY.json inside the package intentionally keeps its as-built provenance wording — editing it would invalidate the independently pinned manifest.",
+    "pushed": false
+  },
+  "independently_pinned_identities": {
+    "package_manifest": {
+      "path": "p6b/rcos-kernel-subset-v2.manifest.sha256",
+      "sha256": "55ec0e5fd65079836711e07bb0b1be6fc4d8f5b73965d67efc5b17f29dbf120f",
+      "covers_files": 27,
+      "lives_outside_package_root": true
+    },
+    "execution_specification": {
+      "path": "p6b/EXECUTION-SPEC-v2.md",
+      "sha256": "ba02abd9dd7f00d886dd0050e032952ffbc36f82f0458bc3200296aef841a4f0"
+    },
+    "evidence_export": {
+      "path": "p6b/offline-evidence-v2/export.tgz",
+      "sha256": "95af198ae559d2812e9a72ea960f652ce4c65905951777d4fd46406f9f7bcc48",
+      "files": 167,
+      "contains": "battery logs, meta, both RCOS trees (uid 501 + uid 0), NC1/NC2 fixtures, manifest, guard, battery script — byte-identical to export/"
+    },
+    "battery_script": {
+      "path": "p6b/offline-battery-v2.sh",
+      "sha256": "14e788f9aa02481c28a1626e47dfb8cc7540ee1272388383d1ff5bdad0b2296a"
+    },
+    "isolation_guard": {
+      "path": "p6b/run-isolated.cjs",
+      "sha256": "395e69a08e70cfc61eb3c86cb23d77138c86f897b7ee11cf32b177079d7a9aa4",
+      "tracked_before_candidate": true
+    },
+    "runner_vnext": {
+      "path": "p6b/runner-vnext/runner-vnext.mjs",
+      "sha256": "f6af7a50825832650e9b6df54c1d9e204199850a7bdb7b0efa15ef91997b46f2",
+      "test_path": "p6b/runner-vnext/runner-vnext.test.mjs",
+      "test_sha256": "5fd71c20e59fec5a7c3938c14a355e03457c3184263aea235a625bee8c12e289"
+    },
+    "package_evals": ["reuse-ledger-invariant-v2", "execution-posture-v1"]
+  },
+  "v1_preservation": {
+    "package": ["p6b/rcos-kernel-subset/", "p6b/rcos-kernel-subset.manifest.sha256"],
+    "tracked_paths_unchanged_vs_base": true,
+    "verified_by": "git diff 9bd4849..5cad253 over p6b/rcos-kernel-subset, its manifest, and p6b/run-isolated.cjs — empty"
+  },
+  "historical_run_1_run_2_evidence": {
+    "policy": "byte-identical copies in p6b/live-evidence-v1/; originals also still present in host temp from the original export. The record is immutable: never sanitize, never modify, never reconstruct.",
+    "tracked_in_commit": [
+      { "file": "p6b-live-evidence.json", "sha256": "292dd805ba815b9171fecb82fee47699a71e23f66ee4b020fd971ac55ba0fbd8" },
+      { "file": "p6b-live-run2-evidence.json", "sha256": "ce28f6e9124945f26ffc1af0f749508d6e97fb675df1186bf03b9824023ec05f" }
+    ],
+    "preserved_untracked_by_repo_hygiene": [
+      { "file": "p6b-live-run.mjs", "sha256": "a9f37db915db19d2287ed4b679ed35e008e9b5ff10e75e873c3af468fcfc9aec", "reason": "embeds a private machine path literal; public-release hygiene forbids tracking it and sanitizing would alter the historical record" },
+      { "file": "p6b-live-run2.mjs", "sha256": "35f806e0ead67caa02f0e6d933bf6974a36356b2113f3fb8c4e446db3ffa516e", "reason": "same as p6b-live-run.mjs" },
+      { "file": "p6b-live-run.log", "sha256": "05297c49ba374cf4761a08dc68d010aee85cfb82130da9978ce88b2a88d327c6", "reason": "*.log may never be tracked (repo hygiene gate 6c); logs live inside evidence exports" },
+      { "file": "p6b-live-run2.log", "sha256": "fa9d5bd986536dc0888aa244dfb60926ef7f807c3772c96690b36c10144e4e5d", "reason": "*.log may never be tracked (repo hygiene gate 6c); logs live inside evidence exports" }
+    ],
+    "exclusion_from_git_is_guaranteed_by": ".gitignore entries for *.log and p6b/live-evidence-v1/*.mjs (added with explanatory comments in the candidate commit)"
+  },
+  "source_integrity": {
+    "contract_check": { "command": "node scripts/check.js", "result": "PASS", "exit": 0, "ok_lines": 28, "gates_include": "tracked-file hygiene 6c (no logs/dev-home/node_modules) and 8d (no private names or machine paths) scanned the full staged set" },
+    "test_suite": { "command": "node --test test/*.test.mjs", "tests": 171, "pass": 171, "fail": 0, "exit": 0 },
+    "manifest_reverification": "all pinned sha256 values re-computed from disk immediately before commit and matched"
+  },
+  "preserved_disclosures": [
+    "First offline battery export (dsh-org-env-p6b/1, runs 20260922T211555Z-f02d9e and 20260922T211730Z-4ad2c1) was lost before export and cannot count toward acceptance; the persisted rerun battery is the relevant evidence. Documented in dsh-org-env-p6b.json supersedes block.",
+    "Future-dated run ids in that lost battery are disclosed, not silently normalized, and are never presented as trustworthy elapsed-time measurements.",
+    "Evidence-loss and clock-anomaly disclosures remain in the record permanently."
+  ],
+  "outstanding_separate_security_requirement": {
+    "statement": "Testing recovery after a failed append does not establish that an untrusted process cannot write to protected filesystem locations.",
+    "status": "open, not claimed by this candidate; tracked per the offline-accepted ruling as a distinct security requirement",
+    "note": "Separate from both the privilege-independent invariant and the execution-posture requirement; neither is weakened to accommodate it."
+  },
+  "readiness": {
+    "candidate_status": "offline-accepted candidate, versioned and identity-pinned",
+    "live_validation": "HOLD — no Run #3, no third Solari sandbox, no live Solari execution, no paid service authorized",
+    "gates": "P6C and P6D remain separate gates; this file certifies nothing about production readiness or host certification",
+    "boundaries": "local commit only — no push, no publication, no production modification, no vNext change, no capability promotion"
+  }
+}
