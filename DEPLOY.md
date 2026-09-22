@@ -70,6 +70,8 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 # Teach Mode (M2) — where RCOS may write LEARNED-workflow artifacts (empty = teaching reports NOT_CONFIGURED):
 # Environment=DSH_OPERATOR_UI_TEACH_WORKFLOWS=/path/to/archon-home/workflows
 # Environment=DSH_OPERATOR_UI_TEACH_WORKSPACE=/path/to/archon-registered-workspace
+# Marketplace import target (P4) — the ONLY directory imports may write (empty = imports refuse NOT_CONFIGURED):
+# Environment=DSH_OPERATOR_UI_MARKETPLACE_WORKFLOWS=/path/to/marketplace-install-target
 ```
 
 ```sh

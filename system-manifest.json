@@ -1,48 +1,75 @@
 {
-  "$comment": "system-manifest.json — the tracked installation/observation contract (GENERIC-INSTALL-DESIGN.md §3.4). Setup is data-driven from THIS file so the UI, README, and DEPLOY.md can never drift apart: DEPLOY.md's env table is CHECKED against envOverrides below (scripts/check.js), and the /status route reports the same components/ports/health named here. RCOS owns the tested compatibility pin (see COMPAT.md); this file owns install/topology facts.",
+  "$comment": "system-manifest.json \u2014 the tracked installation/observation contract (GENERIC-INSTALL-DESIGN.md \u00a73.4). Setup is data-driven from THIS file so the UI, README, and DEPLOY.md can never drift apart: DEPLOY.md's env table is CHECKED against envOverrides below (scripts/check.js), and the /status route reports the same components/ports/health named here. RCOS owns the tested compatibility pin (see COMPAT.md); this file owns install/topology facts.",
   "manifestVersion": 1,
   "supportedPlatforms": {
-    "os": ["macOS", "Linux"],
-    "unsupported": ["Windows"],
-    "runtimes": { "node": ">=22", "git": ">=2.30", "bash": true, "python3": ">=3.10 (Slice 2 seeds)" }
+    "os": [
+      "macOS",
+      "Linux"
+    ],
+    "unsupported": [
+      "Windows"
+    ],
+    "runtimes": {
+      "node": ">=22",
+      "git": ">=2.30",
+      "bash": true,
+      "python3": ">=3.10 (Slice 2 seeds)"
+    }
   },
   "components": {
     "dsh": {
       "role": "cognitive/agent runtime (harness)",
       "install": "npx --yes @deepseek-ai/dsh@${pin} web",
       "pin": "0.1.0-rc.6",
-      "pinPolicy": "verified-pin (see COMPAT.md) — RCOS owns the known-good pin; upgrades move through verification before it changes",
-      "configPaths": ["$DSH_HOME/settings.yaml", "$DSH_HOME/.env (DSH-owned credential store)"],
+      "pinPolicy": "verified-pin (see COMPAT.md) \u2014 RCOS owns the known-good pin; upgrades move through verification before it changes",
+      "configPaths": [
+        "$DSH_HOME/settings.yaml",
+        "$DSH_HOME/.env (DSH-owned credential store)"
+      ],
       "port": 3080,
       "bind": "127.0.0.1 only",
       "health": "http GET 127.0.0.1:3080",
-      "verify": ["dsh --version"]
+      "verify": [
+        "dsh --version"
+      ]
     },
     "archon": {
       "role": "workflow execution/orchestration (execution adapter)",
       "install": "curl -fsSL https://archon.diy/install | bash",
-      "configPaths": ["~/.archon/config.yaml"],
+      "configPaths": [
+        "~/.archon/config.yaml"
+      ],
       "port": 3090,
       "health": "http GET <archon.baseUrl>/api/workflows (2xx + array body)",
-      "verify": ["archon version"],
-      "note": "The default URL is only the DEFAULT — the configured endpoint comes from archon.baseUrl (env>file>default). The /status archon probe uses the same path the Workflows tab proxies. Mock for sandbox checks lives at scripts/mock-archon.mjs on :13090 (deliberately NOT 3090)."
+      "verify": [
+        "archon version"
+      ],
+      "note": "The default URL is only the DEFAULT \u2014 the configured endpoint comes from archon.baseUrl (env>file>default). The /status archon probe uses the same path the Workflows tab proxies. Mock for sandbox checks lives at scripts/mock-archon.mjs on :13090 (deliberately NOT 3090)."
     },
     "rcos": {
       "role": "capability + routing + verification architecture (this UI exposes it, never duplicates it)",
-      "install": "none — the registry is a FILE the operator points at (registry.path), not a service to install",
-      "configPaths": ["<registry.path> (default unconfigured; example: <this-repo>/fixtures/capability-registry.example.json)"],
+      "install": "none \u2014 the registry is a FILE the operator points at (registry.path), not a service to install",
+      "configPaths": [
+        "<registry.path> (default unconfigured; example: <this-repo>/fixtures/capability-registry.example.json)"
+      ],
       "port": null,
       "health": "live read via /status rcos probe: exists + JSON + capabilities[] + declared schema",
-      "verify": ["GET /plugins/operator-ui/status → components.rcos.state == AVAILABLE"],
-      "schemaPolicy": "the public RCOS schema wins (§6 ruling 3) — production divergence is migration debt, not a second truth"
+      "verify": [
+        "GET /plugins/operator-ui/status \u2192 components.rcos.state == AVAILABLE"
+      ],
+      "schemaPolicy": "the public RCOS schema wins (\u00a76 ruling 3) \u2014 production divergence is migration debt, not a second truth"
     },
     "operator-ui": {
       "role": "installation, configuration, observation, intervention surface (this repo)",
       "install": "dsh plugin --profile web add <this-repo>",
-      "configPaths": ["$DSH_HOME/operator-ui.config.json (see configFile + fixtures/operator-ui.config.example.json)"],
+      "configPaths": [
+        "$DSH_HOME/operator-ui.config.json (see configFile + fixtures/operator-ui.config.example.json)"
+      ],
       "port": null,
-      "health": "GET /plugins/operator-ui/status → { ok:true }",
-      "verify": ["node scripts/check.js"]
+      "health": "GET /plugins/operator-ui/status \u2192 { ok:true }",
+      "verify": [
+        "node scripts/check.js"
+      ]
     },
     "chrome": {
       "role": "OPTIONAL local browser binary for the supervised Browser tab only (integration, not core)",
@@ -50,7 +77,9 @@
       "configPaths": [],
       "port": null,
       "health": "/status chrome probe: binary exists + --version runs",
-      "verify": ["GET /plugins/operator-ui/status → components.chrome.state"],
+      "verify": [
+        "GET /plugins/operator-ui/status \u2192 components.chrome.state"
+      ],
       "optional": true
     }
   },
@@ -58,22 +87,62 @@
     "path": "$DSH_HOME/operator-ui.config.json",
     "configVersion": 1,
     "example": "fixtures/operator-ui.config.example.json",
-    "precedence": ["explicit env var (back-compat, wins)", "config file", "default"],
+    "precedence": [
+      "explicit env var (back-compat, wins)",
+      "config file",
+      "default"
+    ],
     "restartSemantics": {
-      "requestTime": ["archon.baseUrl", "archon.tokenVar", "archon.timeoutMs", "registry.path", "registry.schema", "registry.maxBytes", "git.*", "files.*"],
-      "bootTime": ["browser.chromePath", "browser.userDataDir", "browser.idleMs", "browser.viewport"],
-      "note": "request-time knobs re-resolve per request (restart-free); boot-time knobs are read once in apply() — file changes need a DSH restart. /status exposes both live + configured viewports so drift is visible."
+      "requestTime": [
+        "archon.baseUrl",
+        "archon.tokenVar",
+        "archon.timeoutMs",
+        "registry.path",
+        "registry.schema",
+        "registry.maxBytes",
+        "git.*",
+        "files.*"
+      ],
+      "bootTime": [
+        "browser.chromePath",
+        "browser.userDataDir",
+        "browser.idleMs",
+        "browser.viewport"
+      ],
+      "note": "request-time knobs re-resolve per request (restart-free); boot-time knobs are read once in apply() \u2014 file changes need a DSH restart. /status exposes both live + configured viewports so drift is visible."
     },
-    "godConfigRule": "operator-ui.config.json contains operator-UI integration/configuration and REFERENCES to authorities (endpoint URLs, file paths, caps, slot names) — never copied DSH/Archon/RCOS state, never secret values (see credentials below)"
+    "godConfigRule": "operator-ui.config.json contains operator-UI integration/configuration and REFERENCES to authorities (endpoint URLs, file paths, caps, slot names) \u2014 never copied DSH/Archon/RCOS state, never secret values (see credentials below)"
   },
   "envOverrides": {
-    "$comment": "Every DSH_OPERATOR_UI_* name the code reads, each naming the config key it wins over. check.js asserts code ⊇ manifest ⊇ DEPLOY.md.",
-    "DSH_OPERATOR_UI_ARCHON": { "winsOver": "archon.baseUrl", "example": "http://127.0.0.1:3090" },
-    "DSH_OPERATOR_UI_REGISTRY": { "winsOver": "registry.path", "example": "/path/to/capability-registry.json" },
-    "DSH_OPERATOR_UI_CHROME": { "winsOver": "browser.chromePath", "example": "/usr/bin/chromium" },
-    "DSH_OPERATOR_UI_AUTHORITY_PRESET": { "winsOver": "authority.preset", "example": "ASK_BEFORE_ACTION" },
-    "DSH_OPERATOR_UI_TEACH_WORKFLOWS": { "winsOver": "teaching.workflowsDir", "example": "/path/to/archon-home/workflows" },
-    "DSH_OPERATOR_UI_TEACH_WORKSPACE": { "winsOver": "teaching.workspaceDir", "example": "/path/to/archon-registered-workspace" }
+    "$comment": "Every DSH_OPERATOR_UI_* name the code reads, each naming the config key it wins over. check.js asserts code \u2287 manifest \u2287 DEPLOY.md.",
+    "DSH_OPERATOR_UI_ARCHON": {
+      "winsOver": "archon.baseUrl",
+      "example": "http://127.0.0.1:3090"
+    },
+    "DSH_OPERATOR_UI_REGISTRY": {
+      "winsOver": "registry.path",
+      "example": "/path/to/capability-registry.json"
+    },
+    "DSH_OPERATOR_UI_CHROME": {
+      "winsOver": "browser.chromePath",
+      "example": "/usr/bin/chromium"
+    },
+    "DSH_OPERATOR_UI_AUTHORITY_PRESET": {
+      "winsOver": "authority.preset",
+      "example": "ASK_BEFORE_ACTION"
+    },
+    "DSH_OPERATOR_UI_TEACH_WORKFLOWS": {
+      "winsOver": "teaching.workflowsDir",
+      "example": "/path/to/archon-home/workflows"
+    },
+    "DSH_OPERATOR_UI_TEACH_WORKSPACE": {
+      "winsOver": "teaching.workspaceDir",
+      "example": "/path/to/archon-registered-workspace"
+    },
+    "DSH_OPERATOR_UI_MARKETPLACE_WORKFLOWS": {
+      "winsOver": "marketplace.workflowsDir",
+      "example": "/path/to/marketplace-install-target"
+    }
   },
   "statusRoute": {
     "path": "GET /plugins/operator-ui/status",
@@ -82,89 +151,110 @@
       "AVAILABLE": "live probe/read succeeded",
       "UNAVAILABLE": "configured (or defaulted) but the live probe failed",
       "NOT_CONFIGURED": "no value provided where one is required",
-      "INVALID": "value present but malformed — reported, never a boot failure",
+      "INVALID": "value present but malformed \u2014 reported, never a boot failure",
       "NOT_INSTALLED": "optional package does not resolve",
-      "UNKNOWN": "cannot be known from here — a valid state, never collapsed into one red light"
+      "UNKNOWN": "cannot be known from here \u2014 a valid state, never collapsed into one red light"
     },
-    "ladders": ["CONFIGURED → AVAILABLE → VERIFIED (integrations/bindings)", "INSTALLED → AVAILABLE → VERIFIED (components)"],
+    "ladders": [
+      "CONFIGURED \u2192 AVAILABLE \u2192 VERIFIED (integrations/bindings)",
+      "INSTALLED \u2192 AVAILABLE \u2192 VERIFIED (components)"
+    ],
     "rules": [
       "every reported field names its authority (DSH truth from DSH, Archon truth from Archon, registry truth from the registry file; the UI owns only its own integration state)",
       "configuration is separated from observation (a configured URL is not AVAILABLE; an existing path is not valid schema; a populated slot is not VERIFIED)",
-      "live authoritative reads/probes per request — nothing cached; each probe carries checkedAt",
+      "live authoritative reads/probes per request \u2014 nothing cached; each probe carries checkedAt",
       "no secret value can appear (slot names + presence booleans only)",
-      "Slice 1 never reports verified:true — Slice 2 owns live verification"
+      "Slice 1 never reports verified:true \u2014 Slice 2 owns live verification"
     ]
   },
   "credentials": {
-    "policy": "No secrets, ever — not in code, not in screenshots, not in the dev-home. Config carries slot NAMES only (archon.tokenVar names an env var; provider slots name envSlots). Presence checks only, values never read, never reported, never echoed.",
-    "owningStores": ["$DSH_HOME/.env (DSH-owned)", "~/.archon/config.yaml (Archon-owned)"],
+    "policy": "No secrets, ever \u2014 not in code, not in screenshots, not in the dev-home. Config carries slot NAMES only (archon.tokenVar names an env var; provider slots name envSlots). Presence checks only, values never read, never reported, never echoed.",
+    "owningStores": [
+      "$DSH_HOME/.env (DSH-owned)",
+      "~/.archon/config.yaml (Archon-owned)"
+    ],
     "template": "fixtures/providers.example.yaml (slot names + REQUIRED/OPTIONAL markers; zeroCredentialProbe names the seed that must verify with NO credentials)"
   },
   "permissions": {
-    "$comment": "Permissions round: presets are operator PERSONALITIES over a lower-level authority contract of scopes (GPT refinement — never four global modes). A capability DECLARES what it requires; the preset pre-authorizes (grants) a subset; the task envelope carries the granted policy it ran (or waits) under. The SAME block renders Preview ('RCOS plans to …') before dispatch and Prove ('RCOS did …' + authority line) after — one vocabulary, two tenses.",
+    "$comment": "Permissions round: presets are operator PERSONALITIES over a lower-level authority contract of scopes (GPT refinement \u2014 never four global modes). A capability DECLARES what it requires; the preset pre-authorizes (grants) a subset; the task envelope carries the granted policy it ran (or waits) under. The SAME block renders Preview ('RCOS plans to \u2026') before dispatch and Prove ('RCOS did \u2026' + authority line) after \u2014 one vocabulary, two tenses.",
     "scopes": [
-      "filesystem:read", "filesystem:write", "shell:execute", "network:outbound",
-      "browser:read", "browser:interact", "credentials:use",
-      "git:read", "git:modify", "git:push", "external:draft", "external:submit"
+      "filesystem:read",
+      "filesystem:write",
+      "shell:execute",
+      "network:outbound",
+      "browser:read",
+      "browser:interact",
+      "credentials:use",
+      "git:read",
+      "git:modify",
+      "git:push",
+      "external:draft",
+      "external:submit"
     ],
-    "reservedScopes": ["physical:observe", "physical:control"],
+    "reservedScopes": [
+      "physical:observe",
+      "physical:control"
+    ],
     "presets": {
-      "PLAN_ONLY": "pre-authorizes nothing — every execution needs explicit approval",
+      "PLAN_ONLY": "pre-authorizes nothing \u2014 every execution needs explicit approval",
       "ASK_BEFORE_ACTION": "pre-authorizes read-only-ish scopes (filesystem:read, git:read, browser:read, network:outbound, external:draft); writes/execution/credentials need approval",
       "AUTO_WITHIN_POLICY": "pre-authorizes everything except the irreversible/external trio (credentials:use, git:push, external:submit)",
-      "FULL_ACCESS": "pre-authorizes every listed scope — still bound by capability/runtime safety (seeded + retired capabilities never route; registry still required)"
+      "FULL_ACCESS": "pre-authorizes every listed scope \u2014 still bound by capability/runtime safety (seeded + retired capabilities never route; registry still required)"
     },
-    "failClosed": "a capability declaring an UNKNOWN scope can never auto-dispatch; PLAN_ONLY pre-authorizes nothing; a missing grant seals an awaiting-approval envelope BEFORE dispatch — nothing executes on a guess",
-    "approval": "approval resumes the SAME task (approveTaskId → retryOf + approved flag); the host re-checks the stored envelope is genuinely awaiting-approval first and refuses anything else (409); approval is per task, never a global mode flip",
-    "authorityConfig": "authority.preset (env DSH_OPERATOR_UI_AUTHORITY_PRESET > file > default ASK_BEFORE_ACTION) — a preset NAME only, never secrets",
-    "persistence": "the granted policy {preset, requires, granted, missing, mode, reason, approvedAt} rides the task envelope in operator-ui/tasks.json — no third store, no new persistence",
-    "faultIsolation": "every registered surface is wrapped in an error boundary: a bug may kill its card/surface (rendered as a killed-card fallback), never shell.overlay — the boundary contains, it never rethrows"
+    "failClosed": "a capability declaring an UNKNOWN scope can never auto-dispatch; PLAN_ONLY pre-authorizes nothing; a missing grant seals an awaiting-approval envelope BEFORE dispatch \u2014 nothing executes on a guess",
+    "approval": "approval resumes the SAME task (approveTaskId \u2192 retryOf + approved flag); the host re-checks the stored envelope is genuinely awaiting-approval first and refuses anything else (409); approval is per task, never a global mode flip",
+    "authorityConfig": "authority.preset (env DSH_OPERATOR_UI_AUTHORITY_PRESET > file > default ASK_BEFORE_ACTION) \u2014 a preset NAME only, never secrets",
+    "persistence": "the granted policy {preset, requires, granted, missing, mode, reason, approvedAt} rides the task envelope in operator-ui/tasks.json \u2014 no third store, no new persistence",
+    "faultIsolation": "every registered surface is wrapped in an error boundary: a bug may kill its card/surface (rendered as a killed-card fallback), never shell.overlay \u2014 the boundary contains, it never rethrows"
   },
   "teachMode": {
-    "$comment": "M2: capability ACQUISITION. Lifecycle GAP → TEACH → BUILD → EVALUATE → CANDIDATE → PROMOTE → ROUTE. THREE identities stay separate and are never mutated into each other: source_task_id (the task whose objective exposed the gap), teaching_task_id (the learning process), capability_id+version (the reusable intelligence IF learning succeeds).",
-    "hardRule": "successful generation does NOT equal learned capability — the candidate is EXECUTED on the real Archon against a held-out deterministic fixture set, and promotion may only be OFFERED when every case passes; a candidate failing any case is refused honestly ('Not added to Intelligence')",
+    "$comment": "M2: capability ACQUISITION. Lifecycle GAP \u2192 TEACH \u2192 BUILD \u2192 EVALUATE \u2192 CANDIDATE \u2192 PROMOTE \u2192 ROUTE. THREE identities stay separate and are never mutated into each other: source_task_id (the task whose objective exposed the gap), teaching_task_id (the learning process), capability_id+version (the reusable intelligence IF learning succeeds).",
+    "hardRule": "successful generation does NOT equal learned capability \u2014 the candidate is EXECUTED on the real Archon against a held-out deterministic fixture set, and promotion may only be OFFERED when every case passes; a candidate failing any case is refused honestly ('Not added to Intelligence')",
     "promotion": "always an EXPLICIT human action (Promote to Intelligence); the promoted registry entry carries permanent provenance (builtBy RCOS, sourceTaskId, teachingTaskId, per-case eval run ids, promotedBy operator, promotedAt, version); duplicate-id promotion is refused",
-    "authority": "the candidate DECLARES its required scopes at BUILD time — a learned capability cannot quietly acquire power; unknown scopes fail closed at promotion exactly as at dispatch",
-    "writes": "the ONLY files teaching ever writes: the candidate workflow YAML under teaching.workflowsDir and per-eval fixture files under teaching.workspaceDir (both operator-configured path references); everything durable about the teaching itself lives in tasks.json — no third store",
-    "honesty": "teaching paths unconfigured → the teach action reports NOT_CONFIGURED instead of pretending; eval evidence (expected vs observed totals per case, run ids) is sealed in the teaching envelope"
+    "authority": "the candidate DECLARES its required scopes at BUILD time \u2014 a learned capability cannot quietly acquire power; unknown scopes fail closed at promotion exactly as at dispatch",
+    "writes": "the ONLY files teaching ever writes: the candidate workflow YAML under teaching.workflowsDir and per-eval fixture files under teaching.workspaceDir (both operator-configured path references); everything durable about the teaching itself lives in tasks.json \u2014 no third store",
+    "honesty": "teaching paths unconfigured \u2192 the teach action reports NOT_CONFIGURED instead of pretending; eval evidence (expected vs observed totals per case, run ids) is sealed in the teaching envelope"
   },
   "memory": {
-    "$comment": "M2.5 Capability Memory & Lifecycle: PROMOTED → USED → OBSERVED → RE-EVALUATED → IMPROVED / SUPERSEDED / RETIRED.",
-    "readModel": "capability operating history (uses, objective-satisfaction record, blocks after clean execution, last-verified, recent window) is DERIVED from the durable task envelopes at /rcos?op=history — never a new store, never copied state",
-    "noScore": "history is NEVER collapsed into a single confidence score — the underlying evidence (the recent outcomes themselves) stays inspectable and every number traces to tasks",
-    "decay": "a capability whose recent window degrades (≥2 of last 5 objectives unsatisfied, ≥3 uses) is flagged 'Needs re-evaluation' with the reason named; routing continues conditionally unless the operator retires it — trust degrades visibly, never silently",
+    "$comment": "M2.5 Capability Memory & Lifecycle: PROMOTED \u2192 USED \u2192 OBSERVED \u2192 RE-EVALUATED \u2192 IMPROVED / SUPERSEDED / RETIRED.",
+    "readModel": "capability operating history (uses, objective-satisfaction record, blocks after clean execution, last-verified, recent window) is DERIVED from the durable task envelopes at /rcos?op=history \u2014 never a new store, never copied state",
+    "noScore": "history is NEVER collapsed into a single confidence score \u2014 the underlying evidence (the recent outcomes themselves) stays inspectable and every number traces to tasks",
+    "decay": "a capability whose recent window degrades (\u22652 of last 5 objectives unsatisfied, \u22653 uses) is flagged 'Needs re-evaluation' with the reason named; routing continues conditionally unless the operator retires it \u2014 trust degrades visibly, never silently",
     "lineage": "version evolution never overwrites history: promoted learned entries carry provenance (teaching task, source task, eval run ids); improved versions link improvedFrom and the old version stays reconstructable"
   },
   "receipt": {
-    "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (§6 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
-    "contract": "docs/GENERIC-INSTALL-DESIGN.md §3.6"
+    "$comment": "SYSTEM-VERIFIED must prove components communicated and executed the verification path (\u00a76 receipt gate): versions, configuration authorities/paths without secrets, health results, execution/result identity, timestamps, hashes/provenance sufficient to reproduce what was tested.",
+    "contract": "docs/GENERIC-INSTALL-DESIGN.md \u00a73.6"
   },
   "verification": {
-    "$comment": "Slice 2 (VERIFIABLE): turns 'pieces appear healthy' into sealed evidence. Probe B is the REAL RCOS path — routing goes through the configured registry (the seeded capability's workflow binding is read from the registry, never hardcoded) and execution goes through the configured Archon's normal run API. There is no parallel verification architecture to bypass it.",
+    "$comment": "Slice 2 (VERIFIABLE): turns 'pieces appear healthy' into sealed evidence. Probe B is the REAL RCOS path \u2014 routing goes through the configured registry (the seeded capability's workflow binding is read from the registry, never hardcoded) and execution goes through the configured Archon's normal run API. There is no parallel verification architecture to bypass it.",
     "route": "POST /plugins/operator-ui/verify (runs probes + writes the receipt) | GET /plugins/operator-ui/verify?op=receipt (read-only freshness verdict)",
     "probes": {
-      "probeA": "verify-machinery — deterministic, zero-credential: manifest load, seed-bundle hashing, config resolution, and an evaluator self-test (accepts the seeded expectation, rejects wrong output and wrong terminal status)",
-      "probeB": "rcos-execution-path — request → route via configured registry (seeded capability rcos-verify-echo → its `workflow` binding) → execute on configured Archon (POST /api/workflows/{name}/run, same base the Workflows tab proxies) → poll run to terminal → evaluate evidence against the seeded expectation"
+      "probeA": "verify-machinery \u2014 deterministic, zero-credential: manifest load, seed-bundle hashing, config resolution, and an evaluator self-test (accepts the seeded expectation, rejects wrong output and wrong terminal status)",
+      "probeB": "rcos-execution-path \u2014 request \u2192 route via configured registry (seeded capability rcos-verify-echo \u2192 its `workflow` binding) \u2192 execute on configured Archon (POST /api/workflows/{name}/run, same base the Workflows tab proxies) \u2192 poll run to terminal \u2192 evaluate evidence against the seeded expectation"
     },
     "levels": {
-      "NOT_VERIFIED": "Probe A did not pass — nothing above it may be claimed",
+      "NOT_VERIFIED": "Probe A did not pass \u2014 nothing above it may be claimed",
       "SYSTEM_VERIFIED": "Probe A passed; Probe B did not run or did not pass (blocker named, never stretched to RCOS_VERIFIED)",
-      "RCOS_VERIFIED": "Probe A + Probe B both passed — the installation executed the actual RCOS execution path"
+      "RCOS_VERIFIED": "Probe A + Probe B both passed \u2014 the installation executed the actual RCOS execution path"
     },
     "receiptFile": "$DSH_HOME/operator-ui/receipt.json",
     "receiptWrites": "the ONLY file this plugin writes, and only on an explicit POST /verify; GET never writes",
-    "seal": "sha256 over the canonical receipt body without the seal field — a modified body reads TAMPERED, not merely old",
+    "seal": "sha256 over the canonical receipt body without the seal field \u2014 a modified body reads TAMPERED, not merely old",
     "staleness": "the receipt fingerprints what it tested (node version, manifest sha256, config hash, registry sha256, seed-bundle sha256s); readReceipt recomputes them fresh so a materially different installation reads STALE with reasons",
-    "seedBundle": ["fixtures/verify-echo-v1.yaml", "fixtures/capability-registry.example.json (seeded entry rcos-verify-echo)"],
-    "realArchonContract": "verified against real Archon v0.10.1 (RC0): catalog entries may be {workflow:{…}}-wrapped (normalized at the proxy/status boundary); dispatch POST /api/workflows/{name}/run requires a conversationId and answers an ACCEPTANCE {accepted:true} — the verifier discovers the new run from the run list; runs need a registered workspace (folder codebase) to execute in",
-    "adapterProvenance": "the receipt's execution.executionAdapter records what the endpoint itself reported (/api/health version): real Archon reads archon@0.10.1, an unversioned compatible reads archon-compatible (unversioned) — a mock-backed receipt can never pose as a versioned real-Archon one",
+    "seedBundle": [
+      "fixtures/verify-echo-v1.yaml",
+      "fixtures/capability-registry.example.json (seeded entry rcos-verify-echo)"
+    ],
+    "realArchonContract": "verified against real Archon v0.10.1 (RC0): catalog entries may be {workflow:{\u2026}}-wrapped (normalized at the proxy/status boundary); dispatch POST /api/workflows/{name}/run requires a conversationId and answers an ACCEPTANCE {accepted:true} \u2014 the verifier discovers the new run from the run list; runs need a registered workspace (folder codebase) to execute in",
+    "adapterProvenance": "the receipt's execution.executionAdapter records what the endpoint itself reported (/api/health version): real Archon reads archon@0.10.1, an unversioned compatible reads archon-compatible (unversioned) \u2014 a mock-backed receipt can never pose as a versioned real-Archon one",
     "seedPolicy": "seeded/example capabilities are clearly marked (status `seeded`, seed `true`) so they can never be mistaken for accumulated production intelligence; the private workflow library is never bundled",
-    "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed — provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt",
+    "providerNote": "provider/model-backed execution is NOT part of the zero-credential seed \u2014 provider slots report separately and stay UNVERIFIED unless a live check proves otherwise; they are never a prerequisite for the genesis receipt",
     "goalMode": {
-      "route": "POST /plugins/operator-ui/goal {objective} | GET /goal?id= | GET /goal (recent, durable — operator-ui/tasks.json)",
-      "pipeline": "objective → ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) → EXECUTE (the selected capability's own workflow binding on the configured Archon) → EVIDENCE (terminal poll + node outputs) → VERIFY (M1: a 3-check evaluation gate — terminal status + the registry-declared expectation marker + objective-satisfaction over the evidence text) → SHIP | BLOCK | FAILED",
-      "taskIdentity": "task_id ('goal-xxxxxxxx') is born at goal admission, ABOVE DSH/Archon; attempts are recorded per task; the envelope (route, attempts, checks incl. objective-satisfaction, verdict + scope, trust ladder, next action, lineage) is sealed to operator-ui/tasks.json after every state change — retry = same task new attempt, fork = new task_id with lineage",
-      "honesty": "a capability that declares no expectation can reach COMPLETED but never SHIP; a goal that matches nothing is refused with reasons, never guessed; verdict scope is 'capability-validation' unless the objective-satisfaction check passed ('objective-evaluation') — never silently upgraded",
+      "route": "POST /plugins/operator-ui/goal {objective} | GET /goal?id= | GET /goal (recent, durable \u2014 operator-ui/tasks.json)",
+      "pipeline": "objective \u2192 ROUTE (transparent keyword scoring over EVERY registry capability; seeded entries excluded; scores + reasons reported) \u2192 EXECUTE (the selected capability's own workflow binding on the configured Archon) \u2192 EVIDENCE (terminal poll + node outputs) \u2192 VERIFY (M1: a 3-check evaluation gate \u2014 terminal status + the registry-declared expectation marker + objective-satisfaction over the evidence text) \u2192 SHIP | BLOCK | FAILED",
+      "taskIdentity": "task_id ('goal-xxxxxxxx') is born at goal admission, ABOVE DSH/Archon; attempts are recorded per task; the envelope (route, attempts, checks incl. objective-satisfaction, verdict + scope, trust ladder, next action, lineage) is sealed to operator-ui/tasks.json after every state change \u2014 retry = same task new attempt, fork = new task_id with lineage",
+      "honesty": "a capability that declares no expectation can reach COMPLETED but never SHIP; a goal that matches nothing is refused with reasons, never guessed; verdict scope is 'capability-validation' unless the objective-satisfaction check passed ('objective-evaluation') \u2014 never silently upgraded",
       "persistence": "goals are durable in operator-ui/tasks.json (atomic tmp+rename writes; Archon's run record stays the execution truth; restarts lose nothing); the plugin writes only tasks.json + the sealed receipt"
     }
   }
