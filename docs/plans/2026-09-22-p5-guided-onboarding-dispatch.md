@@ -48,7 +48,7 @@ import, execution authorization, execution verification, and capability admissio
 If the isolated environment cannot execute a real Archon workflow or a real RCOS promotion,
 mark those portions UNVERIFIED rather than substituting a simulated success.
 Run the full test suite and contract checks. Preserve worktree isolation.
-Do not modify the production Dell, change vNext, upgrade production Archon, publish code,
+Do not modify the production execution host, change vNext, upgrade production Archon, publish code,
 expose Operator publicly, or provision paid Solari infrastructure.
 Return the P5 implementation receipt, executed tests, and the exact remaining blockers for
 the first real cloud-based beginner session.
