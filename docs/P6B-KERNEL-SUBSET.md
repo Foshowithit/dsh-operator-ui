@@ -77,9 +77,9 @@ no mock, no benchmark checker, no rewritten evaluator.
 ## 5. Reduction: what was excluded and why
 
 - **Registry**: the production registry has 22 capabilities; 21 were excluded. Four of
-  those (`dell-gpu-dispatch`, `character-forge`, `local-talking-heads`,
-  `video-forensics-receipt`) reference Dell/chow/local infrastructure and were never
-  candidates. The rest (chromium/playwright, ffmpeg, MLX, model-key transports) cannot
+  those — an on-prem GPU dispatch capability and three local media/forensics
+  capabilities (ids withheld per the public-release hygiene rule, §8 of the plan doc)
+  — reference on-prem GPU/local infrastructure and were never candidates. The rest (chromium/playwright, ffmpeg, MLX, model-key transports) cannot
   run in a Solari sandbox. The committed registry contains exactly one capability —
   `reuse-ledger`, copied verbatim from the production entry — plus
   `registry_version`. Any other capability id therefore fails registry lookup
@@ -98,7 +98,11 @@ no mock, no benchmark checker, no rewritten evaluator.
 
 Procedure (run over all 22 staged files):
 
-1. Identity/host/IP scan — `grep -rniE "/users/|adam|dell|chow|192\.168|10\.0\.|100\.[0-9]+\.|\.local|tailscale|hostname|api[_-]?key|secret|token|password|credential|bearer"`.
+1. Identity/host/IP scan — a `grep -rniE` over all staged files for: machine paths
+   (`/users/`), personal and infrastructure names (developer given name, hardware
+   vendor, project codenames), private address ranges (`192.168`, `10.0.`,
+   `100.<n>.`), `.local`, `tailscale`, `hostname`, and credential vocabulary
+   (`api[_-]?key`, `secret`, `token`, `password`, `credential`, `bearer`).
 2. High-entropy literal scan — AWS `AKIA…`, GitHub `ghp_…`, OpenAI `sk-…`, and
    40+ char base64-ish runs, excluding the manifest's own sha256 lines.
 
@@ -163,29 +167,68 @@ the run.
 
 ## 10. Exact execution commands (sandbox-side)
 
-Transfer: push the 22 files (paths preserved) via the SDK's `files.write`, then:
+Transfer layout — the isolated root and the guard must be **siblings**: any file
+inside the root that is not in the committed manifest would (correctly) trip the
+guard's unlisted-file refusal, so `run-isolated.cjs` and the manifest live beside
+the root, not inside it:
+
+```
+$SANDBOX/
+  p6b/run-isolated.cjs                    # the guard (same repo path)
+  p6b/rcos-kernel-subset.manifest.sha256  # the committed manifest
+  rcos-kernel-subset/                     # = the isolated root; the 22 files
+    bin/  lib/  capabilities/  evals/  registry/   (paths preserved)
+```
+
+Push the 22 subset files (paths preserved) and the guard pair via the SDK's
+`files.write`, then route EVERY experiment command through the fail-closed isolation
+guard (the required correction from the 2026-09-22 ruling). The
+guard verifies — before any write or spawn — that the root is not production-directed,
+`RCOS_HOME` is explicitly pinned to it, the tree matches the manifest exactly (run
+artifacts permitted only under `runs/ invocations/ eligibility/ evidence-records/
+traces/`), the registry holds exactly the one `reuse-ledger` capability with its
+entrypoint inside the root, and no output location is a symlink escape. Refusal exits
+9 before anything runs. It also verifies normally on a host where the production
+default home does not exist (the fresh-sandbox case) instead of crashing.
 
 ```bash
-# 0) assert the workspace root is pinned (hard requirement; see §9 incident)
-export RCOS_HOME="<sandbox-root-of-subset>"
-test "$RCOS_HOME" = "$(pwd)" || exit 9   # run from the subset root
-env | grep -qx "RCOS_HOME=$RCOS_HOME" || exit 9
+# run from $SANDBOX
+ROOT="$PWD/rcos-kernel-subset"
 
-# 1) manifest check (independent re-hash of the transferred source)
-shasum -a 256 -c <manifest> || exit 9
+# 0) pre-execution verification (read-only)
+RCOS_HOME="$ROOT" node p6b/run-isolated.cjs --root "$ROOT" --check-only
+# expect: "isolation-guard: OK — root … verified (manifest 22 files,
+#         registry 1 capability reuse-ledger, RCOS_HOME pinned)", exit 0
+# unset/incorrect RCOS_HOME, a production-directed root, manifest drift,
+# stray files, a second capability, or a symlinked output dir all REFUSE (exit 9)
 
-# 2) real RCOS execution — the existing evaluator, not a substitute
-node bin/rcos eval-run --eval reuse-ledger-invariant-v1
+# 1) real RCOS execution — the existing evaluator, not a substitute, under the guard
+RCOS_HOME="$ROOT" node p6b/run-isolated.cjs --root "$ROOT" -- \
+  node bin/rcos eval-run --eval reuse-ledger-invariant-v1
 # expect: "ship — all 4 required gates pass", exit 0; run id from stdout/receipt
 
-# 3) independent verification — re-hash every receipt artifact
-node bin/rcos eval-verify --run <run-id>
+# 2) independent verification — re-hash every receipt artifact, under the guard
+RCOS_HOME="$ROOT" node p6b/run-isolated.cjs --root "$ROOT" -- \
+  node bin/rcos eval-verify --run <run-id>
 # expect: 7 artifact(s) hash-clean, ok: true, exit 0
 
-# 4) negative controls — on a DISPOSABLE COPY of the run dir, not the original
-cp -r runs/<run-id> /tmp/neg-tamper && printf '\n' >> /tmp/neg-tamper/output.json \
-  && RCOS_HOME="$PWD" node bin/rcos eval-verify --run <run-id>   # expect exit 3 MISMATCH
+# 3) negative controls — DISPOSABLE HOME holding a COPY of the run; the tamper
+#    happens only under /tmp, and the original receipt under $ROOT is untouched
+#    (eval-verify itself is read-only)
+mkdir -p /tmp/neg-home/runs && cp -r "$ROOT/runs/<run-id>" /tmp/neg-home/runs/
+printf '\n' >> /tmp/neg-home/runs/<run-id>/output.json
+RCOS_HOME=/tmp/neg-home node "$ROOT/bin/rcos" eval-verify --run <run-id>
+# expect exit 3 MISMATCH output.json: sha256 mismatch; then dispose:
+rm -rf /tmp/neg-home
 ```
+
+The automated suite `test/isolation-guard.test.mjs` (10 tests) proves each refusal
+case writes nothing, that the guard still verifies on a host where the production
+default home is absent (fresh-sandbox case — regression guard for the ENOENT crash),
+and that the full eval-run → eval-verify sequence succeeds under
+the guard inside a disposable root. Negative-control refusals are part of the frozen
+package: an unset `RCOS_HOME`, a mismatched `RCOS_HOME`, and the production default
+root each refuse with exit 9 and a byte-identical file inventory.
 
 Budget context: pure-node, seconds of wall time; at the microVM rate (~$0.086/hr) the
 whole sequence is well under the proposed $1 cap — which remains **unauthorized**.
@@ -208,7 +251,10 @@ Given only the receipt GPT will receive, an independent party can verify by:
 
 - Sandbox results are **candidate/forensic evidence only** — never promotion input,
   never merged into the production Mac cell's records.
-- vNext contract untouched; production Dell untouched (modulo the disclosed §9
+- vNext contract untouched; the production RCOS cell untouched (modulo the disclosed §9
   stray-write, fully cleaned and proven); nothing published or pushed.
+- **P6B execution package FROZEN** once the isolation-guard correction lands: subset
+  @ manifest, guard, adapter, and this document move together; capability set is not
+  expanded and no unrelated UI/marketplace changes ride along.
 - **Live gate remains HOLD**: no sandbox creation until Adam authorizes the account,
   server-side credential configuration, and the $1 cap with no automatic top-ups.
