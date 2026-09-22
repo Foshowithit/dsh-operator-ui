@@ -59,6 +59,9 @@ const REGISTRY = {
 
 const SENTINEL = 'e2e-secret-sentinel-8c41f0';
 const TOKEN_VAR = 'DSH_E2E_REMOTE_TOKEN';
+// A NAME the child never sets: the solari token leg refuses before client
+// construction on any machine, regardless of what the host exports.
+const TOKEN_SOLARI = 'DSH_E2E_SOLARI_TOKEN';
 
 const archonHttp = (providerId, extra = {}) => ({
   kind: 'custom-remote',
@@ -89,13 +92,24 @@ const CONFIGS = {
       list: [archonHttp('archon-remote', { environmentId: 'env-remote' }), { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: {} } }],
     },
   },
-  'adapter-missing': {
+  // P6A rename: the solari adapter IS implemented now (execution-worker role);
+  // the boundary this case proves is the orchestrator seam, not the adapter seam.
+  'solari-boundary': {
     environments: {
       list: [
-        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: {} } },
+        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: { tokenVar: TOKEN_SOLARI } } },
         archonHttp('archon-remote', { environmentId: 'env-remote' }),
         // Both refusals apply; authorization is the earlier gate.
         archonHttp('archon-mixed', { environmentId: 'env-mixed', workspaceScope: { owners: ['someone-else'] } }),
+      ],
+    },
+  },
+  // The /solari route case shares the same declaration shape.
+  'solari-route': {
+    environments: {
+      list: [
+        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: { tokenVar: TOKEN_SOLARI } } },
+        archonHttp('archon-remote', { environmentId: 'env-remote' }),
       ],
     },
   },
@@ -310,32 +324,70 @@ test('environment mismatch: a bound workspace refuses another environment, ident
   assert.deepEqual(d, { createPosts: 1, dispatchPosts: 1, codebasePosts: 2, setProjectPosts: 1 }, 'exactly one dispatch and its project binding, and both refusals stayed off the orchestrator');
 });
 
-test('missing adapter: a declared-but-unexecutable environment refuses to dispatch', async () => {
+test('solari boundary: an execution-worker-only environment refuses orchestrator dispatch', async () => {
   const home = await newHome('adapter');
   const before_ = await mockCalls();
-  const r = await runCase('adapter-missing', home, caseArg('adapter-missing'));
+  const r = await runCase('solari-boundary', home, caseArg('solari-boundary'));
   const d = delta(before_, await mockCalls());
 
   assert.equal(r.ok, true, JSON.stringify(r));
 
-  // Declared and inspectable, but this build cannot execute it.
+  // Implemented at the execution seam and inspectable. What is NOT deployed is
+  // the orchestrator protocol inside the environment — a live-integration gate
+  // (P6C), not something this build can fake.
   assert.equal(r.localPresent, true);
-  assert.equal(r.sandboxImplemented, false, 'the solari-sandbox adapter is declared, not implemented');
-  assert.ok(typeof r.sandboxReason === 'string' && r.sandboxReason.length > 0, 'the surface says why it cannot execute');
+  assert.equal(r.sandboxImplemented, true, 'the solari-sandbox adapter is implemented (execution-worker role)');
+  assert.equal(r.sandboxReason, null, 'no adapter gap remains — the refusal must name the orchestrator, not the adapter');
   assert.equal(r.remoteImplemented, true, 'an implemented adapter in the same config still reports implemented');
 
   // The goal path is the verdict shape (200 + FAILED); the workspace path is the
   // transport shape, because createWorkspace throws before any goal exists.
-  assert.equal(r.goal, '200:FAILED:environment-adapter-missing', 'dispatching into an unimplemented adapter must refuse');
+  assert.equal(r.goal, '200:FAILED:solari-orchestrator-not-deployed', 'dispatching into an execution-worker-only environment refuses at the protocol seam');
   assert.equal(r.goalEnvironment, null, 'the refusal leaves no execution identity in the receipt');
-  assert.equal(r.workspace, '501:environment-adapter-missing', 'a workspace must not be created in an environment that cannot execute it');
+  assert.equal(r.workspace, '501:solari-orchestrator-not-deployed', 'a workspace must not be created where no orchestrator is deployed');
 
-  // Unauthorized AND unimplemented: the earlier gate answers.
-  assert.equal(r.mixed, '200:FAILED:environment-unauthorized', 'authorization is checked before the adapter');
+  // Unauthorized AND protocol-less: the earlier gate answers.
+  assert.equal(r.mixed, '200:FAILED:environment-unauthorized', 'authorization is checked before the protocol seam');
   // Unknown id: the caller asked for something that does not exist.
   assert.equal(r.unknown, '200:FAILED:environment-not-found');
 
   assert.deepEqual(d, { createPosts: 0, dispatchPosts: 0, codebasePosts: 0, setProjectPosts: 0 }, 'not one refusal may reach the orchestrator');
+});
+
+test('solari route: readiness is a pure read and every run refusal is free', async () => {
+  const home = await newHome('solari-route');
+  const before_ = await mockCalls();
+  const r = await runCase('solari-route', home, caseArg('solari-route'));
+  const d = delta(before_, await mockCalls());
+
+  assert.equal(r.ok, true, JSON.stringify(r));
+
+  assert.equal(r.status, '200:null', 'status is a plain readiness read');
+  assert.equal(r.statusEnvironmentId, 'env-sandbox');
+  assert.equal(r.readiness.role, 'execution-worker', 'the adapter owns the execution-worker role only');
+  assert.equal(r.readiness.liveCertified, false, 'nothing claims live certification — that is the P6B gate');
+  assert.equal(typeof r.readiness.sdkPresent, 'boolean', 'SDK presence is reported as a fact, never asserted');
+  assert.equal(r.readiness.tokenConfigured, false, 'the test token var is never set; readiness reports presence booleans only');
+  assert.equal(r.readiness.tokenVar, 'DSH_E2E_SOLARI_TOKEN');
+  assert.equal(r.readiness.documentedBaseUrl, 'https://api.getsolari.com');
+  assert.equal(r.readiness.carriesCredential, false, 'readiness carries presence booleans, never a credential value or field');
+  assert.equal(r.defaultOp, '200:null', 'GET without op defaults to status');
+
+  // The refusal ladder, cheapest first. Over-cap refusing with NO token set
+  // (while the plain run refuses 409 token-missing) proves budget refusals are
+  // free and ordered before readiness.
+  assert.equal(r.runNoReason, '400:solari-reason-required');
+  assert.equal(r.runShell, '400:solari-capability-unsupported', 'a raw shell string is refused, naming the documented argv form');
+  assert.equal(r.runEnvValues, '400:solari-env-values-forbidden', 'inline env values are refused outright');
+  assert.equal(r.runOverCap, '403:solari-budget-over-cap', 'over-cap budget refuses before readiness — no token needed to be refused');
+  assert.equal(r.runCustomTpl, '400:solari-capability-unsupported', 'custom templates sit behind the documented paid-plan gate');
+  assert.equal(r.runNoToken, '409:solari-token-missing', 'the token refusal is the last free one — nothing was ever constructed');
+  assert.equal(r.wrongAdapter, '400:solari-adapter-mismatch', 'the route serves solari-sandbox adapters only');
+  assert.equal(r.killUnknown, '409:solari-sandbox-unknown');
+  assert.equal(r.badOp, '400:solari-op-unsupported');
+  assert.equal(r.noEnv, '400:environment-id-required');
+
+  assert.deepEqual(d, { createPosts: 0, dispatchPosts: 0, codebasePosts: 0, setProjectPosts: 0 }, 'no leg of this route may touch the orchestrator');
 });
 
 test('owner scope: a scoped environment refuses outsiders by id and by default, and still serves its owner', async () => {

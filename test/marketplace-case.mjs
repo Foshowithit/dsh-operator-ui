@@ -553,7 +553,7 @@ if (caseName === 'unsupported') {
   // GPT negative 7: a declared-but-unimplemented execution adapter is an honest
   // 501 — inspectable, refused before registration, never a silent fallback.
   const broken = await probe('guided-adapter-missing', () => call('POST', '/workspace', { guided: true, label: 'broken', environmentId: 'env-broken', owner: 'alice' }, { token: T.root }));
-  check('guided-adapter-missing-501', broken.status === 501 && broken.code === 'environment-adapter-missing', JSON.stringify(broken));
+  check('guided-adapter-missing-501', broken.status === 501 && broken.code === 'solari-orchestrator-not-deployed', JSON.stringify(broken));
   check('guided-adapter-missing-zero-writes', JSON.stringify(broken.writes) === JSON.stringify(ZERO_WRITES), JSON.stringify(broken.writes));
 
   // svc-alice is scoped to env-local; reaching for the broken env is an

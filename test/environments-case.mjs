@@ -230,7 +230,7 @@ cases['env-mismatch'] = async () => {
 // An environment this build declares but cannot execute refuses to dispatch —
 // and an environment the caller is not authorized for refuses on authorization,
 // never on the adapter it happens to also be missing.
-cases['adapter-missing'] = async () => {
+cases['solari-boundary'] = async () => {
   const list = await call('GET', '/environments');
   const envs = (list.json && list.json.environments) || [];
   const byId = (id) => envs.find((e) => e.environmentId === id) || null;
@@ -255,6 +255,54 @@ cases['adapter-missing'] = async () => {
     mixed: goalTag(mixed),
     unknown: goalTag(unknown),
     unknownError: unknown.json && unknown.json.error,
+  };
+};
+
+// ---------------------------------------------------------------------------
+// P6A: the /solari route. status is a pure readiness read; every run refusal is
+// free — nothing constructs a client, imports the SDK, or touches the network.
+// The token var is a NAME this child never sets, so the token leg refuses
+// before any client construction on any machine.
+cases['solari-route'] = async () => {
+  const envQ = '&environment_id=env-sandbox';
+  const s = (r) => r.status + ':' + ((r.json && r.json.code) || null);
+  const status = await call('GET', '/solari?op=status' + envQ);
+  const defaultOp = await call('GET', '/solari?environment_id=env-sandbox');
+  const runNoReason = await call('POST', '/solari?op=run' + envQ, { argv: ['true'] });
+  const runShell = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', command: 'true && echo hi' });
+  const runEnvValues = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['printenv', 'X'], env: { X: 'v' } });
+  const runOverCap = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'], budget: { cpu: 16 } });
+  const runCustomTpl = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'], budget: { template: 'gpu-big' } });
+  const runNoToken = await call('POST', '/solari?op=run' + envQ, { reason: 'e2e', argv: ['true'] });
+  const wrongAdapter = await call('POST', '/solari?op=run&environment_id=env-remote', { reason: 'e2e', argv: ['true'] });
+  const killUnknown = await call('POST', '/solari?op=kill' + envQ, { sandbox_id: 'sbx-not-here' });
+  const badOp = await call('GET', '/solari?op=search' + envQ);
+  const noEnv = await call('GET', '/solari?op=status');
+  const rd = (status.json && status.json.readiness) || null;
+  return {
+    ok: true,
+    status: s(status),
+    statusEnvironmentId: status.json && status.json.environmentId,
+    readiness: rd ? {
+      role: rd.role,
+      liveCertified: rd.liveCertified,
+      sdkPresent: rd.sdkPresent,
+      tokenConfigured: rd.tokenConfigured,
+      tokenVar: rd.tokenVar,
+      documentedBaseUrl: rd.documentedBaseUrl,
+      carriesCredential: Object.prototype.hasOwnProperty.call(rd, 'apiKey') || Object.prototype.hasOwnProperty.call(rd, 'token'),
+    } : null,
+    defaultOp: s(defaultOp),
+    runNoReason: s(runNoReason),
+    runShell: s(runShell),
+    runEnvValues: s(runEnvValues),
+    runOverCap: s(runOverCap),
+    runCustomTpl: s(runCustomTpl),
+    runNoToken: s(runNoToken),
+    wrongAdapter: s(wrongAdapter),
+    killUnknown: s(killUnknown),
+    badOp: s(badOp),
+    noEnv: s(noEnv),
   };
 };
 
