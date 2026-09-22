@@ -1,0 +1,249 @@
+{
+  "experiment": "P6B-live-frozen-package",
+  "ruling": "RUN #2 AUTHORIZED, WITH CORRECTIONS (2026-09-22)",
+  "runNumber": 2,
+  "startedAt": "2026-09-22T19:22:56.124Z",
+  "corrections": {
+    "A": "guest root is the explicit isolated constant /tmp/p6b-run2 (selectSb); probe HOME and pwd deliberately ignored; guestConfirmScript proves writable, non-symlink, realpath-stable before any package write",
+    "B": "negative controls live in two independent isolated dirs /tmp/neg-home1 and /tmp/neg-home2, each freshly copied from the ORIGINAL receipt only; before/after digests plus the receipt sha-pin prove the original cannot be modified by destructive tests",
+    "C": "Run #1 evidence sha-pinned immutable at startup and finish; Run #2 marker/evidence is a distinct file written only at pre-create; a second Run #2 or any third launch is refused (exit 2)"
+  },
+  "refusalChain": {
+    "run1Evidence": {
+      "path": "/tmp/p6b-live-evidence.json",
+      "sha256Pinned": "292dd805ba815b9171fecb82fee47699a71e23f66ee4b020fd971ac55ba0fbd8",
+      "sha256AtStartup": "292dd805ba815b9171fecb82fee47699a71e23f66ee4b020fd971ac55ba0fbd8",
+      "record": {
+        "status": "failed",
+        "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+        "error": {
+          "message": "could not determine guest home",
+          "code": null,
+          "status": null,
+          "stack": "Error: could not determine guest home\n    at main (file:///private/tmp/p6b-live-run.mjs:169:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///private/tmp/p6b-live-run.mjs:343:11"
+        }
+      },
+      "verdictsPreservedUnchanged": true,
+      "sha256AtFinish": "292dd805ba815b9171fecb82fee47699a71e23f66ee4b020fd971ac55ba0fbd8",
+      "immutableEnd": true
+    },
+    "run2Evidence": {
+      "path": "/tmp/p6b-live-run2-evidence.json",
+      "semantics": "written at pre-create; once it exists, a second Run #2 and any third launch are refused (exit 2)"
+    }
+  },
+  "configRequested": {
+    "template": "base",
+    "cpu": 1,
+    "memMb": 1024,
+    "timeoutMs": 600000,
+    "lifecycle": {
+      "onTimeout": "kill"
+    },
+    "metadata": {
+      "gate": "P6B",
+      "run": "2",
+      "commit": "9bd4849",
+      "purpose": "frozen-package-experiment"
+    }
+  },
+  "baseUrl": "https://api.getsolari.com",
+  "budgetCapsReference": "frozen lib/solari.js SOLARI_DEFAULT_BUDGET_CAPS; no top-ups, payments, upgrades, subscriptions, production changes, or publication authorized",
+  "balanceBeforeUsd": 25.82,
+  "balanceBeforeSource": "fresh metered provider billing read passed via env P6B_BALANCE_BEFORE immediately pre-launch",
+  "localBattery": {
+    "regression": {
+      "path": "/tmp/p6b-run2-regression.mjs",
+      "covers": "exact Run #1 probe HOME=\\n/\\nv20.20.2\\nLinux 6.6.30 x86_64\\n selects /tmp/p6b-run2; legacy defect reproduced; guard refuses missing RCOS_HOME, mismatched root, symlink escape; accept on clean root",
+      "exitCode": 0,
+      "tail": "PASS  legacy Run #1 parser reproduces the defect (home === \"\")\nPASS  selectSb(exact probe) does not throw\nPASS  selects the intended isolated directory\nPASS  root = <sb>/rcos-kernel-subset\nPASS  never empty / never \"/\" / never a home path\nPASS  probe parsed: HOME unset recorded as \"\" (ignored)\nPASS  probe parsed: pwd \"/\" recorded and ignored\nPASS  probe parsed: node v20.20.2\nPASS  probe parsed: Linux 6.6.30 x86_64\nPASS  populated HOME still selects /tmp/p6b-run2 (HOME never consulted)\nPASS  two separate negative-control dirs under /tmp\nPASS  confirm accepts a fresh real directory under /tmp (exit 0)\nPASS  confirm refuses a symlinked root (exit 13)\nPASS  confirm refuses a non-writable root (exit 12)\nPASS  escape invariant: realpath(/etc) would fail the pinned comparison\nPASS  escape invariant: realpath(/tmp) normalization is the comparison base\nPASS  builder refuses any root outside /tmp\nPASS  guard refuses missing RCOS_HOME (exit 9)\nPASS  refusal names missing configuration\nPASS  missing-config refusal leaves root untouched\nPASS  guard refuses mismatched RCOS_HOME (exit 9)\nPASS  refusal names root mismatch\nPASS  incorrect-root refusal leaves root untouched\nPASS  guard refuses symlinked output escape (exit 9)\nPASS  refusal names the symlink\nPASS  escape target received no writes\nPASS  guard verifies a clean isolated root (exit 0)\nPASS  verification names manifest + registry + pinned RCOS_HOME\nREGRESSION OK — 28 checks, 0 failed\n"
+    },
+    "suites": {
+      "count": 6,
+      "exitCode": 0,
+      "tail": "ere (24.278333ms)\n✔ guard verifies normally on a host where the production default home is ABSENT (fresh-sandbox case) (42.817625ms)\n✔ guard refuses on manifest hash drift (44.901291ms)\n✔ guard refuses on an unlisted extra file (42.367375ms)\n✔ guard refuses a second capability in the registry (48.542291ms)\n✔ guard refuses a symlinked output dir that would escape the root (41.714458ms)\n✔ guard accepts a clean isolated copy (check-only) (43.688125ms)\n✔ guard runs the real eval end-to-end in the isolated root and only there (866.397458ms)\n✔ objective-echo evidence without the required lines is NOT_SATISFIED (T2a) (0.511625ms)\n✔ token boundaries reject near-miss continuations on either side (T2b) (0.122042ms)\n✔ non-word trailing characters do not defeat a real evidence line (0.06125ms)\n✔ a clean run log with all six lines in noise satisfies the objective (0.111167ms)\n✔ lib module graph loads as a whole (R-5 export leg pinned in test lane) (26.357583ms)\n✔ protocol: a scoped run produces evidence the operator verifies independently (3.429375ms)\n✔ protocol: the sandbox echoing the credential is scrubbed and counted (0.374959ms)\n✔ protocol: free refusals precede readiness, and readiness precedes any spend (0.223667ms)\n✔ protocol: the documented provider gates are typed by name (0.264ms)\n✔ protocol: a leaked sandbox makes the run UNVERIFIED, loudly (0.299583ms)\n✔ protocol: verification re-derives everything and catches tampering (0.122ms)\n✔ protocol: connect failure after create still cleans up and reports (0.164417ms)\n✔ protocol: killScoped is honest about process-local knowledge (0.09225ms)\n✔ readiness: presence booleans only, and it never claims live certification (7.763875ms)\n✔ normalizers: budgets clamp operator caps to documented maxima and refuse nonsense (0.795ms)\n✔ normalizers: commands are argv-only, and shell strings are refused by name (0.199583ms)\n✔ normalizers: scoped env carries NAMES, reads values at request time, refuses inline values (0.137458ms)\n✔ protocol: a privileged env name refuses before any client exists, even while the variable is set (0.102084ms)\n✔ protocol: an undeclared env name refuses even though the variable exists in this process (0.081208ms)\n✔ protocol: no allowlist configured means nothing is forwardable (0.071167ms)\n✔ protocol: the environment override replaces the deployment allowlist and privileged entries are dead (0.09875ms)\nℹ tests 68\nℹ suites 0\nℹ pass 68\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1283.99575\n"
+    },
+    "passed": true
+  },
+  "provenance": {
+    "head": "9bd484999fd2d4b23d2141bd45ccb85559b37488",
+    "porcelainCount": 0,
+    "manifestDiffExit": 0,
+    "manifestDiffOut": "MANIFEST-MATCH"
+  },
+  "providerExecutionIdentity": {
+    "claimed": false,
+    "reason": "SDK create/get response exposes no execution-identity field (not-claimed)"
+  },
+  "steps": [
+    {
+      "label": "client-constructed",
+      "ok": true
+    },
+    {
+      "label": "create",
+      "sandboxId": "Asm1oH5y2X9MmEFULnymEBrWBexLrZ2AFset154TYvpYuBrKZFjpBbJjXqYs-x0mOAZo-tPSbhPXz_x2toL4zfl6KuwuamRfYs9tmO3E2wA9fPVVht6z2bkJiMUzrvcnuWLkorZEMtIfuJLUo-U._u8XMEDRx4iczbd7HDMO8Axq1ClqhBv60Gjo5BrPtG8",
+      "requested": {
+        "template": "base",
+        "cpu": 1,
+        "memMb": 1024,
+        "timeoutMs": 600000,
+        "lifecycle": {
+          "onTimeout": "kill"
+        },
+        "metadata": {
+          "gate": "P6B",
+          "run": "2",
+          "commit": "9bd4849",
+          "purpose": "frozen-package-experiment"
+        }
+      },
+      "providerReturned": {
+        "sandboxId": "Asm1oH5y2X9MmEFULnymEBrWBexLrZ2AFset154TYvpYuBrKZFjpBbJjXqYs-x0mOAZo-tPSbhPXz_x2toL4zfl6KuwuamRfYs9tmO3E2wA9fPVVht6z2bkJiMUzrvcnuWLkorZEMtIfuJLUo-U._u8XMEDRx4iczbd7HDMO8Axq1ClqhBv60Gjo5BrPtG8",
+        "kind": "sandbox",
+        "state": "running",
+        "metadata": {
+          "gate": "P6B",
+          "run": "2",
+          "commit": "9bd4849",
+          "purpose": "frozen-package-experiment"
+        },
+        "template": "base",
+        "createdAt": "2026-09-22T19:22:58.842Z",
+        "expiresAt": "2026-09-22T19:32:59.195Z",
+        "cpu": 1,
+        "memMb": 1024,
+        "diskGb": 4
+      }
+    },
+    {
+      "label": "connect",
+      "ok": true
+    },
+    {
+      "label": "guest-probe",
+      "exitCode": 0,
+      "stdout": "HOME=\n/\nv20.20.2\nLinux 6.6.30 x86_64\n",
+      "stderr": ""
+    },
+    {
+      "label": "guest-root-confirm",
+      "exitCode": 0,
+      "stdout": "SB-CONFIRMED:/tmp/p6b-run2\n",
+      "stderr": ""
+    },
+    {
+      "label": "guard-check-only",
+      "exitCode": 0,
+      "expectedExit": 0,
+      "stdout": "",
+      "stderr": "isolation-guard: OK — root /tmp/p6b-run2/rcos-kernel-subset verified (manifest 22 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)\n"
+    },
+    {
+      "label": "eval-run",
+      "exitCode": 3,
+      "expectedExit": 0,
+      "stdout": "run 20260922T192302Z-417156: fix — 2 of 4 required gates fail: append_failure_leaves_registry_untouched, sync_reconverges_read_only\n  ok   sync_refuses_without_trace_log\n  ok   trace_append_moves_count\n  FAIL append_failure_leaves_registry_untouched\n  FAIL sync_reconverges_read_only\nreceipt: /tmp/p6b-run2/rcos-kernel-subset/runs/20260922T192302Z-417156/receipt.json\n",
+      "stderr": "isolation-guard: OK — root /tmp/p6b-run2/rcos-kernel-subset verified (manifest 22 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)\n"
+    }
+  ],
+  "mismatches": [
+    {
+      "label": "eval-run",
+      "expectedExit": 0,
+      "actualExit": 3
+    }
+  ],
+  "status": "failed",
+  "keychain": {
+    "service": "RCOS-SOLARI-P6B",
+    "readStatus": 0,
+    "prefixOk": true,
+    "valueNeverLogged": true
+  },
+  "preflight": {
+    "sourceIntegrity": {
+      "head": "9bd484999fd2d4b23d2141bd45ccb85559b37488",
+      "porcelainCount": 0,
+      "manifestDiffOut": "MANIFEST-MATCH"
+    },
+    "localBatteryPassed": true,
+    "keychainPrefixOk": true,
+    "freshBalanceRead": 25.82,
+    "preExistingP6B": [],
+    "accountListEmpty": true
+  },
+  "updatedAt": "2026-09-22T19:23:04.038Z",
+  "sandboxId": "Asm1oH5y2X9MmEFULnymEBrWBexLrZ2AFset154TYvpYuBrKZFjpBbJjXqYs-x0mOAZo-tPSbhPXz_x2toL4zfl6KuwuamRfYs9tmO3E2wA9fPVVht6z2bkJiMUzrvcnuWLkorZEMtIfuJLUo-U._u8XMEDRx4iczbd7HDMO8Axq1ClqhBv60Gjo5BrPtG8",
+  "providerIdentityAfterCreate": {
+    "sandboxId": "Asm1oH5y2X9MmEFULnymEBrWBexLrZ2AFset154TYvpYuBrKZFjpBbJjXqYs-x0mOAZo-tPSbhPXz_x2toL4zfl6KuwuamRfYs9tmO3E2wA9fPVVht6z2bkJiMUzrvcnuWLkorZEMtIfuJLUo-U._u8XMEDRx4iczbd7HDMO8Axq1ClqhBv60Gjo5BrPtG8",
+    "kind": "sandbox",
+    "state": "running",
+    "metadata": {
+      "gate": "P6B",
+      "run": "2",
+      "commit": "9bd4849",
+      "purpose": "frozen-package-experiment"
+    },
+    "template": "base",
+    "createdAt": "2026-09-22T19:22:58.842Z",
+    "expiresAt": "2026-09-22T19:32:59.195Z",
+    "cpu": 1,
+    "memMb": 1024,
+    "diskGb": 4
+  },
+  "rootSelection": {
+    "sandboxDir": "/tmp/p6b-run2",
+    "root": "/tmp/p6b-run2/rcos-kernel-subset",
+    "derivation": "explicit constant under /tmp (HOME and pwd deliberately ignored)",
+    "probeHomeIgnored": "",
+    "probePwdIgnored": "/",
+    "localRegressionCovered": "exact Run #1 probe selects /tmp/p6b-run2 (regression checks 1a-1d, run pre-create)"
+  },
+  "transfer": {
+    "sandboxDir": "/tmp/p6b-run2",
+    "root": "/tmp/p6b-run2/rcos-kernel-subset",
+    "files": 24,
+    "bytes": 337308,
+    "guardMatchesLocal": true,
+    "manifestMatchesLocal": true
+  },
+  "cleanup": {
+    "attempts": [
+      {
+        "via": "handle.kill",
+        "result": "accepted"
+      }
+    ],
+    "preKillView": {
+      "sandboxId": "Asm1oH5y2X9MmEFULnymEBrWBexLrZ2AFset154TYvpYuBrKZFjpBbJjXqYs-x0mOAZo-tPSbhPXz_x2toL4zfl6KuwuamRfYs9tmO3E2wA9fPVVht6z2bkJiMUzrvcnuWLkorZEMtIfuJLUo-U._u8XMEDRx4iczbd7HDMO8Axq1ClqhBv60Gjo5BrPtG8",
+      "kind": "sandbox",
+      "state": "running",
+      "metadata": {
+        "gate": "P6B",
+        "run": "2",
+        "commit": "9bd4849",
+        "purpose": "frozen-package-experiment"
+      },
+      "template": "base",
+      "createdAt": "2026-09-22T19:22:58.842Z",
+      "expiresAt": "2026-09-22T19:33:03.571Z",
+      "cpu": 1,
+      "memMb": 1024,
+      "diskGb": 4
+    },
+    "destroyedVerified": true,
+    "postKillError": {
+      "message": "Not found",
+      "status": 404
+    },
+    "listAfterKill": [],
+    "listConfirmsEmpty": true
+  },
+  "error": {
+    "message": "eval-run: expected exit 0 but got 3",
+    "code": null,
+    "status": null,
+    "stack": "Error: eval-run: expected exit 0 but got 3\n    at expect (file:///private/tmp/p6b-live-run2.mjs:158:11)\n    at file:///private/tmp/p6b-live-run2.mjs:363:24\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "schema": "rcos-run-receipt/1",
+  "run_id": "20260922T205413Z-1ebff4",
+  "eval_id": "execution-posture-v1",
+  "capability_id": "reuse-ledger",
+  "verdict": "blocked",
+  "verdict_basis": "evaluation could not establish a result: live_non_root_requirement (blocked)",
+  "gates": [
+    {
+      "id": "posture_report_matches_process",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "non_root_requirement_branches_deterministic",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "complete_sandbox_never_claimed",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "live_non_root_requirement",
+      "type": "deterministic",
+      "required": true,
+      "status": "blocked",
+      "exit_code": 4
+    }
+  ],
+  "invocation": null,
+  "eligibility": null,
+  "artifacts": [
+    {
+      "path": "checks.json",
+      "sha256": "eb16b88336288b73c1516e1199a37aae0418af93371a8bdda11d137f061f7e36",
+      "bytes": 2294
+    },
+    {
+      "path": "evidence/outputs/posture.json",
+      "sha256": "b17ab41df28ccae04d2be06cc295a7bfea2424f8977efc343cc8d1996e5cbc98",
+      "bytes": 1337
+    },
+    {
+      "path": "input.json",
+      "sha256": "aedc956d16930ac6b4ca2576f223e1cb2d73081fbf5394e917ce76dd871d9a4b",
+      "bytes": 388
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "c5f4484b5c2a0ae994e7f3a037e4de88b345e29021f675a9c8805b0b81843a87",
+      "bytes": 387
+    },
+    {
+      "path": "output.json",
+      "sha256": "b2347e0fea7f8235db4392a435d82fa3da6abc9b8db7381d7a00ac47b36f6143",
+      "bytes": 623
+    },
+    {
+      "path": "work/posture.json",
+      "sha256": "b17ab41df28ccae04d2be06cc295a7bfea2424f8977efc343cc8d1996e5cbc98",
+      "bytes": 1337
+    }
+  ],
+  "created_at": "2026-09-22T20:54:13.716Z"
+}

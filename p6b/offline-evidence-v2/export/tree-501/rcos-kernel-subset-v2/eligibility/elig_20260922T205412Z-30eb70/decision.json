@@ -1,0 +1,48 @@
+{
+  "schema": "rcos-eligibility/1",
+  "decision_id": "elig_20260922T205412Z-30eb70",
+  "scope": "execute",
+  "capability_id": "reuse-ledger",
+  "capability_version": "0.1.0",
+  "caller_context": {
+    "purpose": "eval",
+    "explicit_capability_id": "reuse-ledger",
+    "scope": "execute",
+    "forensic_reason": null,
+    "allow_candidate": true,
+    "allow_retired": false,
+    "require_executed_provenance": false,
+    "require_current_ship": false
+  },
+  "observed_state": {
+    "status": "candidate",
+    "executable": true,
+    "adapter": {
+      "declared": true,
+      "type": "command",
+      "type_supported": true,
+      "declaration_errors": [],
+      "entrypoint": "capabilities/reuse-ledger/adapter/run.js",
+      "entrypoint_present": true,
+      "entrypoint_executable": true,
+      "contract_declared": true,
+      "contract_usable": true,
+      "contract_errors": []
+    },
+    "provenance": "asserted",
+    "latest_eval_verdict": null,
+    "latest_eval_at": null,
+    "eval_fresh": "unknown",
+    "evals_total": 0,
+    "evals_executed": 0
+  },
+  "eligible": true,
+  "reasons": [],
+  "decided_at": "2026-09-22T20:54:12.762Z",
+  "rcos_home": "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2",
+  "created_at": "2026-09-22T20:54:12.764Z",
+  "integrity": {
+    "algo": "sha256",
+    "value": "ea3738f76444e01faf36cca5faaac86e8938fe9f637382a4770026167aab8683"
+  }
+}

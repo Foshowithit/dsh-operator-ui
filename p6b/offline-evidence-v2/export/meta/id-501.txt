@@ -1,0 +1,1 @@
+uid=501(adam26) gid=1000(adam26) groups=1000(adam26),999(systemd-journal)

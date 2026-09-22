@@ -1,0 +1,23 @@
+{
+  "fields": {
+    "subject": "reuse-ledger-probe/fixture-cap",
+    "predicate": "probe_completed",
+    "value": {
+      "probe_capability": "fixture-cap",
+      "steps": 4,
+      "final_registry_sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+      "final_reuse_count": 1
+    },
+    "truth_class": "observation",
+    "source": {
+      "kind": "action",
+      "ref": "probe executed inside this invocation"
+    },
+    "observed_at": "2026-09-22T20:54:13.457Z"
+  },
+  "producer": {
+    "capability_id": "reuse-ledger",
+    "capability_version": "0.1.0",
+    "invocation_id": "inv_20260922T205413Z-dc1972"
+  }
+}

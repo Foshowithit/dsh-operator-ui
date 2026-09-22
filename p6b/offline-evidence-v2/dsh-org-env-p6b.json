@@ -1,0 +1,157 @@
+{
+  "schema": "dsh-org-env-p6b/2",
+  "phase": "P6B-v2-offline-candidate",
+  "status": "offline-verification-complete",
+  "ruling": "P6B Ruling — A + B as separate guarantees · Offline GO (offline build GO; live execution remains on HOLD)",
+  "generated_at": "2026-09-22T20:57:00Z",
+  "supersedes": {
+    "schema": "dsh-org-env-p6b/1",
+    "note": "The first battery export was lost before it reached the worktree: its files lived only in host /tmp (wiped), the VM was rebooted (guest /tmp wiped), it was never copied into the worktree, and its run ids (20260922T211555Z-f02d9e, 20260922T211730Z-4ad2c1) were ~35 minutes ahead of the 20:40:44Z anchor (clock anomaly, unexplained). That envelope is unrecoverable and is NOT cited as evidence anywhere. This dsh-org-env-p6b/2 envelope documents the authoritative deterministic re-run below."
+  },
+  "package": {
+    "name": "rcos-kernel-subset-v2",
+    "version": "0.2.0-candidate.1",
+    "source_revision": "9bd484999fd2d4b23d2141bd45ccb85559b37488 + uncommitted candidate working tree",
+    "manifest": "p6b/rcos-kernel-subset-v2.manifest.sha256",
+    "manifest_sha256": "55ec0e5fd65079836711e07bb0b1be6fc4d8f5b73965d67efc5b17f29dbf120f",
+    "manifest_files": 27,
+    "evals": ["reuse-ledger-invariant-v2", "execution-posture-v1"],
+    "identity_notes": [
+      "New independent identity; does not overwrite or alias the original reuse-ledger-invariant-v1 evaluation.",
+      "The historical Run #1 and Run #2 artifacts (v1 package) remain immutable and independently identifiable.",
+      "Offline candidate only: no live validation, no host certification, no production readiness, no promotion."
+    ]
+  },
+  "execution_spec": {
+    "file": "p6b/EXECUTION-SPEC-v2.md",
+    "sha256": "ba02abd9dd7f00d886dd0050e032952ffbc36f82f0458bc3200296aef841a4f0"
+  },
+  "battery": {
+    "script": "p6b/offline-battery-v2.sh",
+    "script_sha256": "14e788f9aa02481c28a1626e47dfb8cc7540ee1272388383d1ff5bdad0b2296a",
+    "window_utc": ["2026-09-22T20:54:12Z", "2026-09-22T20:54:13Z"],
+    "environment": "disposable Linux VM (lima, aarch64, 4 CPU / 4GiB), no network calls, no sandbox provisioning, no paid services, production host untouched",
+    "node": "v20.20.2",
+    "identity_uid_501": "uid=501(adam26) gid=1000(adam26) groups=1000(adam26),999(systemd-journal)",
+    "identity_uid_0": "uid=0(root) gid=0(root) groups=0(root)",
+    "export_tgz_sha256": "95af198ae559d2812e9a72ea960f652ce4c65905951777d4fd46406f9f7bcc48",
+    "export_file_count": 167,
+    "guard": {
+      "file": "p6b/run-isolated.cjs",
+      "sha256": "395e69a08e70cfc61eb3c86cb23d77138c86f897b7ee11cf32b177079d7a9aa4",
+      "check_only_pre_and_post": [
+        { "tree": "tree-501", "phase": "pre", "exit": 0, "result": "isolation-guard: OK (manifest 27 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)" },
+        { "tree": "tree-501", "phase": "post", "exit": 0, "result": "isolation-guard: OK (manifest 27 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)" },
+        { "tree": "tree-root", "phase": "pre", "exit": 0, "result": "isolation-guard: OK (manifest 27 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)" },
+        { "tree": "tree-root", "phase": "post", "exit": 0, "result": "isolation-guard: OK (manifest 27 files, registry 1 capability reuse-ledger, RCOS_HOME pinned)" }
+      ]
+    },
+    "runs": [
+      {
+        "label": "501-invariant",
+        "eval_id": "reuse-ledger-invariant-v2",
+        "uid": 501,
+        "run_id": "20260922T205412Z-dccd80",
+        "verdict": "ship",
+        "exit_code": 0,
+        "gates_ok": 4,
+        "gates_total": 4,
+        "line": "run 20260922T205412Z-dccd80: ship — all 4 required gates pass",
+        "receipt_sha256": "af33b7f1eb0cd638b5586d07ab926f99fb3ca994131c5c0933b58e548ae82de8",
+        "verify_exit": 0,
+        "verify_line": "run 20260922T205412Z-dccd80 verified: 7 artifact(s) hash-clean, verdict ship"
+      },
+      {
+        "label": "501-posture",
+        "eval_id": "execution-posture-v1",
+        "uid": 501,
+        "run_id": "20260922T205413Z-7e300b",
+        "verdict": "ship",
+        "exit_code": 0,
+        "gates_ok": 4,
+        "gates_total": 4,
+        "line": "run 20260922T205413Z-7e300b: ship — all 4 required gates pass",
+        "receipt_sha256": "0147f7ee18975f9edc3639cf972ee7c31dec5955c585529836b968f0cd9bbfba",
+        "verify_exit": 0,
+        "verify_line": "run 20260922T205413Z-7e300b verified: 6 artifact(s) hash-clean, verdict ship"
+      },
+      {
+        "label": "0-invariant (privilege-independence headline)",
+        "eval_id": "reuse-ledger-invariant-v2",
+        "uid": 0,
+        "run_id": "20260922T205413Z-a39f7a",
+        "verdict": "ship",
+        "exit_code": 0,
+        "gates_ok": 4,
+        "gates_total": 4,
+        "line": "run 20260922T205413Z-a39f7a: ship — all 4 required gates pass",
+        "receipt_sha256": "57e40df6f173524b2874eb32450725736b339d107be31547e773bcd8d1733c44",
+        "verify_exit": 0,
+        "verify_line": "run 20260922T205413Z-a39f7a verified: 7 artifact(s) hash-clean, verdict ship",
+        "significance": "The EISDIR append-boundary fixture passes identically under uid 0 and uid 501: the append-failure invariant is proven under both tested privilege levels (Repair A). Run #2's v1 chmod-0444 fixture produced fix 2/4 under root; v2 produces ship 4/4 under root."
+      },
+      {
+        "label": "0-posture (named refusal)",
+        "eval_id": "execution-posture-v1",
+        "uid": 0,
+        "run_id": "20260922T205413Z-1ebff4",
+        "verdict": "blocked",
+        "exit_code": 4,
+        "gates_ok": 3,
+        "gates_total": 4,
+        "line": "run 20260922T205413Z-1ebff4: blocked — evaluation could not establish a result: live_non_root_requirement (blocked)",
+        "receipt_sha256": "afb028fc21cc82186bced55213b4ab977fff490b29cc91bb50db59c253189c0f",
+        "verify_exit": 0,
+        "verify_line": "run 20260922T205413Z-1ebff4 verified: 6 artifact(s) hash-clean, verdict blocked",
+        "checks_json_sha256": "eb16b88336288b73c1516e1199a37aae0418af93371a8bdda11d137f061f7e36",
+        "named_refusal": "environment-incompatibility: requirement non-root not met: effective uid is 0",
+        "significance": "Root does not silently pass the non-root requirement (Repair B): gates 1-3 pass exit 0, gate live_non_root_requirement returns environment-incompatibility exit 4, verdict blocked, and eval-verify still hashes the blocked run clean (exit 0)."
+      }
+    ],
+    "negative_controls": [
+      {
+        "id": "NC1",
+        "gate": "append_failure_leaves_registry_untouched",
+        "method": "tamper step registry_sha256 to zeros in a disposable copy of output.json; run the gate directly (no guard — gates are read-only judges)",
+        "exit_code": 3,
+        "line": "FAIL append_failure_leaves_registry_untouched: registry mutated by the failed append",
+        "proves": "The gate rejects an observation whose registry digest contradicts a successful append; the invariant cannot be passed by a lying receipt."
+      },
+      {
+        "id": "NC2",
+        "gate": "sync_refuses_without_trace_log",
+        "method": "append one valid extra json line to a disposable copy of evidence/traces.jsonl; run the gate directly",
+        "exit_code": 3,
+        "line": "FAIL sync_refuses_without_trace_log: the observation contradicts its own evidence: evidence/traces.jsonl does not match the trace rows in the observation",
+        "proves": "Evidence-integrity override fires when the frozen observation and the trace file disagree; a claim its own bytes contradict fails."
+      }
+    ],
+    "host_side": {
+      "static_verification": "scripts/check.js PASS exit 0 (hygiene, secrets, module graph)",
+      "guard_check_only_host": "isolation-guard: OK on the v1 package host-side (prior to battery)",
+      "runner_vnext_tests": "10/10 pass (partial-success retrieval amendment: receipt preserved, diagnostics_missing:['checks.json'] classified, verdict kept)",
+      "runner_vnext_mjs_sha256": "f6af7a50825832650e9b6df54c1d9e204199850a7bdb7b0efa15ef91997b46f2",
+      "worktree_suites": "node --test test/*.test.mjs → tests 171, pass 171, fail 0"
+    },
+    "evidence_hygiene": {
+      "grep_host_agent_path_literals_over_evidence": "0 hits (grep exit 1)",
+      "grep_secrets_over_evidence": "0 hits (grep exit 1)",
+      "clock": "run ids 20:54Z vs 20:40:44Z anchor — sane, monotone (no future-dating)"
+    }
+  },
+  "readiness": {
+    "ready_for": [
+      "Review of this offline candidate by the thread.",
+      "A separately authorized new RCOS live evaluation that proves the append-failure invariant under both privilege levels with the evidence-preserving runner — ONCE authorized."
+    ],
+    "not_claimed": [
+      "No live validation performed (P6B live execution remains on HOLD; no Run #3; no third Solari sandbox; no paid cloud execution).",
+      "No host certification claim (protocol-verified ≠ live-verified).",
+      "No production readiness; P6B ≠ SHIP; P6C and P6D remain separate gates.",
+      "No production execution-host modification, no vNext contract change, no public push, no publication, no capability promotion.",
+      "Mechanism reproduced is sufficient for the observed Run #2 failure signature; it does not establish the destroyed Solari guest's UID or that the missing original live receipt contained identical detailed failures.",
+      "Repair A (privilege-independent failure testing) and Repair B (non-root execution reporting) are separate guarantees; neither substitutes for the other.",
+      "The original reuse-ledger-invariant-v1 evaluation, its frozen package, and Run #1 / Run #2 artifacts remain immutable and independently identifiable."
+    ]
+  }
+}

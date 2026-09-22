@@ -1,0 +1,2 @@
+{"schema":"rcos-trace/1","ts":"2026-09-22T20:54:12.832Z","capability":"fixture-cap","task_id":"t-adapter-1","verdict":"ship","context":null,"source":"reuse","seconds":null,"backfilled":false,"date":null}
+{"capability":"fixture-cap","task_id":"nc2-extra","verdict":"ship","source":"reuse","backfilled":false}

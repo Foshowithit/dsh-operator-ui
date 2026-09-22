@@ -1,0 +1,19 @@
+{
+  "schema": "rcos-run/1",
+  "eval_id": "reuse-ledger-invariant-v2",
+  "capability_id": "reuse-ledger",
+  "eval_sha256": "773ade4b7af7eb1ad8f17f2dd152691bd008d3d9f346e08ec2be02a81c6cdabd",
+  "adapter_argv": null,
+  "fixtures": [
+    {
+      "name": "seed-registry.json",
+      "sha256": "2793c39709e024ffb5b99597506efb9719e6bd375f8d5db98e9e3b8752464bfd",
+      "bytes": 911
+    }
+  ],
+  "created_at": "2026-09-22T20:54:12.762Z",
+  "capability_input": {
+    "path": "capability-input.json",
+    "sha256": "e84a98a6267d08b2be2b875c883051b0223a30ee44e606a0f390ea8392eda06b"
+  }
+}

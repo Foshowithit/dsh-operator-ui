@@ -1,0 +1,70 @@
+{
+  "schema": "rcos-run/1",
+  "run_id": "20260922T205412Z-dccd80",
+  "gates": [
+    {
+      "id": "sync_refuses_without_trace_log",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/evals/reuse-ledger-invariant-v2/gates/check.js",
+        "sync_refuses_without_trace_log"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS sync_refuses_without_trace_log: exit 2 (want 2), reuse_count 0 (want 0), registry untouched\n",
+      "stderr": "",
+      "duration_ms": 16
+    },
+    {
+      "id": "trace_append_moves_count",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/evals/reuse-ledger-invariant-v2/gates/check.js",
+        "trace_append_moves_count"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS trace_append_moves_count: exit 0, reuse_count 1 (want 1), trace rows for t-adapter-1: 1 source=reuse\n",
+      "stderr": "",
+      "duration_ms": 17
+    },
+    {
+      "id": "append_failure_leaves_registry_untouched",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/evals/reuse-ledger-invariant-v2/gates/check.js",
+        "append_failure_leaves_registry_untouched"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS append_failure_leaves_registry_untouched: exit 2, EISDIR at open() for this uid, trace log byte-identical across the fault window, registry untouched, no t-adapter-2 row\n",
+      "stderr": "",
+      "duration_ms": 15
+    },
+    {
+      "id": "sync_reconverges_read_only",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/evals/reuse-ledger-invariant-v2/gates/check.js",
+        "sync_reconverges_read_only"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS sync_reconverges_read_only: exit 0, stdout \"reuse cache already matches traces\", reuse_count 1, registry untouched\n",
+      "stderr": "",
+      "duration_ms": 17
+    }
+  ]
+}

@@ -6,3 +6,7 @@ eval/records/
 # eval staging copies (fixture duplicates + run logs) never belong in the tree
 eval/records/*/stage/
 .DS_Store
+
+# historical live-run scripts embed a private machine path; the record is immutable
+# (never sanitize, never modify) and public-release hygiene forbids tracking them
+p6b/live-evidence-v1/*.mjs

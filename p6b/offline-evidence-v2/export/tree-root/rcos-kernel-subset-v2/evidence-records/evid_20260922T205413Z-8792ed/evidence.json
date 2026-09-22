@@ -1,0 +1,37 @@
+{
+  "schema": "rcos-evidence/1",
+  "evidence_id": "evid_20260922T205413Z-8792ed",
+  "subject": "reuse-ledger-probe/fixture-cap",
+  "predicate": "probe_completed",
+  "value": {
+    "probe_capability": "fixture-cap",
+    "steps": 4,
+    "final_registry_sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+    "final_reuse_count": 1
+  },
+  "value_sha256": "75c963eb7e893b10c2ed2f3ca2037868e0d2bc41fe74518a116340752f956cb5",
+  "truth_class": "observation",
+  "source": {
+    "kind": "action",
+    "ref": "probe executed inside this invocation"
+  },
+  "observed_at": "2026-09-22T20:54:13.457Z",
+  "valid_at": null,
+  "expires_at": null,
+  "derived": {
+    "inputs": []
+  },
+  "producer": {
+    "capability_id": "reuse-ledger",
+    "capability_version": "0.1.0",
+    "invocation_id": "inv_20260922T205413Z-dc1972",
+    "invocation_manifest_sha256": "98a0a49b998c4854fec6b2058e7b7f6cdfef3c1ab4a14b1083c57ae9fa720ad6"
+  },
+  "recorded_at": "2026-09-22T20:54:13.465Z",
+  "rcos_home": "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2",
+  "created_at": "2026-09-22T20:54:13.465Z",
+  "integrity": {
+    "algo": "sha256",
+    "value": "807d261e7439fbdccd490b4dd527192a282aeeee2fd413f201b0dd8f8462d8ff"
+  }
+}

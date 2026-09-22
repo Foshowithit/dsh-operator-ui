@@ -1,0 +1,24 @@
+{
+  "schema": "rcos-run/1",
+  "run_id": "20260922T205413Z-1ebff4",
+  "adapter": {
+    "status": "ok",
+    "reason": null,
+    "argv": [
+      "node",
+      "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/adapter/report.js"
+    ],
+    "exit_code": 0,
+    "signal": null,
+    "stdout": "posture: euid=0 is_root=true non_root_requirement_ok=false (environment-incompatibility)\n",
+    "stderr": "",
+    "duration_ms": 16
+  },
+  "produced": [
+    {
+      "path": "posture.json",
+      "sha256": "b17ab41df28ccae04d2be06cc295a7bfea2424f8977efc343cc8d1996e5cbc98",
+      "bytes": 1337
+    }
+  ]
+}

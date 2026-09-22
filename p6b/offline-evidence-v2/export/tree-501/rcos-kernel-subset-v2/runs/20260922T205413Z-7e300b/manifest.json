@@ -1,0 +1,13 @@
+{
+  "schema": "rcos-run/1",
+  "run_id": "20260922T205413Z-7e300b",
+  "eval_id": "execution-posture-v1",
+  "capability_id": "reuse-ledger",
+  "started_at": "2026-09-22T20:54:13.071Z",
+  "finished_at": "2026-09-22T20:54:13.152Z",
+  "duration_ms": 81,
+  "invocation": null,
+  "eligibility": null,
+  "rcos_home": "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2",
+  "node": "v20.20.2"
+}

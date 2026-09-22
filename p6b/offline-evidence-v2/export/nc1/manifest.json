@@ -1,0 +1,101 @@
+{
+  "schema": "rcos-invocation/1",
+  "invocation_id": "inv_20260922T205412Z-f52bcf",
+  "capability_id": "reuse-ledger",
+  "capability_version": "0.1.0",
+  "registry_status": "candidate",
+  "mode": "eval",
+  "status": "completed",
+  "status_basis": "adapter exited 0 and its output satisfied the declared contract",
+  "started_at": "2026-09-22T20:54:12.764Z",
+  "completed_at": "2026-09-22T20:54:12.891Z",
+  "duration_ms": 127,
+  "input": {
+    "path": "input.json",
+    "sha256": "e84a98a6267d08b2be2b875c883051b0223a30ee44e606a0f390ea8392eda06b",
+    "bytes": 200
+  },
+  "output": {
+    "path": "output.json",
+    "sha256": "c869eb416d94b167396e483ffb4446f1aa5e6693b00d97b94dbedbf573d10fc1",
+    "bytes": 2607
+  },
+  "stdout": {
+    "path": "stdout.txt",
+    "sha256": "8ff49decbe45426f587162f19fa0d07bdc022e78c366ec88cb8525e1482ec30d",
+    "bytes": 309
+  },
+  "stderr": {
+    "path": "stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "evidence": [
+    {
+      "path": "evidence/probe.emission.json",
+      "sha256": "0602523b12f116c770a7a77d42b5702a5dd65868bb8ac47d98331edd11854aa1",
+      "bytes": 640
+    },
+    {
+      "path": "evidence/registry-after.json",
+      "sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+      "bytes": 1087
+    },
+    {
+      "path": "evidence/steps.json",
+      "sha256": "f99ea09f5f6ae0784ab919671e9fe59627063564cbeadd583129d1b0b2952cc1",
+      "bytes": 1867
+    },
+    {
+      "path": "evidence/traces.jsonl",
+      "sha256": "4a9463b1a756ea356cabadf3eb0bede01dc7b06c7931ae2d1c51d2ada6e64299",
+      "bytes": 204
+    }
+  ],
+  "adapter": {
+    "type": "command",
+    "entrypoint": "capabilities/reuse-ledger/adapter/run.js",
+    "timeout_seconds": 120,
+    "exit_code": 0,
+    "signal": null,
+    "error": null
+  },
+  "contract": {
+    "path": "capabilities/reuse-ledger/contract.json",
+    "declaration_errors": [],
+    "contract_errors": [],
+    "input": {
+      "status": "pass",
+      "errors": []
+    },
+    "output": {
+      "status": "pass",
+      "errors": []
+    }
+  },
+  "rcos_home": "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2",
+  "created_at": "2026-09-22T20:54:12.891Z",
+  "eligibility_decision_id": "elig_20260922T205412Z-30eb70",
+  "eligibility_sha256": "3da8515db110eced0069cbff0f2906e1008044a1f1a80c27db499d6be6442035",
+  "eligibility": {
+    "scope": "execute",
+    "purpose": "eval",
+    "eligible": true,
+    "reasons": [],
+    "path": "eligibility/elig_20260922T205412Z-30eb70/decision.json"
+  },
+  "selection_id": null,
+  "selection_sha256": null,
+  "selection": null,
+  "emitted_evidence": [
+    {
+      "file": "probe.emission.json",
+      "evidence_id": "evid_20260922T205412Z-5146c2"
+    }
+  ],
+  "emission_skipped": [],
+  "integrity": {
+    "algo": "sha256",
+    "value": "23e0afbf9f7deae1b86e40ef5de3ede593be4d17850a56d0d864e65c8a809d18"
+  }
+}

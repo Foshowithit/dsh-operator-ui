@@ -1,0 +1,52 @@
+[
+  {
+    "name": "sync_without_trace_log",
+    "result": {
+      "status": 2,
+      "stdout": "",
+      "stderr": "rcos: no trace log at /tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/invocations/inv_20260922T205412Z-f52bcf/work/reuse-ledger-eval/traces/traces.jsonl — nothing to derive from; refusing to zero the reuse cache (pass --force to reset it to 0)"
+    },
+    "stored_after": 0,
+    "registry_sha256": "2793c39709e024ffb5b99597506efb9719e6bd375f8d5db98e9e3b8752464bfd",
+    "trace_lines": 0
+  },
+  {
+    "name": "reuse_log_first",
+    "result": {
+      "status": 0,
+      "stdout": "'fixture-cap' reuse_count now 1 (derived from traces; no manual increment path)",
+      "stderr": ""
+    },
+    "stored_after": 1,
+    "registry_sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+    "trace_lines": 1
+  },
+  {
+    "name": "reuse_log_append_blocked",
+    "result": {
+      "status": 2,
+      "stdout": "",
+      "stderr": "rcos: EISDIR: illegal operation on a directory, open '/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/invocations/inv_20260922T205412Z-f52bcf/work/reuse-ledger-eval/traces/traces.jsonl'"
+    },
+    "stored_after": 1,
+    "registry_sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+    "trace_lines": 1,
+    "fault": {
+      "method": "eisdir-swap",
+      "trace_sha_before": "4a9463b1a756ea356cabadf3eb0bede01dc7b06c7931ae2d1c51d2ada6e64299",
+      "trace_sha_after": "4a9463b1a756ea356cabadf3eb0bede01dc7b06c7931ae2d1c51d2ada6e64299",
+      "append_error_eisdir": true
+    }
+  },
+  {
+    "name": "sync_reconverges",
+    "result": {
+      "status": 0,
+      "stdout": "reuse cache already matches traces",
+      "stderr": ""
+    },
+    "stored_after": 1,
+    "registry_sha256": "e7ad0240842f19ffd095f3828c9cc56868b23c7c7f2367fd896799e2ac6aba12",
+    "trace_lines": 1
+  }
+]

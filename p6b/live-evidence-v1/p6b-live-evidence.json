@@ -1,0 +1,139 @@
+{
+  "experiment": "P6B-live-frozen-package",
+  "ruling": "GO, ONE RUN ONLY (2026-09-22)",
+  "startedAt": "2026-09-22T18:23:10.037Z",
+  "configRequested": {
+    "template": "base",
+    "cpu": 1,
+    "memMb": 1024,
+    "timeoutMs": 600000,
+    "lifecycle": {
+      "onTimeout": "kill"
+    },
+    "metadata": {
+      "gate": "P6B",
+      "commit": "9bd4849",
+      "purpose": "frozen-package-experiment"
+    }
+  },
+  "baseUrl": "https://api.getsolari.com",
+  "budgetCapsReference": "frozen lib/solari.js SOLARI_DEFAULT_BUDGET_CAPS",
+  "balanceBeforeUsd": 25.82,
+  "provenance": {
+    "head": "9bd484999fd2d4b23d2141bd45ccb85559b37488",
+    "porcelainCount": 0,
+    "manifestDiffExit": 0,
+    "manifestDiffOut": "MANIFEST-MATCH"
+  },
+  "steps": [
+    {
+      "label": "create",
+      "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+      "requested": {
+        "template": "base",
+        "cpu": 1,
+        "memMb": 1024,
+        "timeoutMs": 600000,
+        "lifecycle": {
+          "onTimeout": "kill"
+        },
+        "metadata": {
+          "gate": "P6B",
+          "commit": "9bd4849",
+          "purpose": "frozen-package-experiment"
+        }
+      },
+      "providerReturned": {
+        "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+        "kind": "sandbox",
+        "state": "running",
+        "metadata": {
+          "gate": "P6B",
+          "commit": "9bd4849",
+          "purpose": "frozen-package-experiment"
+        },
+        "template": "base",
+        "createdAt": "2026-09-22T18:23:10.954Z",
+        "expiresAt": "2026-09-22T18:33:11.152Z",
+        "cpu": 1,
+        "memMb": 1024,
+        "diskGb": 4
+      }
+    },
+    {
+      "label": "connect",
+      "ok": true
+    },
+    {
+      "label": "guest-probe",
+      "exitCode": 0,
+      "stdout": "HOME=\n/\nv20.20.2\nLinux 6.6.30 x86_64\n",
+      "stderr": "",
+      "home": "",
+      "node": "v20.20.2"
+    }
+  ],
+  "mismatches": [],
+  "status": "failed",
+  "updatedAt": "2026-09-22T18:23:12.447Z",
+  "keychain": {
+    "service": "RCOS-SOLARI-P6B",
+    "readStatus": 0,
+    "prefixOk": true,
+    "valueNeverLogged": true
+  },
+  "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+  "providerIdentityAfterCreate": {
+    "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+    "kind": "sandbox",
+    "state": "running",
+    "metadata": {
+      "gate": "P6B",
+      "commit": "9bd4849",
+      "purpose": "frozen-package-experiment"
+    },
+    "template": "base",
+    "createdAt": "2026-09-22T18:23:10.954Z",
+    "expiresAt": "2026-09-22T18:33:11.152Z",
+    "cpu": 1,
+    "memMb": 1024,
+    "diskGb": 4
+  },
+  "cleanup": {
+    "attempts": [
+      {
+        "via": "handle.kill",
+        "result": "accepted"
+      }
+    ],
+    "preKillView": {
+      "sandboxId": "Ag8dszvveYKoloUIZF9IO4SE-x4yudu9RvFS1dcm5tytYWbEh4eaRcyfTrGL9qxIBCFGFWTsJ9Ooko8cvNESjNBaumTKvt6TjYAOMq6FwJTALRRcUBn8qnXUTVBnvQG_jErSOqQHBgpJonV45Uk.NcQXUh49oze1ftyF9GSEVlxH8cE4_k8ZRdbF57l3meY",
+      "kind": "sandbox",
+      "state": "running",
+      "metadata": {
+        "gate": "P6B",
+        "commit": "9bd4849",
+        "purpose": "frozen-package-experiment"
+      },
+      "template": "base",
+      "createdAt": "2026-09-22T18:23:10.954Z",
+      "expiresAt": "2026-09-22T18:33:11.723Z",
+      "cpu": 1,
+      "memMb": 1024,
+      "diskGb": 4
+    },
+    "destroyedVerified": true,
+    "postKillError": {
+      "message": "Not found",
+      "status": 404
+    },
+    "listAfterKill": [],
+    "listConfirmsEmpty": true
+  },
+  "error": {
+    "message": "could not determine guest home",
+    "code": null,
+    "status": null,
+    "stack": "Error: could not determine guest home\n    at main (file:///private/tmp/p6b-live-run.mjs:169:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async file:///private/tmp/p6b-live-run.mjs:343:11"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "schema": "rcos-run/1",
+  "run_id": "20260922T205413Z-1ebff4",
+  "gates": [
+    {
+      "id": "posture_report_matches_process",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/gates/check.js",
+        "posture_report_matches_process"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS posture_report_matches_process: euid 0 matches this process, metadata complete, live_evaluation recomputes\n",
+      "stderr": "",
+      "duration_ms": 15
+    },
+    {
+      "id": "non_root_requirement_branches_deterministic",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/gates/check.js",
+        "non_root_requirement_branches_deterministic"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS non_root_requirement_branches_deterministic: root -> environment-incompatibility, non-root -> ok (deterministic at any running uid)\n",
+      "stderr": "",
+      "duration_ms": 15
+    },
+    {
+      "id": "complete_sandbox_never_claimed",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/gates/check.js",
+        "complete_sandbox_never_claimed"
+      ],
+      "exit_code": 0,
+      "signal": null,
+      "stdout": "PASS complete_sandbox_never_claimed: complete-sandbox and unknown requirements always refused with environment-incompatibility\n",
+      "stderr": "",
+      "duration_ms": 16
+    },
+    {
+      "id": "live_non_root_requirement",
+      "type": "deterministic",
+      "required": true,
+      "status": "blocked",
+      "argv": [
+        "node",
+        "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/gates/check.js",
+        "live_non_root_requirement"
+      ],
+      "exit_code": 4,
+      "signal": null,
+      "stdout": "",
+      "stderr": "environment-incompatibility: requirement non-root not met: effective uid is 0\n",
+      "duration_ms": 13
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "rcos-run/1",
+  "eval_id": "execution-posture-v1",
+  "capability_id": "reuse-ledger",
+  "eval_sha256": "58b4e5a146e0d527fcb447b722f9b6f1a9c5d5401ee13f136a092ff17f65f2a8",
+  "adapter_argv": [
+    "node",
+    "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2/evals/execution-posture-v1/adapter/report.js"
+  ],
+  "fixtures": [],
+  "created_at": "2026-09-22T20:54:13.638Z"
+}

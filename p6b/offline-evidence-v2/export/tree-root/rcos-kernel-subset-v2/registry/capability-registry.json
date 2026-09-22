@@ -1,0 +1,23 @@
+{
+  "registry_version": "v1",
+  "capabilities": [
+    {
+      "id": "reuse-ledger",
+      "name": "Reuse ledger invariant",
+      "kind": "script",
+      "version": "0.1.0",
+      "status": "candidate",
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": null,
+      "lineage": "step-1 invariant repair (057ac62, a5c6818): the stored reuse_count is a trace-derived cache with no manual increment path; the adapter re-proves the four invariants in a sandbox home",
+      "adapter": {
+        "type": "command",
+        "entrypoint": "capabilities/reuse-ledger/adapter/run.js",
+        "timeout_seconds": 120,
+        "contract": "capabilities/reuse-ledger/contract.json"
+      }
+    }
+  ]
+}

@@ -1,0 +1,916 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const R = require('../lib/registry');
+const T = require('../lib/traces');
+const ER = require('../lib/evalrunner');
+const I = require('../lib/invocation');
+const E = require('../lib/eligibility');
+const S = require('../lib/selection');
+const JS = require('../lib/jev-shadow');
+const LS = require('../lib/laya-shadow');
+const EV = require('../lib/evidence');
+const ADM = require('../lib/admission');
+const { isValidDate } = require('../lib/validate');
+const { renderDashboard } = require('../lib/render');
+
+const USAGE = [
+  'usage: rcos <command> [options]',
+  '',
+  '  query [--status S] [--kind K] [--json]',
+  '  propose --id <id> --name <name> --kind <kind> [--version x.y.z] [--lineage <text>]',
+  '  eval-submit --id <id> --task <task> --verdict ship|fix|blocked --run <run> [--date YYYY-MM-DD]',
+  '              [--context <text>] [--source reuse|synthesize] [--seconds <n>]',
+  '  evals [--json]',
+  '  eval-run --eval <eval-id> [--submit --task <task>] [--context <text>] [--date YYYY-MM-DD]',
+  '  eval-verify --run <run-id> [--json]',
+  '  runs [--json]',
+  '  run <capability-id> --input <file.json> [--mode normal|eval|forensic] [--forensic <reason>] [--json]',
+  '      [--selection <id>]  (pins the election this run came through; optional)',
+  '      (eligibility is asked and recorded automatically before the kernel runs)',
+  '  eligibility <capability-id> [--purpose normal|eval|forensic] [--scope execute|compete]',
+  '              [--forensic <reason>] [--json]',
+  '  eligibility-verify --decision <id> [--json]',
+  '  select --input <selector-input.json> --decision <id> [--decision <id> ...]',
+  '         [--selector explicit] [--selector-version 1] [--json]',
+  '      (chooses among capabilities already proven eligible to compete; grants nothing)',
+  '  selections [--json]',
+  '  selection-verify --selection <id> [--json]',
+  '  jev-shadow --selection <id> --answer <answer.json> [--json]',
+  '      (shadow comparator: records what jev-ranker@experimental-1 would have picked',
+  '       beside a completed selection; changes nothing, grants nothing)',
+  '  shadows [--json]',
+  '  shadow-verify --shadow <id> [--json]',
+  '  shadow-outcome --shadow <id> --invocation <id> [--json]',
+  '  laya-shadow --selection <id> --answer <answer.json> [--json]',
+  '      (shadow comparator: records what laya-ranker@experimental-1 would have picked',
+  '       beside a completed selection; changes nothing, grants nothing)',
+  '  laya-shadows [--json]',
+  '  laya-shadow-verify --shadow <id> [--json]',
+  '  laya-shadow-outcome --shadow <id> --invocation <id> [--json]',
+  '  evidence --input <fields.json> [--json]',
+  '      (records one claim: subject, predicate, value, truth_class, source{kind,ref}, observed_at;',
+  '       a derived claim is truth_class inference and carries derived.inputs)',
+  '  evidences [--json]',
+  '  evidence-verify --evidence <id> [--json]',
+  '  bundle --evidence <id> [--evidence <id> ...] [--purpose <text>] [--json]',
+  '  bundles [--json]',
+  '  bundle-verify --bundle <id> [--json]',
+  '  admit --policy <policy.json> --consumer <name> --purpose <text>',
+  '      (--evidence <id> ... | --bundle <id> ...) [--json]',
+  '      (consumer-scoped admission: policy{policy_id, policy_version, external_sources, truth_classes};',
+  '       returns ADMIT/REJECT/UNRESOLVED and writes a separate admission receipt —',
+  '       it changes nothing about the evidence itself)',
+  '  admissions [--json]',
+  '  admission-verify --admission <id> [--json]',
+  '  invocations [--json]',
+  '  invocation-verify --invocation <id> [--json]',
+  '  traces [--capability <id>] [--json]',
+  '  backfill-traces',
+  '  promote --id <id>',
+  '  retire --id <id> --reason <text>',
+  '  reuse-log --id <id> --task <task> --run <run> --verdict ship|fix|blocked',
+  '            [--context <text>] [--seconds <n>]',
+  '  sync [--force] [--json]',
+  '  audit [--json]',
+  '  render [--out <path>]',
+  '  help'
+].join('\n');
+
+// Commands that take a bare positional argument (the capability id). Everything
+// else rejects bare arguments so a typo cannot be silently ignored.
+const POSITIONAL_COMMANDS = ['run', 'eligibility'];
+
+function homeDir() {
+  return process.env.RCOS_HOME || path.join(os.homedir(), 'zcode-rcos');
+}
+
+// A few flags are lists rather than values: a candidate set is a set, and
+// `--decision a --decision b` must not silently collapse to the last one.
+// `--evidence` is repeatable for the same reason: a bundle pins a set, and
+// `--evidence a --evidence b` must keep both. `--bundle` is repeatable for the
+// admit verb, which can weigh several bundles in one decision. Single-value
+// uses of a repeatable flag (evidence-verify) read the first entry, as
+// eligibility-verify already does with --decision.
+const REPEATABLE_FLAGS = ['decision', 'evidence', 'bundle'];
+
+function parseArgs(argv) {
+  const args = {};
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (!a.startsWith('--')) { console.error('unexpected argument: ' + a + '\n' + USAGE); process.exit(1); }
+    const key = a.slice(2);
+    const next = argv[i + 1];
+    const value = (next === undefined || next.startsWith('--')) ? true : next;
+    if (value !== true) i++;
+    if (REPEATABLE_FLAGS.includes(key)) {
+      if (!Array.isArray(args[key])) args[key] = [];
+      args[key].push(value);
+    } else {
+      args[key] = value;
+    }
+  }
+  return args;
+}
+
+function need(args, ...keys) {
+  for (const k of keys) {
+    if (args[k] === undefined || args[k] === true) {
+      console.error('missing required --' + k + '\n' + USAGE);
+      process.exit(1);
+    }
+  }
+}
+
+// For the repeatable flags: at least one real value, never a bare `--flag`.
+function needList(args, key) {
+  const v = args[key];
+  if (!Array.isArray(v) || v.length === 0 || v.some((x) => x === true)) {
+    console.error('missing required --' + key + '\n' + USAGE);
+    process.exit(1);
+  }
+  return v;
+}
+
+function main() {
+  const cmd = process.argv[2];
+  const rest = process.argv.slice(3);
+  const hasPositional = rest.length > 0 && !rest[0].startsWith('--');
+  const positional = hasPositional ? rest[0] : null;
+  if (hasPositional && !POSITIONAL_COMMANDS.includes(cmd)) {
+    console.error('unexpected argument: ' + positional + '\n' + USAGE);
+    process.exit(1);
+  }
+  const args = parseArgs(hasPositional ? rest.slice(1) : rest);
+  const home = homeDir();
+  if (!cmd || cmd === 'help') { console.log(USAGE); process.exit(cmd ? 0 : 1); }
+  try {
+    switch (cmd) {
+      case 'query': {
+        const reg = R.loadRegistry(home);
+        const rows = R.queryCapabilities(reg, { status: args.status, kind: args.kind });
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no capabilities match'); break; }
+        for (const c of rows) {
+          console.log([c.status, c.kind, c.id, c.name, 'v' + c.version, 'reuse=' + c.reuse_count, 'last=' + (c.last_eval === null ? '-' : c.last_eval)].join('\t'));
+        }
+        break;
+      }
+      case 'propose': {
+        need(args, 'id', 'name', 'kind');
+        const reg = R.loadRegistry(home);
+        R.proposeCapability(reg, { id: args.id, name: args.name, kind: args.kind, version: args.version, lineage: args.lineage });
+        R.saveRegistry(home, reg);
+        console.log('proposed \'' + args.id + '\' as candidate');
+        break;
+      }
+      case 'eval-submit': {
+        need(args, 'id', 'task', 'verdict', 'run');
+        if (args.date && !isValidDate(args.date)) { console.error('bad --date, want YYYY-MM-DD'); process.exit(1); }
+        const reg = R.loadRegistry(home);
+        R.submitEval(reg, args.id, { task_id: args.task, verdict: args.verdict, run_id: args.run, date: args.date });
+        // trace first: if the append fails the registry is not mutated, so the
+        // two can never silently diverge (a trace line per eval is invariant)
+        T.appendTrace(home, {
+          capability: args.id, task_id: args.task, verdict: args.verdict,
+          context: args.context === true ? undefined : args.context,
+          source: args.source === true ? undefined : args.source,
+          seconds: args.seconds === true || args.seconds === undefined ? undefined : Number(args.seconds),
+          date: args.date || undefined
+        });
+        R.syncDerivedReuse(reg, T.loadTraces(home));
+        R.saveRegistry(home, reg);
+        console.log('recorded ' + args.verdict + ' for \'' + args.id + '\' on ' + args.task + ' (+trace)');
+        break;
+      }
+      // Eval DEFINITIONS (evals/<id>/eval.json) and their EXECUTED runs
+      // (runs/<run-id>/) are different trees on purpose: definitions are edited
+      // and versioned, runs are immutable evidence.
+      case 'evals': {
+        const rows = ER.listEvalPackages(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no eval packages under ' + ER.evalsDir(home) + ' — add evals/<eval-id>/eval.json'); break; }
+        for (const p of rows) {
+          if (p.error) { console.log('INVALID\t' + p.id + '\t' + p.error.split('\n')[0]); continue; }
+          console.log([p.id, p.capability_id, p.gates + ' gates', p.fixtures + ' fixtures'].join('\t'));
+        }
+        break;
+      }
+      case 'runs': {
+        const rows = ER.listRuns(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no runs yet — `rcos eval-run --eval <eval-id>` creates one'); break; }
+        for (const r of rows) {
+          if (r.error) { console.log('BROKEN\t' + r.run_id + '\t' + r.error); continue; }
+          console.log([r.run_id, r.verdict, r.eval_id, r.capability_id, r.created_at].join('\t'));
+        }
+        break;
+      }
+      // Executes a declared evaluation and lets the RUNNER derive the verdict
+      // from gate exit codes (0 pass / 3 fail / 4 blocked). Nothing on the
+      // command line may assert a verdict — that is the whole point.
+      case 'eval-run': {
+        need(args, 'eval');
+        if (args.submit) {
+          need(args, 'task');
+          if (args.date && !isValidDate(args.date)) { console.error('bad --date, want YYYY-MM-DD'); process.exit(1); }
+          const pkg = ER.loadEvalPackage(home, args.eval);
+          R.findCapability(R.loadRegistry(home), pkg.spec.capability_id); // fail before running, not after
+        }
+        const res = ER.runEval(home, args.eval, {});
+        console.log('run ' + res.run_id + ': ' + res.verdict + ' — ' + res.basis);
+        for (const g of res.gates) {
+          console.log('  ' + (g.status === 'pass' ? 'ok  ' : g.status === 'fail' ? 'FAIL' : g.status.toUpperCase()) +
+            ' ' + g.id + (g.required ? '' : ' (optional)'));
+        }
+        console.log('receipt: ' + path.join(res.run_dir, 'receipt.json'));
+        if (args.submit) {
+          const reg = R.loadRegistry(home);
+          const id = res.receipt.capability_id;
+          R.submitEval(reg, id, {
+            task_id: args.task, verdict: res.verdict, run_id: res.run_id,
+            provenance: 'executed', date: args.date
+          });
+          // trace first (file) before the registry save, same invariant as
+          // eval-submit. source stays null: an eval run is not automatically a
+          // reuse — whether the capability was invoked is a different fact, and
+          // reuse_count must not move on selection or evaluation alone.
+          T.appendTrace(home, {
+            capability: id, task_id: args.task, verdict: res.verdict,
+            context: args.context === true ? undefined : args.context,
+            source: null, seconds: null, date: args.date || undefined
+          });
+          R.syncDerivedReuse(reg, T.loadTraces(home));
+          R.saveRegistry(home, reg);
+          console.log('submitted ' + res.verdict + ' for \'' + id + '\' on ' + args.task +
+            ' (provenance executed, run ' + res.run_id + '; +trace source=null — reuse_count unchanged)');
+        }
+        process.exitCode = res.verdict === 'ship' ? 0 : res.verdict === 'fix' ? 3 : 4;
+        break;
+      }
+      // Re-hashes every artifact the receipt names. This is the check that CAN
+      // fail: an edited run directory stops verifying.
+      case 'eval-verify': {
+        need(args, 'run');
+        const res = ER.verifyRun(home, args.run);
+        if (args.json) { console.log(JSON.stringify(res, null, 2)); break; }
+        for (const m of res.mismatches) {
+          console.log('MISMATCH ' + m.path + ': ' + m.problem +
+            (m.actual ? ' (expected ' + m.expected + ', got ' + m.actual + ')' : ''));
+        }
+        console.log(res.ok
+          ? 'run ' + args.run + ' verified: ' + res.receipt.artifacts.length + ' artifact(s) hash-clean, verdict ' + res.receipt.verdict
+          : 'run ' + args.run + ' FAILED verification');
+        if (!res.ok) process.exitCode = 3;
+        break;
+      }
+      case 'traces': {
+        let rows = T.loadTraces(home);
+        if (args.capability) rows = rows.filter((t) => t.capability === args.capability);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        console.log('traces: ' + rows.length + (args.capability ? ' for \'' + args.capability + '\'' : ' total') +
+          ' (' + rows.filter((t) => t.context !== null).length + ' with context, ' +
+          rows.filter((t) => !t.backfilled).length + ' live)');
+        for (const t of rows.slice(-10)) {
+          console.log([t.date || t.ts.slice(0, 10), t.capability, t.task_id, t.verdict,
+            t.source || '-', t.context ? String(t.context).slice(0, 60) : '-'].join('\t'));
+        }
+        break;
+      }
+      case 'backfill-traces': {
+        const reg = R.loadRegistry(home);
+        const traces = T.loadTraces(home);
+        const gaps = T.traceGaps(reg, traces);
+        if (gaps.length === 0) { console.log('no trace gaps — every eval already has a trace line'); break; }
+        for (const c of reg.capabilities) {
+          for (const e of c.evals) {
+            T.appendTrace(home, {
+              capability: c.id, task_id: e.task_id, verdict: e.verdict,
+              backfilled: true
+            });
+          }
+        }
+        console.log('backfilled ' + gaps.length + ' trace line(s), flagged backfilled:true');
+        break;
+      }
+      case 'promote': {
+        need(args, 'id');
+        const reg = R.loadRegistry(home);
+        const dir = path.join(home, 'capabilities', args.id);
+        if (!fs.existsSync(path.join(dir, 'EVAL.json'))) {
+          console.error('rcos: cannot promote \'' + args.id + '\': capabilities/' + args.id + '/EVAL.json missing — document the eval before promoting');
+          process.exit(2);
+        }
+        R.promoteCapability(reg, args.id);
+        R.saveRegistry(home, reg);
+        console.log('promoted \'' + args.id + '\'');
+        break;
+      }
+      case 'retire': {
+        need(args, 'id', 'reason');
+        const reg = R.loadRegistry(home);
+        R.retireCapability(reg, args.id, args.reason);
+        R.saveRegistry(home, reg);
+        console.log('retired \'' + args.id + '\'');
+        break;
+      }
+      // A reuse is a trace line, not a counter bump. The trace is appended
+      // FIRST and the registry field is then re-derived from the trace log, so
+      // the number can never move without evidence behind it.
+      case 'reuse-log': {
+        need(args, 'id', 'task', 'run', 'verdict');
+        const reg = R.loadRegistry(home);
+        const cap = R.findCapability(reg, args.id);
+        if (cap.status !== 'promoted') {
+          console.error('rcos: cannot log a reuse of \'' + args.id + '\': status is ' + cap.status + ', must be promoted');
+          process.exit(2);
+        }
+        T.appendTrace(home, {
+          capability: args.id, task_id: args.task, verdict: args.verdict,
+          context: args.context === true ? undefined : args.context,
+          source: 'reuse',
+          seconds: args.seconds === true || args.seconds === undefined ? undefined : Number(args.seconds),
+          date: args.date || undefined
+        });
+        R.syncDerivedReuse(reg, T.loadTraces(home));
+        R.saveRegistry(home, reg);
+        console.log('\'' + args.id + '\' reuse_count now ' + R.findCapability(reg, args.id).reuse_count +
+          ' (derived from traces; no manual increment path)');
+        break;
+      }
+      // Re-derives the reuse cache from the trace log. Read-only unless a delta
+      // exists — this is the repair path, not an increment path. With no trace
+      // log at all there is nothing to derive from, and zeroing the cache would
+      // destroy numbers we cannot replace, so it refuses unless forced.
+      case 'sync': {
+        const reg = R.loadRegistry(home);
+        if (!T.hasTraceFile(home) && !args.force) {
+          console.error('rcos: no trace log at ' + T.tracesPath(home) + ' — nothing to derive from; ' +
+            'refusing to zero the reuse cache (pass --force to reset it to 0)');
+          process.exit(2);
+        }
+        const deltas = R.reuseDeltas(reg, T.loadTraces(home));
+        if (args.json) { console.log(JSON.stringify(deltas, null, 2)); }
+        else if (deltas.length === 0) { console.log('reuse cache already matches traces'); }
+        else for (const d of deltas) console.log(d.id + ': stored ' + d.stored + ' -> trace-derived ' + d.derived);
+        if (deltas.length > 0) {
+          R.syncDerivedReuse(reg, T.loadTraces(home));
+          R.saveRegistry(home, reg);
+          if (!args.json) console.log('synced ' + deltas.length + ' capability/capabilities');
+        }
+        break;
+      }
+      // The execution primitive: name a capability, hand it input, let the
+      // kernel resolve and run its declared adapter. No reuse semantics (no
+      // trace, no reuse_count move) and no evaluation semantics (no verdict).
+      //
+      // The user does not manufacture an eligibility decision by hand: this
+      // command builds the caller context for the requested mode, the engine
+      // decides and records, and the kernel consumes that decision. A refusal
+      // is a recorded decision, not a bare error string.
+      case 'run': {
+        if (!positional) { console.error('missing <capability-id>\n' + USAGE); process.exit(1); }
+        need(args, 'input');
+        let input;
+        try {
+          input = JSON.parse(fs.readFileSync(args.input, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --input is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        const mode = args.mode === undefined ? 'normal' : String(args.mode);
+        if (!I.MODES.includes(mode)) {
+          console.error('bad --mode, want one of ' + I.MODES.join('|'));
+          process.exit(2);
+        }
+        if (mode === 'forensic' && (args.forensic === undefined || args.forensic === true)) {
+          console.error('rcos: --mode forensic requires --forensic <reason> — an override nobody can mistake for production reuse');
+          process.exit(2);
+        }
+        const dec = E.decideForHome(home, positional, {
+          purpose: mode,
+          scope: 'execute',
+          forensicReason: mode === 'forensic' ? String(args.forensic) : undefined
+        });
+        if (!dec.ok) { console.error('rcos: ' + dec.error); process.exit(2); }
+        if (!dec.eligible) {
+          console.log('ELIGIBLE: no');
+          console.log('REASONS:');
+          for (const r of dec.reasons) console.log('  ' + r);
+          console.log('decision: ' + dec.decision_id + '\t' + dec.dir);
+          console.error('rcos: refusing to invoke \'' + positional + '\' in ' + mode + ' mode');
+          process.exit(4);
+        }
+        const res = I.invokeCapability(home, positional, {
+          input, mode,
+          forensicReason: args.forensic,
+          eligibilityDecisionId: dec.decision_id,
+          // Provenance only, and optional: the decision above is what
+          // authorizes this run. The kernel verifies the selection and refuses
+          // if it chose something other than the capability being invoked.
+          selectionId: args.selection === undefined || args.selection === true ? undefined : String(args.selection)
+        });
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.manifest, null, 2));
+        else {
+          console.log(res.invocation_id + '\t' + res.status + '\t' + res.capability_id + '\t' + res.manifest.adapter.exit_code);
+          console.log('basis: ' + res.basis);
+          console.log('eligibility: ' + dec.decision_id + ' (' + (dec.eligible ? 'yes' : 'no') + ')');
+          if (res.selection_id) console.log('selection: ' + res.selection_id + ' (' + res.manifest.selection.status + ' → ' + res.manifest.selection.selected_capability_id + ')');
+          console.log('artifacts: ' + res.dir);
+          if (mode === 'forensic') console.log('NOTE: forensic override (' + args.forensic + ') — this is not production reuse.');
+          if (mode === 'eval') console.log('NOTE: eval-mode invocation of a ' + res.manifest.registry_status + ' capability — development, not reuse.');
+        }
+        process.exit(res.status === 'completed' ? 0 : res.status === 'rejected' ? 2 : res.status === 'failed' ? 3 : 4);
+      }
+      // The policy question on its own, asked without invoking anything. This
+      // command exists so the decision can be inspected, and so an operator can
+      // see WHY a capability is not eligible — every applicable reason, in the
+      // canonical order, not just the first failure.
+      case 'eligibility': {
+        if (!positional) { console.error('missing <capability-id>\n' + USAGE); process.exit(1); }
+        const purpose = args.purpose === undefined ? 'normal' : String(args.purpose);
+        if (!E.PURPOSES.includes(purpose)) {
+          console.error('bad --purpose, want one of ' + E.PURPOSES.join('|'));
+          process.exit(2);
+        }
+        const scope = args.scope === undefined ? 'execute' : String(args.scope);
+        if (!E.SCOPES.includes(scope)) {
+          console.error('bad --scope, want one of ' + E.SCOPES.join('|'));
+          process.exit(2);
+        }
+        if (purpose === 'forensic' && (args.forensic === undefined || args.forensic === true)) {
+          console.error('rcos: --purpose forensic requires --forensic <reason> — an override nobody can mistake for production reuse');
+          process.exit(2);
+        }
+        const dec = E.decideForHome(home, positional, {
+          purpose,
+          scope,
+          forensicReason: purpose === 'forensic' ? String(args.forensic) : undefined
+        });
+        if (!dec.ok) { console.error('rcos: ' + dec.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(dec.decision, null, 2));
+        else {
+          console.log('ELIGIBLE: ' + (dec.eligible ? 'yes' : 'no'));
+          if (dec.eligible) console.log('REASONS: (none)');
+          else {
+            console.log('REASONS:');
+            for (const r of dec.reasons) console.log('  ' + r);
+          }
+          if (purpose === 'forensic') console.log('override: ' + args.forensic + ' (recorded in the decision)');
+          console.log('decision: ' + dec.decision_id + '\t' + dec.dir);
+        }
+        process.exit(dec.eligible ? 0 : 4);
+      }
+      case 'eligibility-verify': {
+        const decisionIds = needList(args, 'decision');
+        const res = E.verifyDecision(home, decisionIds[0]);
+        if (args.json) console.log(JSON.stringify(res, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'eligibility decision ' + decisionIds[0] + ' verified (' + res.checked + ' check(s))' : 'eligibility decision verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      // The selection bus on its own. This command chooses; it runs nothing and
+      // grants nothing. What comes out is a record of which already-eligible
+      // capability was chosen, and the winner still has to come back with a
+      // fresh scope=execute decision before any kernel will touch it.
+      case 'select': {
+        need(args, 'input');
+        const decisionIds = needList(args, 'decision');
+        let selectorInput;
+        try {
+          selectorInput = JSON.parse(fs.readFileSync(args.input, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --input is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        // A selector's identity is id AND version, so `--selector explicit@1`
+        // is accepted as sugar for the two flags.
+        let selectorId = args.selector === undefined || args.selector === true ? 'explicit' : String(args.selector);
+        let selectorVersion = args['selector-version'] === undefined || args['selector-version'] === true ? null : String(args['selector-version']);
+        if (selectorId.includes('@')) {
+          const parts = selectorId.split('@');
+          if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
+            console.error('bad --selector, want <id> or <id>@<version>');
+            process.exit(2);
+          }
+          selectorId = parts[0];
+          if (selectorVersion === null) selectorVersion = parts[1];
+        }
+        const res = S.createSelection(home, {
+          selectorId,
+          selectorVersion,
+          selectorInput,
+          candidateDecisionIds: decisionIds
+        });
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.selection, null, 2));
+        else {
+          console.log('STATUS: ' + res.status);
+          console.log('SELECTED: ' + (res.selected_capability_id === null ? '(none)' : res.selected_capability_id));
+          console.log('CANDIDATES: ' + (res.candidates.length === 0 ? '(none)' : res.candidates.map((c) => c.capability_id).join(', ')));
+          console.log('basis: ' + res.status_basis);
+          console.log('selector: ' + res.selection.selector.id + '@' + res.selection.selector.version);
+          console.log('selection: ' + res.selection_id + '\t' + res.dir);
+          if (res.status === 'selected') {
+            console.log('NOTE: this grants nothing — the winner still needs a fresh scope=execute decision before it can run.');
+          }
+        }
+        process.exit(res.status === 'selected' ? 0 : res.status === 'failed' ? 3 : 4);
+      }
+      case 'selections': {
+        const rows = S.listSelections(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no selections yet — `rcos select --input <file> --decision <id>` creates one'); break; }
+        for (const r of rows) {
+          console.log([
+            r.selection_id,
+            r.status,
+            r.selected_capability_id === null ? '-' : r.selected_capability_id,
+            r.selector ? r.selector.id + '@' + r.selector.version : '-',
+            r.candidates ? String(r.candidates.length) : '-',
+            r.decided_at
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'selection-verify': {
+        need(args, 'selection');
+        const res = S.verifySelection(home, args.selection);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'selection ' + args.selection + ' verified (' + res.checked + ' check(s))' : 'selection verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      // The shadow comparator on its own. jev-ranker@experimental-1 is an
+      // observer, never a selector: it records what Jev would have picked
+      // beside a completed selection, and the record changes nothing. The CLI
+      // takes a canned answer file — a frozen Choice answer captured
+      // elsewhere — so comparing never dials out and never spends: the live
+      // lane is a separate, explicitly invoked path that does not exist yet.
+      case 'jev-shadow': {
+        need(args, 'selection', 'answer');
+        let canned;
+        try {
+          canned = JSON.parse(fs.readFileSync(args.answer, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --answer is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        const res = JS.compareShadow(home, args.selection, {
+          transport: () => ({ answers: { rank: canned }, usage: null })
+        });
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.record, null, 2));
+        else {
+          console.log('STATUS: ' + res.record.status);
+          console.log('JEV_TOP: ' + (res.record.jev_top_candidate === null ? '(none)' : res.record.jev_top_candidate));
+          console.log('AGREES: ' + res.record.top_agrees_with_selection);
+          console.log('ESCALATION: ' + res.record.escalation_triggered);
+          console.log('VETOED: ' + res.record.vetoed);
+          console.log('shadow: ' + res.shadow_id + '\t' + res.dir);
+          console.log('NOTE: this changes nothing — the selection stands as the bus left it.');
+        }
+        break;
+      }
+      case 'shadows': {
+        const rows = JS.listShadows(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no shadows yet — `rcos jev-shadow --selection <id> --answer <file>` records one'); break; }
+        for (const r of rows) {
+          const rec = JS.readShadow(home, r);
+          console.log([
+            r,
+            rec ? rec.status : '?',
+            rec && rec.jev_top_candidate !== null ? rec.jev_top_candidate : '-',
+            rec ? String(rec.top_agrees_with_selection) : '-',
+            rec ? rec.selection_id : '-'
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'shadow-verify': {
+        need(args, 'shadow');
+        const res = JS.verifyShadow(home, args.shadow);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'shadow ' + args.shadow + ' verified (' + res.checked + ' check(s))' : 'shadow verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      case 'shadow-outcome': {
+        need(args, 'shadow', 'invocation');
+        const res = JS.recordOutcome(home, args.shadow, args.invocation);
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify({ ok: true, shadow_id: res.shadow_id, outcome: res.outcome, outcome_path: res.outcome_path }, null, 2));
+        else console.log('OUTCOME: ' + res.outcome + '\t' + res.outcome_path);
+        break;
+      }
+      // The Laya shadow comparator on its own. laya-ranker@experimental-1 is
+      // an observer, never a selector: it records what Laya would have picked
+      // beside a completed selection, and the record changes nothing. The CLI
+      // takes a canned answer file — a frozen typed decision captured
+      // elsewhere — so comparing never loads weights, dials out, or spends.
+      case 'laya-shadow': {
+        need(args, 'selection', 'answer');
+        let canned;
+        try {
+          canned = JSON.parse(fs.readFileSync(args.answer, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --answer is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        const res = LS.compareLaya(home, args.selection, {
+          transport: () => ({ answers: { rank: canned }, latency_ms: null })
+        });
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.record, null, 2));
+        else {
+          console.log('STATUS: ' + res.record.status);
+          console.log('LAYA_TOP: ' + (res.record.laya_top_candidate === null ? '(none)' : res.record.laya_top_candidate));
+          console.log('AGREES: ' + res.record.top_agrees_with_selection);
+          console.log('ESCALATION: ' + res.record.escalation_triggered);
+          console.log('VETOED: ' + res.record.vetoed);
+          console.log('shadow: ' + res.shadow_id + '\t' + res.dir);
+          console.log('NOTE: this changes nothing — the selection stands as the bus left it.');
+        }
+        break;
+      }
+      case 'laya-shadows': {
+        const rows = LS.listLayaShadows(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no laya shadows yet — `rcos laya-shadow --selection <id> --answer <file>` records one'); break; }
+        for (const r of rows) {
+          const rec = LS.readLayaShadow(home, r);
+          console.log([
+            r,
+            rec ? rec.status : '?',
+            rec && rec.laya_top_candidate !== null ? rec.laya_top_candidate : '-',
+            rec ? String(rec.top_agrees_with_selection) : '-',
+            rec ? rec.selection_id : '-'
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'laya-shadow-verify': {
+        need(args, 'shadow');
+        const res = LS.verifyLayaShadow(home, args.shadow);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'laya shadow ' + args.shadow + ' verified (' + res.checked + ' check(s))' : 'laya shadow verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      case 'laya-shadow-outcome': {
+        need(args, 'shadow', 'invocation');
+        const res = LS.recordLayaOutcome(home, args.shadow, args.invocation);
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify({ ok: true, shadow_id: res.shadow_id, outcome: res.outcome, outcome_path: res.outcome_path }, null, 2));
+        else console.log('OUTCOME: ' + res.outcome + '\t' + res.outcome_path);
+        break;
+      }
+      // The evidence envelope on its own. A record says what was claimed, by
+      // whom, on what basis — nothing more. It is not an authorization, not an
+      // eval verdict, and not a resolution of anything: two records that
+      // contradict each other coexist without complaint, and the command that
+      // decides between them does not exist yet. A bundle pins a set of
+      // records; it ranks nothing inside it.
+      case 'evidence': {
+        need(args, 'input');
+        let fields;
+        try {
+          fields = JSON.parse(fs.readFileSync(args.input, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --input is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        // No producer pin here, deliberately. A producer block means "this
+        // claim came out of that run", and the only path with the run's own
+        // participation is the emission path: the adapter writes the file, the
+        // kernel seals the id into the manifest. A flag that let anyone type a
+        // producer id would mint records claiming a run's provenance while the
+        // run's manifest never corroborates them — the two-way link, broken in
+        // one direction. Direct records carry producer: null.
+        const res = EV.createEvidence(home, fields);
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.evidence, null, 2));
+        else {
+          console.log('TRUTH_CLASS: ' + res.evidence.truth_class);
+          console.log('SOURCE: ' + res.evidence.source.kind + ':' + res.evidence.source.ref);
+          console.log('subject: ' + res.evidence.subject);
+          console.log('predicate: ' + res.evidence.predicate);
+          if (res.evidence.derived.inputs.length > 0) console.log('INPUTS: ' + res.evidence.derived.inputs.join(', '));
+          console.log('evidence: ' + res.evidence_id + '\t' + res.dir);
+          console.log('NOTE: this records what was claimed, by whom, on what basis — it decides nothing.');
+        }
+        break;
+      }
+      case 'evidences': {
+        const rows = EV.listEvidence(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no evidence yet — `rcos evidence --input <fields.json>` records one'); break; }
+        for (const r of rows) {
+          console.log([
+            r.evidence_id,
+            r.truth_class === null ? '-' : r.truth_class,
+            r.source ? r.source.kind + ':' + r.source.ref : '-',
+            r.subject === null ? '-' : r.subject,
+            r.predicate === null ? '-' : r.predicate,
+            r.inputs === null ? '-' : String(r.inputs),
+            r.producer_invocation_id === null ? '-' : r.producer_invocation_id,
+            r.observed_at === null ? '-' : r.observed_at
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'evidence-verify': {
+        const evidenceIds = needList(args, 'evidence');
+        const res = EV.verifyEvidence(home, evidenceIds[0]);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'evidence ' + evidenceIds[0] + ' verified (' + res.checked + ' check(s))' : 'evidence verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      case 'bundle': {
+        const evidenceIds = needList(args, 'evidence');
+        const purpose = args.purpose === undefined || args.purpose === true ? null : String(args.purpose);
+        const res = EV.createBundle(home, evidenceIds, { purpose });
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.bundle, null, 2));
+        else {
+          console.log('MEMBERS: ' + res.members.length);
+          console.log('evidence_set_sha256: ' + res.bundle.evidence_set_sha256);
+          console.log('purpose: ' + (res.bundle.purpose === null ? '(none)' : res.bundle.purpose));
+          console.log('bundle: ' + res.bundle_id + '\t' + res.dir);
+          console.log('NOTE: a bundle pins a set of records — it ranks nothing and resolves no disagreement.');
+        }
+        break;
+      }
+      case 'bundles': {
+        const rows = EV.listBundles(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no bundles yet — `rcos bundle --evidence <id> [--evidence <id> ...]` pins one'); break; }
+        for (const r of rows) {
+          console.log([
+            r.bundle_id,
+            r.members === null ? '-' : String(r.members.length),
+            r.purpose === null ? '-' : r.purpose,
+            r.consumed_by_invocation_id === null ? '-' : r.consumed_by_invocation_id,
+            r.created_at === null ? '-' : r.created_at
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'bundle-verify': {
+        const bundleIds = needList(args, 'bundle');
+        const res = EV.verifyBundle(home, bundleIds[0]);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'bundle ' + bundleIds[0] + ' verified (' + res.checked + ' check(s))' : 'bundle verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      // The consumer-scoped admission layer. A decision asks one question with
+      // a closed vocabulary: may THIS consumer, for THIS stated purpose, rely
+      // on THESE records under THIS policy? The answer is ADMIT, REJECT, or
+      // UNRESOLVED — it never rewrites the evidence, never re-scores its truth
+      // class, never grants the producer anything, and never reaches back into
+      // selection, the registry, or reuse. The receipt is write-once.
+      case 'admit': {
+        need(args, 'policy', 'consumer', 'purpose');
+        let policy;
+        try {
+          policy = JSON.parse(fs.readFileSync(args.policy, 'utf8'));
+        } catch (e) {
+          console.error('rcos: --policy is not readable JSON: ' + e.message);
+          process.exit(2);
+        }
+        const evIds = Array.isArray(args.evidence) ? args.evidence.filter((x) => x !== true) : [];
+        const bdIds = Array.isArray(args.bundle) ? args.bundle.filter((x) => x !== true) : [];
+        if (evIds.length === 0 && bdIds.length === 0) {
+          console.error('missing required --evidence <id> (repeatable) or --bundle <id> (repeatable)\n' + USAGE);
+          process.exit(1);
+        }
+        const request = {
+          policy,
+          consumer: { name: args.consumer, purpose: args.purpose },
+          targets: evIds.map((id) => ({ kind: 'evidence', id }))
+            .concat(bdIds.map((id) => ({ kind: 'bundle', id })))
+        };
+        const res = ADM.createAdmission(home, request);
+        if (!res.ok) { console.error('rcos: ' + res.error); process.exit(2); }
+        if (args.json) console.log(JSON.stringify(res.admission, null, 2));
+        else {
+          console.log('RESULT: ' + res.admission.result);
+          console.log('REASONS: ' + res.admission.reason_codes.join(', '));
+          console.log('CONSUMER: ' + res.admission.consumer.name + ' — ' + res.admission.consumer.purpose);
+          console.log('POLICY: ' + res.admission.policy.policy_id + '@' + res.admission.policy.policy_version +
+            ' (external_sources: ' + res.admission.policy.external_sources +
+            '; truth_classes: ' + res.admission.policy.truth_classes.join(', ') + ')');
+          for (const t of res.admission.targets) {
+            console.log('TARGET ' + t.kind + ' ' + t.id + ' → ' + t.outcome +
+              (t.reason_codes.length > 0 ? ' (' + t.reason_codes.join(', ') + ')' : '') +
+              (t.verify_problems.length > 0 ? ' [' + t.verify_problems.join('; ') + ']' : ''));
+          }
+          console.log('admission: ' + res.admission_id + '\t' + res.admission_path);
+          console.log('NOTE: an admission says who may rely on this evidence, and for what — the evidence itself is unchanged.');
+        }
+        break;
+      }
+      case 'admissions': {
+        const rows = ADM.listAdmissions(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no admissions yet — `rcos admit --policy <policy.json> --consumer <name> --purpose <text> (--evidence <id> ... | --bundle <id> ...)` decides one'); break; }
+        for (const r of rows) {
+          console.log([
+            r.admission_id,
+            r.result,
+            r.consumer_name,
+            r.policy_id + '@' + r.policy_version,
+            r.recorded_at
+          ].join('\t'));
+        }
+        break;
+      }
+      case 'admission-verify': {
+        need(args, 'admission');
+        const res = ADM.verifyAdmission(home, args.admission);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'admission ' + args.admission + ' verified (' + res.checked + ' check(s))' : 'admission verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      case 'invocations': {
+        const rows = I.listInvocations(home);
+        if (args.json) { console.log(JSON.stringify(rows, null, 2)); break; }
+        if (rows.length === 0) { console.log('no invocations yet — `rcos run <capability-id> --input <file>` creates one'); break; }
+        for (const r of rows) {
+          console.log([r.invocation_id, r.status, r.capability_id, r.mode, r.completed_at].join('\t'));
+        }
+        break;
+      }
+      case 'invocation-verify': {
+        need(args, 'invocation');
+        const res = I.verifyInvocation(home, args.invocation);
+        if (args.json) console.log(JSON.stringify({ ok: res.ok, problems: res.problems, checked: res.checked }, null, 2));
+        else {
+          for (const p of res.problems) console.log('PROBLEM ' + p);
+          console.log(res.ok ? 'invocation ' + args.invocation + ' verified (' + res.checked + ' artifacts re-hashed)' : 'invocation verification FAILED');
+        }
+        if (!res.ok) process.exit(3);
+        break;
+      }
+      case 'audit': {
+        const reg = R.loadRegistry(home);
+        const traces = T.loadTraces(home);
+        const res = R.auditRegistry(reg, new Date(), T.hasTraceFile(home) ? traces : null, { homeDir: home });
+        for (const g of T.traceGaps(reg, traces)) res.warnings.push('trace gap: ' + g);
+        if (args.json) console.log(JSON.stringify(res, null, 2));
+        else {
+          for (const e of res.errors) console.log('ERROR ' + e);
+          for (const w of res.warnings) console.log('WARN ' + w);
+          console.log(res.ok ? 'audit clean' : 'audit FAILED');
+        }
+        if (!res.ok) process.exit(2);
+        break;
+      }
+      case 'render': {
+        const reg = R.loadRegistry(home);
+        const out = args.out || path.join(home, 'dashboard.html');
+        fs.writeFileSync(out, renderDashboard(reg));
+        console.log('wrote ' + out);
+        break;
+      }
+      default: {
+        console.error('unknown command: ' + cmd + '\n' + USAGE);
+        process.exit(1);
+      }
+    }
+  } catch (err) {
+    console.error('rcos: ' + err.message);
+    process.exit(2);
+  }
+}
+
+main();

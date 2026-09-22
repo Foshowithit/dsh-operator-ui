@@ -1,0 +1,49 @@
+{
+  "schema": "execution-posture-report/1",
+  "posture": {
+    "schema": "rcos-execution-posture/1",
+    "euid": 501,
+    "egid": 1000,
+    "is_root": false,
+    "platform": "linux",
+    "arch": "arm64",
+    "node": "v20.20.2",
+    "restrictions": [
+      "euid is subject to POSIX file modes",
+      "no namespace/seccomp confinement established by this module"
+    ],
+    "establishes": [
+      "effective_user_identity"
+    ],
+    "does_not_establish": [
+      "complete sandbox boundary (namespaces, seccomp, mount isolation not probed)"
+    ]
+  },
+  "declared_requirement": {
+    "requires": "non-root"
+  },
+  "live_evaluation": {
+    "ok": true,
+    "requirement": "non-root",
+    "posture": {
+      "schema": "rcos-execution-posture/1",
+      "euid": 501,
+      "egid": 1000,
+      "is_root": false,
+      "platform": "linux",
+      "arch": "arm64",
+      "node": "v20.20.2",
+      "restrictions": [
+        "euid is subject to POSIX file modes",
+        "no namespace/seccomp confinement established by this module"
+      ],
+      "establishes": [
+        "effective_user_identity"
+      ],
+      "does_not_establish": [
+        "complete sandbox boundary (namespaces, seccomp, mount isolation not probed)"
+      ]
+    }
+  },
+  "recorded_at": "2026-09-22T20:54:13.085Z"
+}

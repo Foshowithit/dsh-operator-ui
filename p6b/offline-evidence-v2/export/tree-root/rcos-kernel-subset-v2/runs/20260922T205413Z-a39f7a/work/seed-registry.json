@@ -1,0 +1,26 @@
+{
+  "registry_version": "v1",
+  "capabilities": [
+    {
+      "id": "fixture-cap",
+      "name": "Fixture capability (sandbox only)",
+      "kind": "script",
+      "version": "0.1.0",
+      "status": "promoted",
+      "lineage": "synthetic fixture — exists only to give the reuse-ledger eval a valid registry to mutate",
+      "admitted_after": ["t-seed-1", "t-seed-2"],
+      "evals": [
+        { "task_id": "t-seed-1", "verdict": "ship", "run_id": "20260901T000000Z-aaaaaa", "provenance": "asserted" },
+        { "task_id": "t-seed-2", "verdict": "ship", "run_id": "20260901T000001Z-bbbbbb", "provenance": "asserted" }
+      ],
+      "reuse_count": 0,
+      "last_eval": "2026-09-01",
+      "retirement": {
+        "armed_at": "2026-09-01",
+        "policy_version": "rcos-retire/1",
+        "decay": { "window": 5, "threshold": null },
+        "neglect": { "n": 20, "threshold": null }
+      }
+    }
+  ]
+}

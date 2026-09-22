@@ -1,0 +1,25 @@
+{
+  "schema": "rcos-eval/1",
+  "eval_id": "execution-posture-v1",
+  "capability_id": "reuse-ledger",
+  "description": "Execution-isolation posture (Repair B, a separate guarantee from the append-failure invariant): the runtime reports its real effective uid/gid, the declared non-root requirement is evaluated against live process identity, a root runtime refuses with an explicit environment-incompatibility result instead of a silent pass, and a complete-sandbox claim is never derivable from identity alone.",
+  "notes": [
+    "rcos-eval/1 with a private adapter: this eval measures the RUNTIME's posture,",
+    "not a capability's domain work, so it declares its own reporter instead of",
+    "invoking reuse-ledger through the invocation kernel. It is independent of the",
+    "append-failure evaluation by construction.",
+    "The adapter records posture.json (execution posture + the live evaluation of",
+    "the declared requirement) into the run work dir; the gates re-read it beside",
+    "the live process identity they themselves run under, prove both branches of",
+    "the requirement evaluator with injected postures (deterministic at any uid),",
+    "and never allow a complete-sandbox claim."
+  ],
+  "fixtures": [],
+  "adapter": { "argv": ["node", "./adapter/report.js"] },
+  "gates": [
+    { "id": "posture_report_matches_process", "type": "deterministic", "argv": ["node", "./gates/check.js", "posture_report_matches_process"], "required": true },
+    { "id": "non_root_requirement_branches_deterministic", "type": "deterministic", "argv": ["node", "./gates/check.js", "non_root_requirement_branches_deterministic"], "required": true },
+    { "id": "complete_sandbox_never_claimed", "type": "deterministic", "argv": ["node", "./gates/check.js", "complete_sandbox_never_claimed"], "required": true },
+    { "id": "live_non_root_requirement", "type": "deterministic", "argv": ["node", "./gates/check.js", "live_non_root_requirement"], "required": true }
+  ]
+}

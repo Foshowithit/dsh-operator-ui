@@ -1,0 +1,5 @@
+{
+  "seed_registry": "/tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/runs/20260922T205412Z-dccd80/work/seed-registry.json",
+  "probe_capability": "fixture-cap",
+  "sandbox": "reuse-ledger-eval"
+}

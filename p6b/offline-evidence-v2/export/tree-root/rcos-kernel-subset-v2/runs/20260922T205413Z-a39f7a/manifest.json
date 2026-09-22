@@ -1,0 +1,29 @@
+{
+  "schema": "rcos-run/1",
+  "run_id": "20260922T205413Z-a39f7a",
+  "eval_id": "reuse-ledger-invariant-v2",
+  "capability_id": "reuse-ledger",
+  "started_at": "2026-09-22T20:54:13.333Z",
+  "finished_at": "2026-09-22T20:54:13.533Z",
+  "duration_ms": 200,
+  "invocation": {
+    "invocation_id": "inv_20260922T205413Z-dc1972",
+    "status": "completed",
+    "mode": "eval",
+    "dir": "invocations/inv_20260922T205413Z-dc1972",
+    "manifest_sha256": "98a0a49b998c4854fec6b2058e7b7f6cdfef3c1ab4a14b1083c57ae9fa720ad6",
+    "output_sha256": "84ccc410d1f62c9bb4659091d1ae309c95409638511d8dc8f94694a610da1f92",
+    "eligibility_decision_id": "elig_20260922T205413Z-2f0464",
+    "eligibility_sha256": "bf2efcc4252d6aa2522c2eba23acd4ddfe69dbc188eea3136b8ff95b5f4b595e"
+  },
+  "eligibility": {
+    "decision_id": "elig_20260922T205413Z-2f0464",
+    "sha256": "bf2efcc4252d6aa2522c2eba23acd4ddfe69dbc188eea3136b8ff95b5f4b595e",
+    "purpose": "eval",
+    "eligible": true,
+    "reasons": [],
+    "dir": "eligibility/elig_20260922T205413Z-2f0464"
+  },
+  "rcos_home": "/tmp/p6b-v2-battery/tree-root/rcos-kernel-subset-v2",
+  "node": "v20.20.2"
+}

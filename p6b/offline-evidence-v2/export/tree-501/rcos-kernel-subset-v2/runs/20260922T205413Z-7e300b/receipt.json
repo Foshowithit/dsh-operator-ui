@@ -1,0 +1,73 @@
+{
+  "schema": "rcos-run-receipt/1",
+  "run_id": "20260922T205413Z-7e300b",
+  "eval_id": "execution-posture-v1",
+  "capability_id": "reuse-ledger",
+  "verdict": "ship",
+  "verdict_basis": "all 4 required gates pass",
+  "gates": [
+    {
+      "id": "posture_report_matches_process",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "non_root_requirement_branches_deterministic",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "complete_sandbox_never_claimed",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "live_non_root_requirement",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    }
+  ],
+  "invocation": null,
+  "eligibility": null,
+  "artifacts": [
+    {
+      "path": "checks.json",
+      "sha256": "775b9977d71316bfa50b9cabc64260d7d8115135564b17a1ee1bbc1d7d992188",
+      "bytes": 2279
+    },
+    {
+      "path": "evidence/outputs/posture.json",
+      "sha256": "7bfea777ae4108ce7c8038e4b114595b924918c5996a631c7c29bf9a45160daa",
+      "bytes": 1280
+    },
+    {
+      "path": "input.json",
+      "sha256": "352338bb1eabccb7f6f3aa13dfe1e55d8370bef0048f425a89af354874e89767",
+      "bytes": 387
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "97c1fab839df71d512b1eeae6cffbfc4e9f4d3b7dd95684c75611b5a0abb91fb",
+      "bytes": 386
+    },
+    {
+      "path": "output.json",
+      "sha256": "2378a3a2d3b3e4428ceb8f530e8dcfb6b8c4bad182e2fe8f277cbf926f53dc51",
+      "bytes": 594
+    },
+    {
+      "path": "work/posture.json",
+      "sha256": "7bfea777ae4108ce7c8038e4b114595b924918c5996a631c7c29bf9a45160daa",
+      "bytes": 1280
+    }
+  ],
+  "created_at": "2026-09-22T20:54:13.152Z"
+}

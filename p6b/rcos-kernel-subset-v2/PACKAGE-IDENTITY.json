@@ -1,0 +1,14 @@
+{
+  "schema": "rcos-package-identity/1",
+  "package": "rcos-kernel-subset-v2",
+  "version": "0.2.0-candidate.1",
+  "source_revision": "9bd484999fd2d4b23d2141bd45ccb85559b37488 + uncommitted candidate working tree",
+  "manifest": "rcos-kernel-subset-v2.manifest.sha256",
+  "evals": ["reuse-ledger-invariant-v2", "execution-posture-v1"],
+  "identity_notes": [
+    "Versioned candidate per the P6B v2 offline-build ruling: own version, own source-revision reference, own independently pinned manifest (lives OUTSIDE this root), own evaluation identities.",
+    "The historical reuse-ledger-invariant-v1 package (p6b/rcos-kernel-subset/) and its Run #1 / Run #2 artifacts are separate, immutable, and independently identifiable — this package does not replace them and must never overwrite them.",
+    "Offline candidate evidence only: no live validation, host certification, production promotion, or publication is implied by this file."
+  ],
+  "created_at": "2026-09-22"
+}

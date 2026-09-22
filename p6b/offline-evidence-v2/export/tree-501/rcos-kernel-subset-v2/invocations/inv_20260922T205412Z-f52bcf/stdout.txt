@@ -1,0 +1,5 @@
+sandbox home: /tmp/p6b-v2-battery/tree-501/rcos-kernel-subset-v2/invocations/inv_20260922T205412Z-f52bcf/work/reuse-ledger-eval
+  sync_without_trace_log: exit 2, reuse_count 0
+  reuse_log_first: exit 0, reuse_count 1
+  reuse_log_append_blocked: exit 2, reuse_count 1
+  sync_reconverges: exit 0, reuse_count 1

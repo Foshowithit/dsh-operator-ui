@@ -1,0 +1,94 @@
+{
+  "schema": "rcos-run-receipt/1",
+  "run_id": "20260922T205412Z-dccd80",
+  "eval_id": "reuse-ledger-invariant-v2",
+  "capability_id": "reuse-ledger",
+  "verdict": "ship",
+  "verdict_basis": "all 4 required gates pass",
+  "gates": [
+    {
+      "id": "sync_refuses_without_trace_log",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "trace_append_moves_count",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "append_failure_leaves_registry_untouched",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "id": "sync_reconverges_read_only",
+      "type": "deterministic",
+      "required": true,
+      "status": "pass",
+      "exit_code": 0
+    }
+  ],
+  "invocation": {
+    "invocation_id": "inv_20260922T205412Z-f52bcf",
+    "status": "completed",
+    "mode": "eval",
+    "dir": "invocations/inv_20260922T205412Z-f52bcf",
+    "manifest_sha256": "dee218b3107db8853523c4c2f0acc519e69466beff25b1008e92d6814b214ea6",
+    "output_sha256": "c869eb416d94b167396e483ffb4446f1aa5e6693b00d97b94dbedbf573d10fc1",
+    "eligibility_decision_id": "elig_20260922T205412Z-30eb70",
+    "eligibility_sha256": "3da8515db110eced0069cbff0f2906e1008044a1f1a80c27db499d6be6442035"
+  },
+  "eligibility": {
+    "decision_id": "elig_20260922T205412Z-30eb70",
+    "sha256": "3da8515db110eced0069cbff0f2906e1008044a1f1a80c27db499d6be6442035",
+    "purpose": "eval",
+    "eligible": true,
+    "reasons": [],
+    "dir": "eligibility/elig_20260922T205412Z-30eb70"
+  },
+  "artifacts": [
+    {
+      "path": "capability-input.json",
+      "sha256": "e84a98a6267d08b2be2b875c883051b0223a30ee44e606a0f390ea8392eda06b",
+      "bytes": 200
+    },
+    {
+      "path": "checks.json",
+      "sha256": "444388bbba30f9a8866bd1d72bbbf2b15b2a37c7048bde4c25b1ba68f82d9a46",
+      "bytes": 2337
+    },
+    {
+      "path": "evidence/inputs/seed-registry.json",
+      "sha256": "2793c39709e024ffb5b99597506efb9719e6bd375f8d5db98e9e3b8752464bfd",
+      "bytes": 911
+    },
+    {
+      "path": "input.json",
+      "sha256": "5b68ac3c78c7ab76c7436a0058f812e428d3898051fc0d46cfe4f83cd20404b8",
+      "bytes": 578
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "47e538dac6a2232d0f090cc78fa3ced240f318046cdacd002444b0371452251d",
+      "bytes": 1134
+    },
+    {
+      "path": "output.json",
+      "sha256": "5c8f713ceca2f638e3c9b18fce2c5cee1101b3c391822fb5451b29c7177f9e93",
+      "bytes": 366
+    },
+    {
+      "path": "work/seed-registry.json",
+      "sha256": "2793c39709e024ffb5b99597506efb9719e6bd375f8d5db98e9e3b8752464bfd",
+      "bytes": 911
+    }
+  ],
+  "created_at": "2026-09-22T20:54:12.963Z"
+}

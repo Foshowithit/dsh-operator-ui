@@ -1,0 +1,32 @@
+{
+  "schema": "rcos-eval/2",
+  "eval_id": "reuse-ledger-invariant-v2",
+  "capability_id": "reuse-ledger",
+  "description": "The reuse ledger cannot move without a trace line: sync refuses a cache it cannot verify, a reuse appends the trace before the registry moves, and a deterministic append-boundary failure (EISDIR directory-swap, privilege-independent) leaves the registry byte-identical.",
+  "notes": [
+    "rcos-eval/2: this package declares NO adapter of its own. It names the registered",
+    "capability and the input document, and the run reaches the capability through the",
+    "invocation kernel — `rcos run reuse-ledger` takes the identical path. The thing",
+    "being evaluated is the thing reuse will call; there is no second way to invoke it.",
+    "Version 2 replaces the chmod-0444 read-only fixture: the capability adapter now",
+    "moves the trace log aside and puts a directory at its path, so the real",
+    "`rcos reuse-log` is refused at open(2) with EISDIR for EVERY uid (root bypasses",
+    "DAC mode bits, not file-type checks) — the same invariant, proven under both",
+    "privilege levels, with the original log restored byte-for-byte.",
+    "The gates read $RCOS_INVOCATION_DIR/output.json (the observation the kernel froze)",
+    "and re-hash the evidence beside it, so a claim its own bytes contradict fails."
+  ],
+  "capability_mode": "eval",
+  "capability_input": {
+    "seed_registry": "{work}/seed-registry.json",
+    "probe_capability": "fixture-cap",
+    "sandbox": "reuse-ledger-eval"
+  },
+  "fixtures": ["seed-registry.json"],
+  "gates": [
+    { "id": "sync_refuses_without_trace_log", "type": "deterministic", "argv": ["node", "./gates/check.js", "sync_refuses_without_trace_log"], "required": true },
+    { "id": "trace_append_moves_count", "type": "deterministic", "argv": ["node", "./gates/check.js", "trace_append_moves_count"], "required": true },
+    { "id": "append_failure_leaves_registry_untouched", "type": "deterministic", "argv": ["node", "./gates/check.js", "append_failure_leaves_registry_untouched"], "required": true },
+    { "id": "sync_reconverges_read_only", "type": "deterministic", "argv": ["node", "./gates/check.js", "sync_reconverges_read_only"], "required": true }
+  ]
+}
