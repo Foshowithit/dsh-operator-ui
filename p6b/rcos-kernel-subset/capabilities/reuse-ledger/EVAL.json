@@ -1,0 +1,10 @@
+{
+  "capability": "reuse-ledger",
+  "promotion_gate": "2 shipped evals with lineage (mechanical x2-ship gate)",
+  "gates": [
+    { "id": "sync_refuses_without_trace_log", "kind": "deterministic", "check": "sync against a home with no trace log exits non-zero and leaves the stored count untouched — an unverifiable cache is refused, never zeroed" },
+    { "id": "trace_append_moves_count", "kind": "deterministic", "check": "a reuse-log append adds exactly one trace line and the stored count follows it (trace first, registry second)" },
+    { "id": "append_failure_leaves_registry_untouched", "kind": "deterministic", "check": "when the trace append fails (read-only log), the registry sha256 is unchanged and no trace line was added" },
+    { "id": "sync_reconverges_read_only", "kind": "deterministic", "check": "sync on a cache that already equals the trace-derived count exits 0 without rewriting the registry" }
+  ]
+}

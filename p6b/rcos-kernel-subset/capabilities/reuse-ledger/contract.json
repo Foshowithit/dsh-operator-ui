@@ -1,0 +1,26 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "input": {
+    "type": "object",
+    "properties": {
+      "seed_registry": { "type": "string", "minLength": 1 },
+      "probe_capability": { "type": "string", "minLength": 1 },
+      "sandbox": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9._-]+$" }
+    },
+    "required": ["seed_registry", "probe_capability"],
+    "additionalProperties": false
+  },
+  "output": {
+    "type": "object",
+    "properties": {
+      "schema": { "type": "string", "enum": ["reuse-ledger-observation/1"] },
+      "probe_capability": { "type": "string", "minLength": 1 },
+      "sandbox_home": { "type": "string", "minLength": 1 },
+      "initial_registry_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+      "steps": { "type": "array", "minItems": 4, "items": { "type": "object" } },
+      "traces": { "type": "array" }
+    },
+    "required": ["schema", "probe_capability", "sandbox_home", "initial_registry_sha256", "steps", "traces"],
+    "additionalProperties": false
+  }
+}
