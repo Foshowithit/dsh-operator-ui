@@ -32,6 +32,7 @@ const ROOT = join(HERE, '..');
 const ROUTE = '/plugins/operator-ui';
 const OWNER = 'e2e-owner';
 const OBJECTIVE = 'verify echo running total seed values';
+const BRIDGE_OBJECTIVE = 'verify bridge receipt claim';
 
 // The declaration file is written BEFORE the plugin is imported. The plugin reads
 // its config fresh on every call, so this is the same path a restarted deployment
@@ -417,6 +418,58 @@ cases['provider-claims'] = async () => {
     });
   }
   return { ok: true, legs };
+};
+
+// ---------------------------------------------------------------------------
+// P6D: the execution bridge's SECOND witness. A bridge-declaring capability
+// requires the worker's own receipt — without one loadable for its id the goal
+// fails closed even when its objective evaluated green — and a no-bridge goal
+// keeps the exact pre-P6D receipt shape (additivity).
+cases['bridge-goal'] = async () => {
+  const created = await call('POST', '/workspace', { path: arg.wsDir, owner: OWNER });
+  const ws = created.json && created.json.workspace;
+  if (!ws) return { ok: false, error: 'workspace create failed: ' + created.status + ' ' + created.text.slice(0, 200) };
+
+  // The mock's seeded run output carries no brg_ id, so no bridge receipt can
+  // load for the declared worker environment.
+  const g = await call('POST', '/goal', { objective: BRIDGE_OBJECTIVE, owner: OWNER, workspaceId: ws.workspaceId });
+  const goal = goalOf(g);
+  const env = goal && goal.executionEnvironment;
+  const worker = env && env.worker;
+  const bridgeChecks = (goal && Array.isArray(goal.checks) ? goal.checks : []).filter((c) => c && c.id === 'bridge-provider-claim');
+  const claimChecks = (goal && Array.isArray(goal.checks) ? goal.checks : []).filter((c) => c && c.id === 'execution-provider-claim');
+  const failing = (x) => (x && Array.isArray(x.checks) ? x.checks : []).filter((c) => c && c.pass === false).map((c) => c.id);
+
+  // Additivity control: the same workspace, an objective that routes to the
+  // non-bridge capability — the receipt must carry no worker leg at all.
+  const control = await call('POST', '/goal', { objective: OBJECTIVE, owner: OWNER, workspaceId: ws.workspaceId });
+  const controlGoal = goalOf(control);
+  const controlEnv = controlGoal && controlGoal.executionEnvironment;
+  const controlBridgeChecks = (controlGoal && Array.isArray(controlGoal.checks) ? controlGoal.checks : []).filter((c) => c && c.id === 'bridge-provider-claim');
+
+  return {
+    ok: true,
+    bridgeStatus: g.status,
+    bridgeVerdict: goal && goal.verdict,
+    bridgeFailureCodes: (goal && goal.failureCodes) || [],
+    bridgeExecutionStatus: goal && goal.execution && goal.execution.status,
+    hasWorkerKey: !!(env && Object.prototype.hasOwnProperty.call(env, 'worker')),
+    worker,
+    bridgeCheckCount: bridgeChecks.length,
+    bridgeCheckPass: bridgeChecks.length ? bridgeChecks[0].pass : null,
+    claimCheckCount: claimChecks.length,
+    claimCheckPass: claimChecks.length ? claimChecks[0].pass : null,
+    failingChecks: failing(goal),
+    bridgeRunId: env && env.runId,
+    controlStatus: control.status,
+    controlVerdict: controlGoal && controlGoal.verdict,
+    controlHasWorker: !!(controlEnv && Object.prototype.hasOwnProperty.call(controlEnv, 'worker')),
+    controlBridgeCheckCount: controlBridgeChecks.length,
+    controlFailingChecks: failing(controlGoal),
+    controlFailureCodes: (controlGoal && controlGoal.failureCodes) || [],
+    controlEstablishedBy: controlEnv && controlEnv.establishedBy,
+    controlIdentityEnvironment: controlEnv && controlEnv.identity && controlEnv.identity.environmentId,
+  };
 };
 
 let report;

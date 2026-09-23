@@ -54,6 +54,19 @@ const REGISTRY = {
       verification: { terminalStatus: 'completed', expectOutput: 'rcos-verify-seed:rcos-verify-echo-v1' },
       objectiveEvaluation: { kind: 'output-contains', value: 'rcos-verify-seed:rcos-verify-echo-v1' },
     },
+    {
+      // P6D: the bridge-declaring capability. Same workflow as verify-echo (so
+      // the mock's run record and seeded output are identical); the bridge field
+      // names the WORKER environment this goal's receipt must account for.
+      id: 'verify-bridge',
+      objective: 'verify bridge receipt claim',
+      workflow: 'verify-echo-v1',
+      tags: ['verify', 'bridge', 'receipt', 'claim'],
+      requires: ['shell:execute'],
+      verification: { terminalStatus: 'completed', expectOutput: 'rcos-verify-seed:rcos-verify-echo-v1' },
+      objectiveEvaluation: { kind: 'output-contains', value: 'rcos-verify-seed:rcos-verify-echo-v1' },
+      bridge: { environmentId: 'env-sandbox' },
+    },
   ],
 };
 
@@ -122,6 +135,16 @@ const CONFIGS = {
   'provider-claims': {
     environments: {
       list: [archonHttp('archon-remote', { environmentId: 'env-remote' })],
+    },
+  },
+  // P6D: the declared WORKER environment for the bridge goal. The goal itself
+  // dispatches on Local (the synthesized default); env-sandbox is declared here
+  // so the worker leg can resolve the capability's bridge.environmentId.
+  'bridge-goal': {
+    environments: {
+      list: [
+        { environmentId: 'env-sandbox', kind: 'solari-cloud', providerId: 'solari-dev', adapter: { kind: 'solari-sandbox', transport: { tokenVar: TOKEN_SOLARI } } },
+      ],
     },
   },
 };
@@ -529,4 +552,67 @@ test('provider claims: a run claiming an undeclared provider blocks instead of s
   }
 
   assert.deepEqual(d, { createPosts: 5, dispatchPosts: 5, codebasePosts: 5, setProjectPosts: 0 }, 'five executions, five workspaces, five bindings at creation — nothing extra');
+});
+
+test('execution bridge: a bridge-declaring goal without a loadable receipt blocks, and a control goal keeps the pre-P6D shape', async () => {
+  const home = await newHome('bridge');
+  const before_ = await mockCalls();
+  const r = await runCase('bridge-goal', home, caseArg('bridge-goal'));
+  const d = delta(before_, await mockCalls());
+
+  assert.equal(r.ok, true, JSON.stringify(r));
+
+  // The run itself was green — that is exactly the case the second witness
+  // exists for: a completed, output-matching, objectively SATISFIED execution
+  // whose bridge receipt is missing must still fail closed.
+  assert.equal(r.bridgeStatus, 200, 'enforcement is a verdict, not a transport error');
+  assert.equal(r.bridgeVerdict, 'BLOCK', 'a green objective never ships a bridge goal whose receipt is missing');
+  assert.ok(r.bridgeFailureCodes.includes('bridge-receipt-missing'), JSON.stringify(r.bridgeFailureCodes));
+  assert.equal(r.bridgeExecutionStatus, 'completed', 'the underlying run DID complete — the block is about the receipt, not the run');
+
+  // The worker leg is stamped and names the missing receipt honestly.
+  assert.equal(r.hasWorkerKey, true, 'a bridge-declaring goal records its worker leg');
+  assert.equal(r.worker.establishedBy, 'bridge-receipt');
+  assert.equal(r.worker.status, 'missing');
+  assert.equal(r.worker.ok, false);
+  assert.equal(r.worker.code, 'bridge-receipt-missing');
+  assert.equal(r.worker.id, null, 'no bridge id was found in the evidence');
+  assert.equal(r.worker.environmentId, 'env-sandbox', 'the capability-declared worker environment is what the goal is checked against');
+  // Every field the missing branch does not assert is recorded as null — never
+  // invented, never left to inference.
+  assert.equal(r.worker.claimed, null);
+  assert.equal(r.worker.declared, null);
+  assert.equal(r.worker.identitySha256, null);
+  assert.equal(r.worker.receiptSha256, null);
+  assert.equal(r.worker.runExitCode, null);
+  assert.equal(r.worker.cleanupOk, null);
+  assert.equal(r.worker.dead, null);
+  assert.equal(r.worker.posture, null);
+
+  // The receipt carries the failed check, not just the verdict.
+  assert.equal(r.bridgeCheckCount, 1, 'exactly one bridge-provider-claim check');
+  assert.equal(r.bridgeCheckPass, false);
+
+  // The dispatch leg is untouched by the worker leg: silence on the run record
+  // is still not a claim.
+  assert.equal(r.claimCheckCount, 1, 'exactly one execution-provider-claim check');
+  assert.equal(r.claimCheckPass, true, 'the dispatch leg passes — the block comes from the worker leg alone');
+  assert.deepEqual(r.failingChecks, ['bridge-provider-claim'], 'the ONLY failing check is the bridge one');
+
+  assert.match(String(r.bridgeRunId), /\S/, 'the bridge goal still adopted its dispatch run');
+
+  // Additivity: the same dispatch, an objective routed to the non-bridge
+  // capability — receipt shape exactly as before P6D.
+  assert.equal(r.controlStatus, 200);
+  assert.equal(r.controlVerdict, 'SHIP', 'a goal that declares no bridge is unaffected by the bridge machinery');
+  assert.deepEqual(r.controlFailureCodes, []);
+  assert.equal(r.controlHasWorker, false, 'no worker key exists on a receipt that never declared a bridge');
+  assert.equal(r.controlBridgeCheckCount, 0, 'no bridge-provider-claim check exists on a non-bridge goal');
+  assert.deepEqual(r.controlFailingChecks, [], 'the control receipt passes every check it carries');
+  assert.equal(r.controlEstablishedBy, 'adopted-run', 'the control identity comes from the dispatch leg alone');
+  assert.equal(r.controlIdentityEnvironment, 'env-local');
+
+  // One workspace, two goals: two bindings at creation, one codebase for the
+  // single workspace, two dispatches, no conversation messages.
+  assert.deepEqual(d, { createPosts: 2, dispatchPosts: 2, codebasePosts: 1, setProjectPosts: 0 }, 'one workspace, two goals — goals add no codebase work, and dispatch sends no conversation message');
 });

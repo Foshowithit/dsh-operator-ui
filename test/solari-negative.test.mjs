@@ -18,6 +18,7 @@ import {
   executeScoped,
   killScoped,
   solariReadiness,
+  normalizeSolari,
   normalizeSolariBudget,
   normalizeSolariCommand,
   scopedEnvironmentFor,
@@ -502,4 +503,198 @@ test('protocol: the environment override replaces the deployment allowlist and p
   assert.throws(() => scopedEnvironmentFor({ envNames: ['E2E_OVERRIDE_ONLY_OK'] }, effectiveEnvAllowlist(ENV, CONFIG), TOKEN_VAR), (e) => e.code === 'solari-env-not-allowed');
   // tokenVar is denied by identity, allowlist notwithstanding.
   assert.throws(() => scopedEnvironmentFor({ envNames: [TOKEN_VAR] }, [TOKEN_VAR], TOKEN_VAR), (e) => e.code === 'solari-env-privileged');
+});
+
+test('normalizers: the solari config section reports-and-drops malformed fields and never carries a credential', () => {
+  // Absent and null sections normalize to null with no errors.
+  assert.deepEqual(normalizeSolari(undefined), { value: null, errors: [] });
+  assert.deepEqual(normalizeSolari(null), { value: null, errors: [] });
+
+  // A non-object section is reported and dropped — never a boot failure.
+  const notObject = normalizeSolari('nope');
+  assert.equal(notObject.value, null);
+  assert.equal(notObject.errors.length, 1);
+  assert.ok(notObject.errors[0].includes('solari must be an object'));
+
+  // A fully valid section passes through with no errors.
+  const valid = normalizeSolari({
+    budgetCaps: { cpu: 1, memMb: 512, timeoutMs: 120000 },
+    maxConcurrent: 1,
+    envAllowlist: ['E2E_ALLOWED_ONE'],
+    workloadUser: 'svc-run',
+  });
+  assert.deepEqual(valid.errors, []);
+  assert.deepEqual(valid.value, {
+    budgetCaps: { cpu: 1, memMb: 512, timeoutMs: 120000 },
+    maxConcurrent: 1,
+    envAllowlist: ['E2E_ALLOWED_ONE'],
+    workloadUser: 'svc-run',
+  });
+
+  // Malformed budget caps are reported PER FIELD and dropped, the good keys kept.
+  const badCaps = normalizeSolari({ budgetCaps: { cpu: 0, memMb: 1.5, timeoutMs: 120000 } });
+  assert.ok(badCaps.errors.some((e) => e.includes('solari.budgetCaps.cpu')), JSON.stringify(badCaps.errors));
+  assert.ok(badCaps.errors.some((e) => e.includes('solari.budgetCaps.memMb')), JSON.stringify(badCaps.errors));
+  assert.deepEqual(badCaps.value.budgetCaps, { timeoutMs: 120000 });
+
+  // A non-object budgetCaps field drops wholesale.
+  const capsArray = normalizeSolari({ budgetCaps: [1, 2] });
+  assert.equal(capsArray.value, null);
+  assert.ok(capsArray.errors[0].includes('solari.budgetCaps must be an object'));
+
+  // maxConcurrent must be an integer >= 1.
+  const badMax = normalizeSolari({ maxConcurrent: 0 });
+  assert.equal(badMax.value, null);
+  assert.ok(badMax.errors[0].includes('solari.maxConcurrent'));
+
+  // envAllowlist carries NAMES only; non-name entries drop individually.
+  const badNames = normalizeSolari({ envAllowlist: ['GOOD_NAME', 'not a name', 42] });
+  assert.deepEqual(badNames.value.envAllowlist, ['GOOD_NAME']);
+  assert.equal(badNames.errors.length, 2, 'each malformed entry is reported');
+  assert.ok(badNames.errors.every((e) => e.includes('solari.envAllowlist[')), JSON.stringify(badNames.errors));
+
+  const notArray = normalizeSolari({ envAllowlist: 'GOOD_NAME' });
+  assert.equal(notArray.value, null);
+  assert.ok(notArray.errors[0].includes('solari.envAllowlist must be an array'));
+
+  // workloadUser: a user name or uid — malformed falls OFF rather than guessed,
+  // so the non-root posture stays disabled instead of being approximated.
+  const badUser = normalizeSolari({ workloadUser: 'not a user!' });
+  assert.equal(badUser.value, null);
+  assert.ok(badUser.errors[0].includes('solari.workloadUser'));
+
+  // Unknown keys are reported and ignored — including anything credential-shaped:
+  // the section never carries a credential, so one can never be smuggled through.
+  const unknown = normalizeSolari({ apiKey: 'sk-must-never-land', budgetCaps: { cpu: 1 } });
+  assert.ok(unknown.errors.some((e) => e.includes('solari.apiKey is an unknown key')), JSON.stringify(unknown.errors));
+  assert.equal(Object.prototype.hasOwnProperty.call(unknown.value, 'apiKey'), false, 'an unknown key never lands in the normalized section');
+  assert.deepEqual(unknown.value.budgetCaps, { cpu: 1 });
+
+  // An empty object is a null section.
+  assert.deepEqual(normalizeSolari({}), { value: null, errors: [] });
+});
+
+test('protocol: with no workloadUser declared the workload options stay pre-P6D', async () => {
+  const { factory, calls } = fakeFactory();
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      const r = await executeScoped(baseRequest());
+      assert.equal(r.ok, true, JSON.stringify(r));
+      assert.equal(calls.run.length, 2, 'workload then death probe — the posture probe does not exist when nothing was declared');
+      assert.equal(calls.run[0].cmd, 'echo');
+      assert.equal(Object.prototype.hasOwnProperty.call(calls.run[0].runOpts, 'user'), false, 'no user key is ever added to a non-posture run');
+      assert.equal(r.posture, null, 'the receipt records an absent posture as null');
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: a posture probe measuring uid 0 refuses typed — the workload never runs as root', async () => {
+  const { factory, calls } = fakeFactory({
+    runImpl: async (cmd) => {
+      if (cmd === 'id') return { exitCode: 0, stdout: '0\n', stderr: '' };
+      throw new Error('the workload command must never be issued');
+    },
+  });
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      const r = await executeScoped(baseRequest({
+        config: { solari: { ...CONFIG.solari, workloadUser: 'svc-run' } },
+      }));
+      assert.equal(r.ok, false, JSON.stringify(r));
+      assert.equal(r.code, 'solari-non-root-required');
+      assert.equal(r.details.workloadUser, 'svc-run');
+      assert.equal(r.details.uidMeasured, 0, 'the measured root uid is named');
+      assert.ok(String(r.reason).includes('never runs as root'), r.reason);
+      assert.equal(r.run, null, 'no workload evidence exists — the run never happened');
+      assert.ok(!r.posture, 'a refusal records no measured posture');
+
+      // The probe ran as the honored user; the workload command never issued;
+      // the created sandbox was still killed with its death verified.
+      assert.deepEqual(calls.run.map((c) => c.cmd), ['id', 'true'], 'probe, then the post-kill death probe — never the workload');
+      assert.deepEqual(calls.run[0].runOpts.args, ['-u']);
+      assert.equal(calls.run[0].runOpts.user, 'svc-run');
+      assert.equal(calls.run.some((c) => c.cmd === 'echo'), false, 'the workload command was never issued');
+      assert.ok(calls.kills >= 1);
+      assert.equal(r.cleanup.ok, true);
+      assert.equal(r.cleanup.dead, true);
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: a posture probe that cannot measure a uid refuses typed — root fallback is never taken', async () => {
+  const { factory, calls } = fakeFactory({
+    runImpl: async (cmd) => {
+      if (cmd === 'id') throw new Error('user switch unsupported in this image');
+      throw new Error('the workload command must never be issued');
+    },
+  });
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      const r = await executeScoped(baseRequest({
+        config: { solari: { ...CONFIG.solari, workloadUser: 'svc-run' } },
+      }));
+      assert.equal(r.ok, false, JSON.stringify(r));
+      assert.equal(r.code, 'solari-non-root-required');
+      assert.equal(r.details.workloadUser, 'svc-run');
+      assert.ok(!('uidMeasured' in r.details), 'an unmeasurable probe names no uid it did not observe');
+      assert.ok(String(r.reason).includes('could not measure'), r.reason);
+      assert.equal(r.run, null, 'no workload evidence exists — the run never happened');
+      assert.ok(!r.posture, 'a refusal records no measured posture');
+
+      assert.deepEqual(calls.run.map((c) => c.cmd), ['id', 'true'], 'probe, then the post-kill death probe — never the workload');
+      assert.equal(calls.run.some((c) => c.cmd === 'echo'), false, 'the workload command was never issued');
+      assert.ok(calls.kills >= 1);
+      assert.equal(r.cleanup.ok, true);
+      assert.equal(r.cleanup.dead, true);
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
+});
+
+test('protocol: a measured non-root posture runs the workload as that user and travels with the evidence', async () => {
+  const { factory, calls } = fakeFactory({
+    runImpl: async (cmd) => {
+      if (cmd === 'id') return { exitCode: 0, stdout: '1000\n', stderr: '', execution_provider: 'solari-dev' };
+      return { exitCode: 0, stdout: 'fake-ok\n', stderr: '', execution_provider: 'solari-dev' };
+    },
+  });
+  setSolariClientFactory(factory);
+  try {
+    await withToken(async () => {
+      const r = await executeScoped(baseRequest({
+        config: { solari: { ...CONFIG.solari, workloadUser: 'svc-run' } },
+        expect: { exitStatus: 0, outputContains: ['fake-ok'] },
+      }));
+      assert.equal(r.ok, true, JSON.stringify(r));
+
+      // The measured posture is recorded on the receipt.
+      assert.equal(r.posture.user, 'svc-run');
+      assert.equal(r.posture.uid, 1000, 'the EFFECTIVE uid, measured before the workload ran');
+      assert.equal(r.posture.probe, 'id -u');
+      assert.equal(typeof r.posture.measuredAt, 'string');
+
+      // Probe, then the workload AS that user, then the death probe.
+      assert.deepEqual(calls.run.map((c) => c.cmd), ['id', 'echo', 'true']);
+      assert.deepEqual(calls.run[0].runOpts.args, ['-u']);
+      assert.equal(calls.run[0].runOpts.user, 'svc-run');
+      assert.equal(calls.run[1].cmd, 'echo');
+      assert.equal(calls.run[1].runOpts.user, 'svc-run', 'the workload itself carries the honored user switch');
+      assert.deepEqual(calls.run[1].runOpts.args, ['hi']);
+
+      assert.equal(r.run.exitCode, 0);
+      assert.equal(r.identity.role, 'execution-worker');
+      assert.equal(r.cleanup.ok, true);
+      assert.equal(r.verification.verified, true, JSON.stringify(r.verification));
+    });
+  } finally {
+    setSolariClientFactory(null);
+  }
 });
