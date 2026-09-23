@@ -665,6 +665,51 @@ check('flowrouter: portability contract — digest rule, state machine, collisio
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'sync.js')], { stdio: 'pipe' });
 });
 
+// P6E: execution-admission census — the registry has EXACTLY three writers
+// (teach promotion, flowrouter import admission, execution admission), one
+// write each, and the admission write lives only inside admitExecution. The
+// goal/teach/acquire/marketplace paths must never import the module, so no
+// execution surface can mint registry entries outside the admission route.
+check('admission: execution admission — typed refusals, derived entry, three-writer census', () => {
+  const a = readFileSync(join(root, 'lib', 'admission.js'), 'utf8');
+  for (const must of [
+    'admitExecution', 'admission-goal-not-found', 'admission-not-a-goal', 'admission-not-shipped',
+    'admission-no-completed-run', 'admission-route-unselected', 'admission-authority-missing',
+    'admission-unknown-scope', 'admission-requires-not-held', 'admission-evaluator-not-derivable',
+    'admission-workflow-bytes-missing', 'admission-already-in-registry', 'admission-metadata-invalid',
+    'admission-bridge-stamp-invalid', 'capability already in the registry',
+    'execution-admission-v1', 'envelopeSha256', 'workflowSha256', 'reuse_count: 0',
+    "kind: 'output-contains'", "status: 'promoted'", 'requiresOf', 'resolveConfig', 'getDshHome',
+  ]) {
+    if (!a.includes(must)) throw new Error('lib/admission.js lost ' + must);
+  }
+  // admission writes the registry exactly once, inside admitExecution — and
+  // never routes a read through the reconciling task store.
+  const writes = a.match(/writeFile\([^)]*registry/g) || [];
+  if (writes.length !== 1) throw new Error('lib/admission.js must write the registry exactly once — got ' + writes.length);
+  const fnIdx = a.indexOf('export async function admitExecution');
+  const wIdx = a.search(/writeFile\([^)]*registry/);
+  if (fnIdx < 0 || wIdx < fnIdx) throw new Error('the registry write must live inside admitExecution');
+  if (/from '\.\/tasks\.js'/.test(a)) throw new Error('admission must read the stored envelope directly, never the reconciling task read path');
+  if (a.includes('upsertTask')) throw new Error('admission must never upsert task records');
+  // goal/teach/acquire/marketplace must not import the admission module
+  for (const f of ['goal.js', 'teach.js', 'acquire.js', 'marketplace.js']) {
+    const src = readFileSync(join(root, 'lib', f), 'utf8');
+    if (src.includes('admission.js')) throw new Error('lib/' + f + ' must never import the admission module');
+  }
+  // three-writer census across ALL lib modules
+  const libFiles = readdirSync(join(root, 'lib')).filter((f) => f.endsWith('.js'));
+  const writers = libFiles.filter((f) => /writeFile\([^)]*registry/.test(readFileSync(join(root, 'lib', f), 'utf8'))).sort();
+  const expected = ['admission.js', 'flowrouter.js', 'teach.js'];
+  if (JSON.stringify(writers) !== JSON.stringify(expected)) throw new Error('registry writers must be exactly teach + flowrouter + admission — got ' + writers.join(', '));
+  // the host route + P3B boundary reach admitExecution
+  const host = readFileSync(join(root, 'lib', 'index.js'), 'utf8');
+  if (!host.includes("GIT_ROUTE + '/admission'")) throw new Error('host lost the /admission route');
+  if (!host.includes('authorizeTaskRecord')) throw new Error('host lost the P3B authorization boundary');
+  if (!host.includes('admitExecution')) throw new Error('host lost the admitExecution call');
+  execFileSync(process.execPath, ['--check', join(root, 'lib', 'admission.js')], { stdio: 'pipe' });
+});
+
 check('memory: history read-model + named decay (no score) + lineage provenance', () => {
   const h = readFileSync(join(root, 'lib', 'history.js'), 'utf8');
   for (const must of ['capabilityHistory', 'listTasks', 'objectivesSatisfied', 'blocksAfterExecution', 'lastVerifiedAt', 'needsReevaluation', 'decayReason', 'recent']) {
