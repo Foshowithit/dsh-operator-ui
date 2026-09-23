@@ -225,7 +225,10 @@ test('two-step: submit is refused unbound, then binds through the supported path
   assert.equal(d.createPosts, 1, 'exactly one conversation creation total');
   assert.equal(d.dispatchPosts, 1, 'exactly one dispatch total');
   assert.equal(d.codebasePosts, 1, 'one codebase registration');
-  assert.ok(d.setProjectPosts >= 1, 'the project binding must reach Archon');
+  // The binding rides the create body (bound at birth, verified by re-read) —
+  // the legacy /setproject fallback never fires, and Archon v0.4.1 could not
+  // satisfy it if it did. SHIP above already proves T1 saw a bound conversation.
+  assert.equal(d.setProjectPosts, 0, 'binding reached Archon at creation, not via /setproject');
   const run = await assertRunIdentity(r, wsDir);
   assert.equal(run.status, 'completed');
 });
@@ -248,7 +251,8 @@ test('one-shot: create workspace, submit task, execute, inspect the receipt', as
   assert.equal(d.createPosts, 1, 'exactly one conversation creation');
   assert.equal(d.dispatchPosts, 1, 'exactly one dispatch');
   assert.equal(d.codebasePosts, 1, 'one codebase registration');
-  assert.ok(d.setProjectPosts >= 1, 'the project binding must reach Archon');
+  // Binding at creation (see two-step): the fallback path stays silent.
+  assert.equal(d.setProjectPosts, 0, 'binding reached Archon at creation, not via /setproject');
   const run = await assertRunIdentity(r, wsDir);
   assert.equal(run.status, 'completed');
   assert.equal(run.workflow_name, 'verify-echo-v1');

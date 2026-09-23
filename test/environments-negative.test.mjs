@@ -321,7 +321,7 @@ test('environment mismatch: a bound workspace refuses another environment, ident
   // before the refusal — so the codebase POST is the price of the refusal.
   assert.equal(r.rebound, '409:workspace-environment-mismatch', 'the same path cannot be re-bound to a second environment');
 
-  assert.deepEqual(d, { createPosts: 1, dispatchPosts: 1, codebasePosts: 2, setProjectPosts: 1 }, 'exactly one dispatch and its project binding, and both refusals stayed off the orchestrator');
+  assert.deepEqual(d, { createPosts: 1, dispatchPosts: 1, codebasePosts: 2, setProjectPosts: 0 }, 'exactly one dispatch; its project binding rode the create body, and both refusals stayed off the orchestrator');
 });
 
 test('solari boundary: an execution-worker-only environment refuses orchestrator dispatch', async () => {
@@ -427,7 +427,7 @@ test('owner scope: a scoped environment refuses outsiders by id and by default, 
   assert.equal(r.allowed, '200:', 'the scoped owner may create a workspace in it');
   assert.equal(r.allowedEnvironmentId, 'env-scoped', 'and the workspace records that binding');
 
-  assert.deepEqual(d, { createPosts: 1, dispatchPosts: 1, codebasePosts: 2, setProjectPosts: 1 }, 'the refusals cost nothing; the two allowed creations cost one codebase each, and one dispatch bound its project');
+  assert.deepEqual(d, { createPosts: 1, dispatchPosts: 1, codebasePosts: 2, setProjectPosts: 0 }, 'the refusals cost nothing; the two allowed creations cost one codebase each, and one dispatch bound its project at creation');
 });
 
 test('provider claims: a run claiming an undeclared provider blocks instead of shipping', async () => {
@@ -528,5 +528,5 @@ test('provider claims: a run claiming an undeclared provider blocks instead of s
     assert.equal(recorded, armed, leg.label + ': the run record must carry the claim the receipt judged');
   }
 
-  assert.deepEqual(d, { createPosts: 5, dispatchPosts: 5, codebasePosts: 5, setProjectPosts: 5 }, 'five executions, five workspaces, five project bindings — nothing extra');
+  assert.deepEqual(d, { createPosts: 5, dispatchPosts: 5, codebasePosts: 5, setProjectPosts: 0 }, 'five executions, five workspaces, five bindings at creation — nothing extra');
 });
