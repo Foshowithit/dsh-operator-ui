@@ -8,6 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
+import * as compat from '../lib/compat.js';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 let failures = 0;
@@ -726,6 +727,60 @@ check('memory: history read-model + named decay (no score) + lineage provenance'
   const m = JSON.parse(readFileSync(join(root, 'system-manifest.json'), 'utf8'));
   if (!m.memory || !m.memory.noScore) throw new Error('manifest lost the memory section');
   execFileSync(process.execPath, ['--check', join(root, 'lib', 'history.js')], { stdio: 'pipe' });
+});
+
+// 12b. Host-version guard: the plugin must be able to TELL which DSH it is
+// running inside, and the pins it compares against must agree with COMPAT.md
+// and package.json. Before this guard existed `probeDsh()` returned
+// `version: null`, so a verified install and an unverified one produced
+// byte-identical status payloads — measured, not assumed (the live A/B boot of
+// DSH 0.1.5-rc.3 against the 0.1.0-rc.6 pin is recorded in lib/compat.js).
+check('compat guard: version is detected, pin agrees with COMPAT.md and package.json', () => {
+  const md = readFileSync(join(root, 'COMPAT.md'), 'utf8');
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+
+  if (typeof compat.PINNED_DSH !== 'string' || !compat.PINNED_DSH) throw new Error('lib/compat.js lost PINNED_DSH');
+  if (typeof compat.PINNED_TOOLS_RANGE !== 'string' || !compat.PINNED_TOOLS_RANGE) {
+    throw new Error('lib/compat.js lost PINNED_TOOLS_RANGE');
+  }
+  if (!md.includes('`' + compat.PINNED_DSH + '`')) {
+    throw new Error('COMPAT.md does not document DSH pin `' + compat.PINNED_DSH + '` — doc and code have drifted');
+  }
+  const peer = (pkg.peerDependencies || {})['@deepseek-ai/dsh-tools'];
+  if (peer !== compat.PINNED_TOOLS_RANGE) {
+    throw new Error('package.json peer dsh-tools ' + JSON.stringify(peer)
+      + ' !== guarded range ' + compat.PINNED_TOOLS_RANGE);
+  }
+
+  // The three verdicts must stay distinct, and only the pin may claim VERIFIED.
+  const pin = compat.judgeDsh(compat.PINNED_DSH);
+  const off = compat.judgeDsh('9.9.9');
+  const none = compat.judgeDsh(null);
+  if (pin.state !== 'VERIFIED' || pin.ok !== true) throw new Error('the pinned DSH version must judge VERIFIED');
+  if (off.state !== 'UNVERIFIED' || off.ok !== false) throw new Error('an off-pin DSH version must judge UNVERIFIED');
+  if (none.state !== 'UNKNOWN' || none.ok !== false) throw new Error('an undetectable DSH version must judge UNKNOWN');
+  if (new Set([pin.state, off.state, none.state]).size !== 3) throw new Error('the three verdict states must stay distinct');
+
+  // Negative control: satisfies() must be able to say no, and the peer range
+  // must admit exactly the one version COMPAT.md documents.
+  if (compat.satisfies('0.1.5-rc.3', compat.PINNED_TOOLS_RANGE) !== false) {
+    throw new Error('satisfies() admitted ' + '0.1.5-rc.3 to ' + compat.PINNED_TOOLS_RANGE + ' — the prerelease gate is open');
+  }
+  if (compat.satisfies(compat.PINNED_TOOLS_RANGE.replace(/^[\^~]+/, ''), compat.PINNED_TOOLS_RANGE) !== true) {
+    throw new Error('satisfies() rejected the range it is meant to admit');
+  }
+
+  // A healthy install must stay silent; an off-pin one must name both numbers.
+  if (compat.bannerBox([pin]) !== null) throw new Error('a VERIFIED verdict must not produce a banner');
+  const box = compat.bannerBox([off]);
+  if (!box || !box.includes('9.9.9') || !box.includes(compat.PINNED_DSH)) {
+    throw new Error('the off-pin banner must name both the detected version and the pin');
+  }
+
+  // Detection must work from the process it runs in, not only from fixtures.
+  const host = compat.hostCompat();
+  if (!('version' in host) || !('state' in host)) throw new Error('hostCompat() lost its shape');
+  if (host.state !== compat.judgeDsh(host.version).state) throw new Error('hostCompat() and judgeDsh() disagree');
 });
 
 // 13. Module graph: every host-side module must LOAD, not just parse. The
