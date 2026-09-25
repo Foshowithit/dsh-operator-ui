@@ -456,5 +456,11 @@ test('the gate refuses a dirty tree instead of certifying an uncommitted subject
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(join(import.meta.dirname, '..', 'scripts', 'gate.mjs'), 'utf8');
   assert.match(src, /workingTreeClean\(root\)/, 'the snapshot path must gate on a clean tree');
-  assert.match(src, /--in-place/, 'the legacy live-tree mode must remain reachable for ad-hoc use');
+  // ...and the refusal above has NO escape hatch any more. The legacy live-tree
+  // mode is retired, so a dirty tree cannot be gated at all. Pinned as an
+  // ABSENCE, because a re-added flag would silently restore a second, weaker
+  // instrument whose receipts still look admissible — which is the whole reason
+  // it was retired.
+  assert.doesNotMatch(src, /has\(\s*'--in-place'\s*\)/, 'the legacy live-tree flag must not be parseable');
+  assert.doesNotMatch(src, /'in-place'/, 'no receipt field may report a live-tree mode');
 });

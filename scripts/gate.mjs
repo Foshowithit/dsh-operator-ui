@@ -76,7 +76,13 @@
 // The tree must be CLEAN for a claim-grade run. Uncommitted content has no
 // commit identity, so there is nothing to bind the receipt to; the gate
 // refuses (exit 3) rather than certifying a tree that no commit describes.
-// `--in-place` retains the old sample-the-live-tree behaviour for ad-hoc use.
+//
+// THERE IS ONE INSTRUMENT. The legacy `--in-place` live-tree sampler was
+// retired (2026-09-25) because it produced receipts that were admissible-looking
+// but weaker: it proved endpoint equality, not immutability, which is the exact
+// distinction P0.4 exists to draw. A dirty tree is now refused outright, with
+// no ad-hoc escape hatch — a run with no commit identity has no receipt to be
+// evidence about, so there is nothing for the escape hatch to produce.
 //
 // USAGE
 //
@@ -86,7 +92,6 @@
 //   node scripts/gate.mjs --no-run         dry: print the expanded test set
 //   node scripts/gate.mjs --out <path>     receipt path
 //   node scripts/gate.mjs --quiet          suppress leg output on the console
-//   node scripts/gate.mjs --in-place       legacy: run in the live worktree
 //   node scripts/gate.mjs --keep-snapshot  do not delete the snapshot afterwards
 //   node scripts/gate.mjs --snapshot-dir <path>  place the snapshot here
 //
@@ -525,74 +530,70 @@ async function main() {
 
   mkdirSync(artifactDir, { recursive: true });
 
-  const inPlace = has('--in-place');
   const keepSnapshot = has('--keep-snapshot');
   const startedAt = new Date().toISOString();
 
-  // --- the execution root: a frozen snapshot, or (legacy) the live tree ------
+  // --- the execution root: a frozen snapshot, NEVER the live tree ------------
   //
   // `files` is fixed HERE and reused for every identity read, so "before" and
   // "after" hash the same path list and a file that vanished mid-run cannot
   // silently drop out of the comparison.
-  let execRoot = root;
   let files = null;
-  let snap = null;
-  let sourceBefore = null;
 
-  if (!inPlace) {
-    // A claim-grade receipt binds to a commit. Uncommitted content has no
-    // commit identity, so there is nothing for the run to be evidence about.
-    if (!workingTreeClean(root)) {
-      console.error('GATE COULD NOT RUN: the tracked working tree is dirty, so no commit describes the content under test.');
-      console.error('  A claim-grade receipt binds to a commit. Commit first, or use --in-place for an ad-hoc sample of the live tree.');
-      process.exit(3);
-    }
-    const commit = headId(root);
-    if (String(commit).startsWith('UNREADABLE')) {
-      console.error('GATE COULD NOT RUN: HEAD is unreadable — ' + commit);
-      process.exit(3);
-    }
-    try {
-      files = trackedFiles(root);
-    } catch (e) {
-      console.error('GATE COULD NOT RUN: the tracked file list could not be read — ' + ((e && e.message) || e));
-      process.exit(3);
-    }
-    sourceBefore = { head: commit, tree: manifestIdentity(root, files) };
+  // A claim-grade receipt binds to a commit. Uncommitted content has no
+  // commit identity, so there is nothing for the run to be evidence about.
+  // There is no ad-hoc escape hatch: a run with no commit identity would have
+  // no receipt to be evidence about, so an escape hatch could only produce a
+  // document that looks admissible and is not.
+  if (!workingTreeClean(root)) {
+    console.error('GATE COULD NOT RUN: the tracked working tree is dirty, so no commit describes the content under test.');
+    console.error('  A claim-grade receipt binds to a commit. Commit first, then re-run the gate.');
+    process.exit(3);
+  }
+  const commit = headId(root);
+  if (String(commit).startsWith('UNREADABLE')) {
+    console.error('GATE COULD NOT RUN: HEAD is unreadable — ' + commit);
+    process.exit(3);
+  }
+  try {
+    files = trackedFiles(root);
+  } catch (e) {
+    console.error('GATE COULD NOT RUN: the tracked file list could not be read — ' + ((e && e.message) || e));
+    process.exit(3);
+  }
+  const sourceBefore = { head: commit, tree: manifestIdentity(root, files) };
 
-    const dest = arg('--snapshot-dir', null) || mkdtempSync(join(tmpdir(), 'rcos-snapshot-'));
-    try {
-      createFrozenSnapshot({ root, dest, commit });
-    } catch (e) {
-      console.error('GATE COULD NOT RUN: could not create the frozen snapshot — ' + ((e && e.message) || e));
-      process.exit(3);
-    }
-    execRoot = dest;
-
-    // PROVE the snapshot is the tracked content of `commit`, rather than
-    // asserting it. A mismatch here means the execution inputs are not what the
-    // receipt would have claimed, which is a refusal, not a warning.
-    const atCreate = manifestIdentity(dest, files);
-    if (atCreate !== sourceBefore.tree) {
-      removeFrozenSnapshot({ root, dest });
-      console.error('GATE COULD NOT RUN: the snapshot is not the tracked content of ' + commit);
-      console.error('  source   ' + sourceBefore.tree.slice(0, 16) + '...');
-      console.error('  snapshot ' + atCreate.slice(0, 16) + '...');
-      process.exit(3);
-    }
-    snap = { dir: dest, commit, identity_at_create: atCreate, tracked_files: files.length, kept: keepSnapshot };
+  const execRoot = arg('--snapshot-dir', null) || mkdtempSync(join(tmpdir(), 'rcos-snapshot-'));
+  try {
+    createFrozenSnapshot({ root, dest: execRoot, commit });
+  } catch (e) {
+    console.error('GATE COULD NOT RUN: could not create the frozen snapshot — ' + ((e && e.message) || e));
+    process.exit(3);
   }
 
+  // PROVE the snapshot is the tracked content of `commit`, rather than
+  // asserting it. A mismatch here means the execution inputs are not what the
+  // receipt would have claimed, which is a refusal, not a warning.
+  const atCreate = manifestIdentity(execRoot, files);
+  if (atCreate !== sourceBefore.tree) {
+    removeFrozenSnapshot({ root, dest: execRoot });
+    console.error('GATE COULD NOT RUN: the snapshot is not the tracked content of ' + commit);
+    console.error('  source   ' + sourceBefore.tree.slice(0, 16) + '...');
+    console.error('  snapshot ' + atCreate.slice(0, 16) + '...');
+    process.exit(3);
+  }
+  const snap = { dir: execRoot, commit, identity_at_create: atCreate, tracked_files: files.length, kept: keepSnapshot };
+
   // --- the explicit set, hashed from the EXECUTION root ----------------------
-  const execHeadBefore = snap ? snap.commit : headId(execRoot);
-  const execBefore = snap ? snap.identity_at_create : contentIdentity(execRoot).id;
-  const trackedCount = snap ? snap.tracked_files : contentIdentity(execRoot).files;
+  const execHeadBefore = snap.commit;
+  const execBefore = snap.identity_at_create;
+  const trackedCount = snap.tracked_files;
   const porcelainBefore = porcelain(execRoot);
   let setHashesBefore;
   try {
     setHashesBefore = hashTestSet(execRoot, testSet);
   } catch (e) {
-    if (snap) removeFrozenSnapshot({ root, dest: snap.dir });
+    removeFrozenSnapshot({ root, dest: snap.dir });
     console.error('GATE COULD NOT RUN: the explicit test set could not be hashed — ' + ((e && e.message) || e));
     process.exit(3);
   }
@@ -618,8 +619,8 @@ async function main() {
   const finishedAt = new Date().toISOString();
 
   // --- the identity that must hold still: the EXECUTION root -----------------
-  const execAfter = snap ? manifestIdentity(execRoot, files) : contentIdentity(execRoot).id;
-  const execHeadAfter = snap ? snap.commit : headId(execRoot);
+  const execAfter = manifestIdentity(execRoot, files);
+  const execHeadAfter = snap.commit;
   const porcelainAfter = porcelain(execRoot);
   let setHashesAfter;
   try {
@@ -639,21 +640,18 @@ async function main() {
   // A sibling committing Y while this gate certifies X must not discard X's
   // evidence. The snapshot is what had to hold still; the development tree
   // moving is a fact worth recording and nothing more.
-  let source = null;
-  if (snap) {
-    const srcTreeAfter = manifestIdentity(root, files);
-    const srcHeadAfter = headId(root);
-    source = {
-      commit_under_test: snap.commit,
-      tree_before: sourceBefore.tree,
-      tree_after: srcTreeAfter,
-      head_before: sourceBefore.head,
-      head_after: srcHeadAfter,
-      repo_moved_during_run: sourceBefore.tree !== srcTreeAfter,
-      head_moved_during_run: sourceBefore.head !== srcHeadAfter,
-      note: 'the development tree is not the measured system; movement here does not void the run',
-    };
-  }
+  const srcTreeAfter = manifestIdentity(root, files);
+  const srcHeadAfter = headId(root);
+  const source = {
+    commit_under_test: snap.commit,
+    tree_before: sourceBefore.tree,
+    tree_after: srcTreeAfter,
+    head_before: sourceBefore.head,
+    head_after: srcHeadAfter,
+    repo_moved_during_run: sourceBefore.tree !== srcTreeAfter,
+    head_moved_during_run: sourceBefore.head !== srcHeadAfter,
+    note: 'the development tree is not the measured system; movement here does not void the run',
+  };
 
   const v = deriveVerdict({
     contentBefore: execBefore, contentAfter: execAfter,
@@ -665,14 +663,12 @@ async function main() {
   const receipt = {
     gate: 'scripts/gate.mjs',
     gate_version: 2,
-    mode: snap ? 'snapshot' : 'in-place',
+    mode: 'snapshot',
     verdict: v.verdict,
     reason: v.reason,
     moved: v.moved,
     head_only_move: v.headOnlyMove,
-    admission_rule: snap
-      ? 'snapshot_content_before == snapshot_content_after AND snapshot_set_bytes == snapshot_set_bytes, else VOID'
-      : 'content_before == content_after AND HEAD_before == HEAD_after, else VOID',
+    admission_rule: 'snapshot_content_before == snapshot_content_after AND snapshot_set_bytes == snapshot_set_bytes, else VOID',
     repo: root,
     exec_root: execRoot,
     started_at: startedAt,
@@ -707,21 +703,14 @@ async function main() {
   console.log('\n' + bar);
   console.log('RCOS FROZEN-PROVENANCE GATE');
   console.log(bar);
-  console.log('mode          : ' + receipt.mode + (snap ? '  (detached worktree at ' + snap.commit.slice(0, 12) + ')' : '  (live tree)'));
+  console.log('mode          : ' + receipt.mode + '  (detached worktree at ' + snap.commit.slice(0, 12) + ')');
   console.log('verdict       : ' + v.verdict + (v.reason ? '  (' + v.reason + ')' : ''));
   if (v.moved.length) console.log('moved         : ' + v.moved.join(', ') + (v.headOnlyMove ? '  [HEAD-only: a concurrent commit, no tracked file changed]' : ''));
-  if (snap) {
-    console.log('snapshot      : ' + snap.identity_at_create.slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
-    if (source) {
-      console.log('source tree   : ' + (source.repo_moved_during_run || source.head_moved_during_run
-        ? 'MOVED during the run (provenance only — does not void): '
-          + [source.repo_moved_during_run ? 'tracked-content' : null, source.head_moved_during_run ? 'head' : null].filter(Boolean).join(', ')
-        : 'unchanged'));
-    }
-  } else {
-    console.log('HEAD          : ' + execHeadBefore + (execHeadBefore === execHeadAfter ? '  (unchanged)' : '  -> ' + execHeadAfter));
-    console.log('tree          : ' + String(execBefore).slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
-  }
+  console.log('snapshot      : ' + snap.identity_at_create.slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
+  console.log('source tree   : ' + (source.repo_moved_during_run || source.head_moved_during_run
+    ? 'MOVED during the run (provenance only — does not void): '
+      + [source.repo_moved_during_run ? 'tracked-content' : null, source.head_moved_during_run ? 'head' : null].filter(Boolean).join(', ')
+    : 'unchanged'));
   console.log('tracked files : ' + receipt.tracked_files);
   console.log('explicit set  : ' + testSet.length + ' files from ' + globLabel + ' (' + excluded.length + ' non-entrypoint .mjs excluded)');
   console.log('set bytes     : ' + Object.keys(setHashesBefore).length + ' hashed' + (setChanged.length ? '  ' + setChanged.length + ' CHANGED: ' + setChanged.join(', ') : '  (unchanged)'));
