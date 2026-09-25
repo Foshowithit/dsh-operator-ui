@@ -51,7 +51,10 @@ const secondChildRun = () => ({ ...realRun, id: SECOND_ID, conversation_id: 'fff
 // adoptionRecord() builds from the real run detail.
 function adoptedEnvelope() {
   const evidence = verifyParentLinkage(realRun, realTask.conversation, WF, MSG).evidence;
-  assert.equal(evidence.every((e) => e.pass), true, 'real run must verify against the real association');
+  // The real historical association carries no expectedWorkspacePath, so the
+  // working-path leg is emitted INAPPLICABLE (no verdict) — every APPLICABLE
+  // leg passes.
+  assert.equal(evidence.every((e) => e.applicable === false || e.pass), true, 'real run must verify against the real association');
   const adoption = adoptionRecord({
     mode: 'direct-exact',
     detail: realRun,
@@ -184,8 +187,8 @@ test('op4r restart: the verified child association reconstructs from disk, re-va
     assert.equal(entry.kind, 'child-run-association-verified');
     assert.equal(entry.runId, realRun.id);
     assert.equal(entry.statusObserved, 'failed');
-    assert.equal(entry.evidence.length, 5);
-    assert.equal(entry.evidence.every((e) => e.pass), true, JSON.stringify(entry.evidence));
+    assert.equal(entry.evidence.length, 6);
+    assert.equal(entry.evidence.every((e) => e.applicable === false || e.pass), true, JSON.stringify(entry.evidence));
 
     // Historical observation immutable: the original FAILED verdict and the
     // authority block survive the reconciliation byte-for-byte.
@@ -425,7 +428,7 @@ test('op4r identified historical run appends evidence and preserves the original
     const entry = read.task.reconciliation[0];
     assert.equal(entry.kind, 'child-run-identified');
     assert.equal(entry.runId, realRun.id);
-    assert.equal(entry.evidence.every((e) => e.pass), true);
+    assert.equal(entry.evidence.every((e) => e.applicable === false || e.pass), true);
 
     // Original observation preserved: the append names the failed child run
     // but rewrites nothing.
@@ -569,7 +572,7 @@ test('op4r discoverRun: an outage is "unavailable" (never a retry signal), a ver
     assert.equal(d.status, 'found');
     assert.equal(d.adoption.mode, 'parent-linked');
     assert.equal(d.adoption.runId, realRun.id);
-    assert.equal(d.adoption.evidence.every((e) => e.pass), true);
+    assert.equal(d.adoption.evidence.every((e) => e.applicable === false || e.pass), true);
 
     // (d) Successful reads, genuinely empty -> "none": absence was ANSWERED,
     // which is a different world from (a).

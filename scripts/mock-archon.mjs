@@ -18,6 +18,26 @@
 // best-effort conversation lookup (dispatch proceeds over an unknown id —
 // enforcement lives Mac-side) and stamps the conversation's effective cwd
 // (cwd ?? codebase.default_cwd) onto the run.
+//
+// RC-read-outcomes (2026-09-24): the run-detail read path is now faultable so
+// the client's "authoritative absence vs failed read" distinction is
+// falsifiable. POST /api/_mock/detail-fault { mode, count? } arms one of
+// 404 | 410 | 500 | 429 | timeout | invalid-json | not-object | not-run-object |
+// array-body | id-mismatch | absent-body | clear on the run-detail GETs that
+// follow. An OMITTED `count` persists the fault until `clear` (the client
+// retries a retryable read, so a one-read default would heal the fault it was
+// armed to inject); an explicit `count: n` bounds it to n reads and then
+// auto-disarms. GET /api/_mock/detail-reads reports { reads, total, armed, mode,
+// remaining, persistent } and POST /api/_mock/detail-reads/reset zeroes both
+// counters. Unarmed, the detail route is byte-for-byte what it was:
+// `{ run, events }`, or a 200 `{ error: 'not found' }` for an unknown id.
+//
+// `not-object` (a JSON string) and `array-body` (a JSON array) deliberately
+// exercise DIFFERENT legs of the client's record gate — the `typeof` leg and
+// the `Array.isArray` leg respectively — and `not-run-object` (a 200 object
+// with neither a `run` key nor an `error` key) is the one 200-object shape that
+// is NOT self-identifying, so it pins the boundary between "explicit negative
+// envelope" and "unrecognized 200 body".
 
 import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
@@ -56,6 +76,19 @@ let forkNextDispatchCount = 0;
 // pre-P3A test relies on: an absent claim is `not-claimed`, never a mismatch.
 // Armed only by the admin route, so no existing case can be perturbed.
 let nextDispatchProvider = null;
+
+// Run-detail read faults (test-only). The defect under test is that the client
+// collapses every run-detail read outcome to `null`, so an AUTHORITATIVE
+// ABSENCE (404, or a 200 `{ error: 'not found' }`) is indistinguishable from a
+// FAILED READ (5xx, 429, abort, unparseable/non-object body, or a server that
+// answers with a DIFFERENT record). Each arm below forces exactly one of those
+// outcomes, and the read counters make the client's bounded retry falsifiable:
+// a test can assert the client attempted exactly N reads and no more.
+const DETAIL_FAULT_MODES = ['404', '410', '500', '429', 'timeout', 'invalid-json', 'not-object', 'not-run-object', 'array-body', 'id-mismatch', 'absent-body'];
+let detailFaultMode = null; // armed mode; null = disarmed
+let detailFaultRemaining = 0; // reads still carrying the fault; null = persistent until `clear`
+let detailReads = 0; // detail GETs attempted since the last arm
+let detailReadsTotal = 0; // lifetime detail GETs attempted
 
 const readBody = (req) => new Promise((resolve) => {
   let body = '';
@@ -311,6 +344,51 @@ createServer(async (req, res) => {
   const runMatch = url.pathname.match(/^\/api\/workflows\/runs\/(.+)$/);
   if (runMatch) {
     const run = [...dynamicRuns, ...runs].find((r) => r.id === runMatch[1]);
+    // Fault injection is scoped to the GET read path — the surface the client
+    // actually consumes — and consumes exactly one armed read per attempt, so
+    // `count` bounds how many reads fail before the mock heals itself.
+    if (req.method === 'GET') {
+      detailReads += 1;
+      detailReadsTotal += 1;
+      if (detailFaultMode !== null) {
+        const mode = detailFaultMode;
+        // A null `remaining` is a PERSISTENT arm: never decremented, so the
+        // fault survives the client's bounded retry until an explicit `clear`.
+        if (detailFaultRemaining !== null) {
+          detailFaultRemaining -= 1;
+          if (detailFaultRemaining <= 0) { detailFaultMode = null; detailFaultRemaining = 0; }
+        }
+        if (mode === '404') return fail(404, { error: 'not found' });
+        if (mode === '410') return fail(410, { error: 'gone' });
+        if (mode === '500') return fail(500, { error: 'internal error' });
+        if (mode === '429') return fail(429, { error: 'too many requests' });
+        // Hold the request open and never answer, so the client's own abort
+        // timeout is what ends the read.
+        if (mode === 'timeout') return;
+        if (mode === 'invalid-json') {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          return res.end('{"run": ');
+        }
+        if (mode === 'not-object') return json('mock: run detail is not an object');
+        // A 200 object with NEITHER a `run` key nor an `error` key: nothing in
+        // it self-identifies as absence, so a client that only recognises an
+        // explicit `{error}` envelope will accept it as a real record.
+        if (mode === 'not-run-object') return json({ ok: true });
+        // A 200 array wrapping a plausible run: the "list row mistaken for a
+        // detail" shape, which only an explicit isArray check rejects.
+        if (mode === 'array-body') return json([run ? publicRun(run, { forDetail: true }) : { id: 'run-someone-else' }]);
+        if (mode === 'absent-body') return json({ error: 'not found' });
+        if (mode === 'id-mismatch') {
+          // Same shape as the honest detail (run + events) but the id is NOT
+          // the one requested: the only observable difference is the mismatch.
+          const other = { ...(run ? publicRun(run, { forDetail: true }) : {}), id: 'run-someone-else' };
+          return json({
+            run: other,
+            events: (other.output ? [{ id: 'ev-1', event_type: 'node_output', step_name: 'emit', data: { output: other.output } }] : []),
+          });
+        }
+      }
+    }
     if (!run) return json({ error: 'not found' });
     const pub = publicRun(run, { forDetail: true });
     return json({
@@ -610,6 +688,55 @@ createServer(async (req, res) => {
     }
     nextDispatchProvider = provider;
     return json({ armed: provider !== null, provider });
+  }
+  // Arm a fault on the run-detail GETs that follow. An omitted `count` means
+  // the fault PERSISTS until `clear`: the client retries a retryable read up to
+  // RUN_READ_MAX_RETRIES times, so a one-read default would silently heal the
+  // fault it was armed to inject and make UNAVAILABLE unobservable. An explicit
+  // `count` arms a BOUNDED fault (that is how a test proves retry-then-success).
+  // `mode: 'clear'` disarms immediately. Invalid input is REFUSED (400), never
+  // coerced — a mock that silently coerced a mode would make the read-outcome
+  // legs unfalsifiable.
+  if (url.pathname === '/api/_mock/detail-fault' && req.method === 'POST') {
+    const body = await readBody(req);
+    let parsed = {};
+    try { parsed = JSON.parse(body || '{}'); } catch { return fail(400, { error: 'invalid JSON body' }); }
+    const mode = parsed.mode;
+    if (mode !== 'clear' && !DETAIL_FAULT_MODES.includes(mode)) {
+      return fail(400, { error: 'mode must be one of: ' + [...DETAIL_FAULT_MODES, 'clear'].join(', ') });
+    }
+    let count = null; // null = persistent until `clear`
+    if ('count' in parsed) {
+      count = parsed.count;
+      if (!Number.isInteger(count) || count < 1) return fail(400, { error: 'count must be a positive integer' });
+    }
+    if (mode === 'clear') {
+      detailFaultMode = null;
+      detailFaultRemaining = 0;
+      return json({ armed: false, mode: null, cleared: true });
+    }
+    detailFaultMode = mode;
+    detailFaultRemaining = count; // null = never decremented, i.e. persistent
+    detailReads = 0; // the since-arm read counter is measured from this arm
+    return json({ armed: true, mode, count: count === null ? 'persistent' : count, persistent: count === null });
+  }
+  // The client's bounded-retry proof: `reads` counts detail GETs since the last
+  // arm, `total` counts them for the process's life. `remaining` is null while
+  // the arm is persistent.
+  if (url.pathname === '/api/_mock/detail-reads' && req.method === 'GET') {
+    return json({
+      reads: detailReads,
+      total: detailReadsTotal,
+      armed: detailFaultMode !== null,
+      mode: detailFaultMode,
+      remaining: detailFaultRemaining,
+      persistent: detailFaultMode !== null && detailFaultRemaining === null,
+    });
+  }
+  if (url.pathname === '/api/_mock/detail-reads/reset' && req.method === 'POST') {
+    detailReads = 0;
+    detailReadsTotal = 0;
+    return json({ reads: 0, total: 0, reset: true });
   }
 
   res.writeHead(404);

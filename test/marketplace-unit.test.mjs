@@ -237,19 +237,33 @@ test('detection: no openapi document at all (404) is unsupported with a hint', a
   });
 });
 
-test('detection: unreachable or unconfigured targets degrade honestly, never throw', async () => {
+test('detection: an unreachable target is an OUTAGE, never "not advertised"', async () => {
+  // Wrong behaviour this prevents: a connection-refused READ was reported as
+  // 'marketplace-not-advertised' — a durable claim about the installation,
+  // derived from a transient network failure.
   const closed = await detectMarketplaceSupport({ baseUrl: 'http://127.0.0.1:1', timeoutMs: 500 });
   assert.equal(closed.supported, false);
-  assert.equal(closed.reason, 'marketplace-not-advertised');
-  const none = await detectMarketplaceSupport({});
-  assert.equal(none.supported, false);
-  assert.equal(none.reason, 'marketplace-not-advertised');
+  assert.equal(closed.outcome, 'UNAVAILABLE');
+  assert.equal(closed.reason, 'marketplace-unreachable');
 });
 
-test('detection: a silent target times out to unsupported instead of hanging', async () => {
+test('detection: an unconfigured Archon is NOT_CONFIGURED, never "not advertised"', async () => {
+  // Wrong behaviour this prevents: "no Archon is configured at all" (operator
+  // action: set archon.baseUrl) was reported as "this installation does not
+  // advertise a marketplace" (a different action entirely).
+  const none = await detectMarketplaceSupport({});
+  assert.equal(none.supported, false);
+  assert.equal(none.outcome, 'NOT_CONFIGURED');
+  assert.equal(none.reason, 'marketplace-not-configured');
+});
+
+test('detection: a silent target times out to UNAVAILABLE instead of hanging', async () => {
+  // Wrong behaviour this prevents: a timeout — the same outage as an
+  // unreachable target — was reported as 'marketplace-not-advertised'.
   await withServer(() => { /* never answers */ }, async (baseUrl) => {
     const s = await detectMarketplaceSupport({ baseUrl, timeoutMs: 200 });
     assert.equal(s.supported, false);
-    assert.equal(s.reason, 'marketplace-not-advertised');
+    assert.equal(s.outcome, 'UNAVAILABLE');
+    assert.equal(s.reason, 'marketplace-unreachable');
   });
 });

@@ -31,6 +31,7 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { createServer } from 'node:http';
 import { mkdtemp, writeFile, rm, mkdir, readdir, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname, basename } from 'node:path';
@@ -38,8 +39,63 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const PORT = 13779;
-const BASE = 'http://127.0.0.1:' + PORT;
+
+// --------------------------------------------------------------- mock lifecycle
+//
+// The mock binds an OS-assigned ephemeral port, never a hardcoded 137xx, so two
+// concurrent runs of this file (or this file beside any other) cannot collide
+// on a port. Binding :0 only PROBES for a free port: the kernel releases it the
+// instant we close, so a sibling process can steal it before the mock child
+// binds. startMock() treats a failed start as a lost race and retries on a
+// fresh port rather than trusting the probed number.
+async function freePort() {
+  const srv = createServer();
+  await new Promise((res, rej) => { srv.once('error', rej); srv.listen(0, '127.0.0.1', res); });
+  const { port } = srv.address();
+  await new Promise((res) => srv.close(res));
+  return port;
+}
+
+async function startMock({ attempts = 6, readyTimeoutMs = 5000 } = {}) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const port = await freePort();
+    const base = 'http://127.0.0.1:' + port;
+    const proc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(port)], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    proc.stderr.on('data', (d) => { stderr += d; });
+    let exited = null;
+    proc.on('exit', (code) => { exited = code; });
+    const deadline = Date.now() + readyTimeoutMs;
+    let ready = false;
+    for (;;) {
+      if (exited !== null) {
+        lastErr = new Error('mock archon exited (' + exited + ') before binding :' + port +
+          ' — the probed port was taken before the bind' + (stderr ? ': ' + stderr.trim().split('\n')[0] : ''));
+        break;
+      }
+      try { if ((await fetch(base + '/api/health')).ok) { ready = true; break; } } catch {}
+      if (Date.now() > deadline) { lastErr = new Error('mock archon never answered on :' + port + ' within ' + readyTimeoutMs + 'ms'); break; }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (ready && exited === null) return { proc, port, base };
+    if (ready) lastErr = new Error('mock archon on :' + port + ' exited right after answering');
+    try { proc.kill('SIGKILL'); } catch {}
+  }
+  throw new Error('could not start a mock archon after ' + attempts + ' attempts: ' + (lastErr ? lastErr.message : 'unknown'));
+}
+
+let mockProc;
+// Acquire the port and prove the mock is live BEFORE any config or case code can
+// observe BASE (CONFIGS below reads BASE at module-eval time). No hard-fail guard
+// survives: with an ephemeral port there is nothing to collide with, and
+// startMock()'s retry absorbs the only remaining race (a sibling stealing the
+// probed port).
+const mock = await startMock();
+const BASE = mock.base;
+mockProc = mock.proc;
 
 // The same single-capability registry the other E2E files use: one objective that
 // routes deterministically to one workflow, so a dispatch is unambiguous.
@@ -151,7 +207,6 @@ const CONFIGS = {
 
 let tmpRoot;
 let registryPath;
-let mockProc;
 let wsRoot;
 let wsDir;
 let wsDir2;
@@ -249,24 +304,6 @@ before(async () => {
   wsDir = await newDir('ws-alpha');
   wsDir2 = await newDir('ws-beta');
   for (let i = 1; i <= 5; i += 1) claimDirs.push(await newDir('ws-claim-' + i));
-
-  // Refuse to run against a stale mock on our port: leftover counters and a
-  // leftover claim arm would corrupt the deltas and the run records.
-  let stale = false;
-  try {
-    stale = (await fetch(BASE + '/api/health')).ok;
-  } catch {}
-  if (stale) throw new Error('a mock archon is already listening on 127.0.0.1:' + PORT + ' — kill it first');
-
-  mockProc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(PORT)], { stdio: 'ignore' });
-  const deadline = Date.now() + 5000;
-  for (;;) {
-    try {
-      if ((await fetch(BASE + '/api/health')).ok) break;
-    } catch {}
-    if (Date.now() > deadline) throw new Error('mock archon failed to start on :' + PORT);
-    await new Promise((r) => setTimeout(r, 100));
-  }
 });
 
 after(async () => {

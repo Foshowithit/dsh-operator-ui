@@ -19,6 +19,7 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { mkdtemp, writeFile, rm, mkdir, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -26,8 +27,63 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const PORT = 13781;
-const BASE = 'http://127.0.0.1:' + PORT;
+
+// --------------------------------------------------------------- mock lifecycle
+//
+// The mock binds an OS-assigned ephemeral port, never a hardcoded 137xx, so two
+// concurrent runs of this file (or this file beside any other) cannot collide
+// on a port. Binding :0 only PROBES for a free port: the kernel releases it the
+// instant we close, so a sibling process can steal it before the mock child
+// binds. startMock() treats a failed start as a lost race and retries on a
+// fresh port rather than trusting the probed number.
+async function freePort() {
+  const srv = createServer();
+  await new Promise((res, rej) => { srv.once('error', rej); srv.listen(0, '127.0.0.1', res); });
+  const { port } = srv.address();
+  await new Promise((res) => srv.close(res));
+  return port;
+}
+
+async function startMock({ attempts = 6, readyTimeoutMs = 5000 } = {}) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const port = await freePort();
+    const base = 'http://127.0.0.1:' + port;
+    const proc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(port)], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    proc.stderr.on('data', (d) => { stderr += d; });
+    let exited = null;
+    proc.on('exit', (code) => { exited = code; });
+    const deadline = Date.now() + readyTimeoutMs;
+    let ready = false;
+    for (;;) {
+      if (exited !== null) {
+        lastErr = new Error('mock archon exited (' + exited + ') before binding :' + port +
+          ' — the probed port was taken before the bind' + (stderr ? ': ' + stderr.trim().split('\n')[0] : ''));
+        break;
+      }
+      try { if ((await fetch(base + '/api/health')).ok) { ready = true; break; } } catch {}
+      if (Date.now() > deadline) { lastErr = new Error('mock archon never answered on :' + port + ' within ' + readyTimeoutMs + 'ms'); break; }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (ready && exited === null) return { proc, port, base };
+    if (ready) lastErr = new Error('mock archon on :' + port + ' exited right after answering');
+    try { proc.kill('SIGKILL'); } catch {}
+  }
+  throw new Error('could not start a mock archon after ' + attempts + ' attempts: ' + (lastErr ? lastErr.message : 'unknown'));
+}
+
+let mockProc;
+// Acquire the port and prove the mock is live BEFORE any config or case code can
+// observe BASE (REQUIRED_CONFIG below reads BASE at module-eval time). No hard-fail
+// guard survives: with an ephemeral port there is nothing to collide with, and
+// startMock()'s retry absorbs the only remaining race (a sibling stealing the
+// probed port).
+const mock = await startMock();
+const BASE = mock.base;
+mockProc = mock.proc;
 
 // ----------------------------------------------------------------- unit imports
 
@@ -447,7 +503,6 @@ test('resolveConfig: the auth block round-trips through a real config file; malf
 
 let tmpRoot;
 let registryPath;
-let mockProc;
 let wsRoot;
 const dirs = {};
 let homeRequired;
@@ -535,22 +590,6 @@ before(async () => {
   }
   homeRequired = join(tmpRoot, 'home-required');
   homeDev = join(tmpRoot, 'home-dev');
-
-  let stale = false;
-  try {
-    stale = (await fetch(BASE + '/api/health')).ok;
-  } catch {}
-  if (stale) throw new Error('a mock archon is already listening on 127.0.0.1:' + PORT + ' — kill it first');
-
-  mockProc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(PORT)], { stdio: 'ignore' });
-  const deadline = Date.now() + 5000;
-  for (;;) {
-    try {
-      if ((await fetch(BASE + '/api/health')).ok) break;
-    } catch {}
-    if (Date.now() > deadline) throw new Error('mock archon failed to start on :' + PORT);
-    await new Promise((r) => setTimeout(r, 100));
-  }
 });
 
 after(async () => {

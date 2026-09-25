@@ -1,16 +1,18 @@
 // S2-R conversation-identity integration tests (GPT work order "S2 Discrepancy
 // Review", section C + the 9 required validation cases).
 //
-// Everything runs against scripts/mock-archon.mjs on a dedicated port — never
-// 3090, never the Dell. Each case runs in its OWN child process with a fresh
-// DSH_HOME: the lib caches task envelopes in module state, so restart and
-// idempotence semantics only prove anything across real process boundaries.
-// The mock's admin routes count creation/dispatch POSTs, so every refusal case
-// is asserted not just on its failure code but on ZERO dispatches.
+// Everything runs against scripts/mock-archon.mjs on an OS-assigned ephemeral
+// port — never a fixed port, never 3090, never the Dell. Each case runs in its
+// OWN child process with a fresh DSH_HOME: the lib caches task envelopes in
+// module state, so restart and idempotence semantics only prove anything across
+// real process boundaries. The mock's admin routes count creation/dispatch
+// POSTs, so every refusal case is asserted not just on its failure code but on
+// ZERO dispatches.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
@@ -18,10 +20,55 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const PORT = 13777;
-const BASE = 'http://127.0.0.1:' + PORT;
 const PROJECT = 'p1x-csv-fixture';
 const P1_ID = 'dc92aa5a4a569d452a2fa65a2a0e2053';
+
+// --------------------------------------------------------------- mock lifecycle
+//
+// The mock binds an OS-assigned ephemeral port, never a hardcoded 137xx, so two
+// concurrent runs of this file (or this file beside any other) cannot collide
+// on a port. Binding :0 only PROBES for a free port: the kernel releases it the
+// instant we close, so a sibling process can steal it before the mock child
+// binds. startMock() treats a failed start as a lost race and retries on a
+// fresh port rather than trusting the probed number.
+async function freePort() {
+  const srv = createServer();
+  await new Promise((res, rej) => { srv.once('error', rej); srv.listen(0, '127.0.0.1', res); });
+  const { port } = srv.address();
+  await new Promise((res) => srv.close(res));
+  return port;
+}
+
+async function startMock({ attempts = 6, readyTimeoutMs = 5000 } = {}) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const port = await freePort();
+    const base = 'http://127.0.0.1:' + port;
+    const proc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(port)], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    let stderr = '';
+    proc.stderr.on('data', (d) => { stderr += d; });
+    let exited = null;
+    proc.on('exit', (code) => { exited = code; });
+    const deadline = Date.now() + readyTimeoutMs;
+    let ready = false;
+    for (;;) {
+      if (exited !== null) {
+        lastErr = new Error('mock archon exited (' + exited + ') before binding :' + port +
+          ' — the probed port was taken before the bind' + (stderr ? ': ' + stderr.trim().split('\n')[0] : ''));
+        break;
+      }
+      try { if ((await fetch(base + '/api/health')).ok) { ready = true; break; } } catch {}
+      if (Date.now() > deadline) { lastErr = new Error('mock archon never answered on :' + port + ' within ' + readyTimeoutMs + 'ms'); break; }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    if (ready && exited === null) return { proc, port, base };
+    if (ready) lastErr = new Error('mock archon on :' + port + ' exited right after answering');
+    try { proc.kill('SIGKILL'); } catch {}
+  }
+  throw new Error('could not start a mock archon after ' + attempts + ' attempts: ' + (lastErr ? lastErr.message : 'unknown'));
+}
 
 // One capability, routable ONLY by the test objective "verify echo running
 // total seed values" (all six tokens land in tags/description — 6/6 hits,
@@ -48,6 +95,14 @@ const REGISTRY = {
 let tmpRoot;
 let registryPath;
 let mockProc;
+
+// Acquire the port and prove the mock is live BEFORE any config or case code can
+// observe BASE. There is no hard-fail guard to delete here: with an ephemeral
+// port there is nothing to collide with, and the retry above absorbs the only
+// remaining race (a sibling stealing the probed port).
+const mock = await startMock();
+const BASE = mock.base;
+mockProc = mock.proc;
 
 const newHome = async (name) => {
   const dir = join(tmpRoot, 'home-' + name);
@@ -105,22 +160,6 @@ before(async () => {
   tmpRoot = await mkdtemp(join(tmpdir(), 's2r-conversation-'));
   registryPath = join(tmpRoot, 'registry.json');
   await writeFile(registryPath, JSON.stringify(REGISTRY, null, 2));
-
-  // Refuse to run against a stale mock on our port: leftover state would
-  // corrupt the call-count deltas.
-  let stale = false;
-  try { stale = (await fetch(BASE + '/api/health')).ok; } catch {}
-  if (stale) throw new Error('a mock archon is already listening on 127.0.0.1:' + PORT + ' — kill it first');
-
-  mockProc = spawn(process.execPath, [join(ROOT, 'scripts', 'mock-archon.mjs'), String(PORT)], { stdio: 'ignore' });
-  const deadline = Date.now() + 5000;
-  for (;;) {
-    try {
-      if ((await fetch(BASE + '/api/health')).ok) return;
-    } catch {}
-    if (Date.now() > deadline) throw new Error('mock archon failed to start on :' + PORT);
-    await new Promise((r) => setTimeout(r, 100));
-  }
 });
 
 after(async () => {
@@ -370,8 +409,12 @@ test('case 9c: T1 — a parent-linked child is adopted on five verified legs, as
   assert.equal(r.adoption.candidatesConsidered, 1);
   assert.match(r.adoption.detailSha256, /^sha256:[0-9a-f]{64}$/);
   assert.deepEqual(r.adoption.evidence.map((e) => e.id),
-    ['workflow-name', 'parent-conversation-id', 'parent-platform-id', 'codebase-id', 'user-message']);
-  assert.ok(r.adoption.evidence.every((e) => e.pass === true));
+    ['workflow-name', 'parent-conversation-id', 'parent-platform-id', 'codebase-id', 'user-message', 'working-path']);
+  // These cases are workspace-less (no workspace is ever provisioned), so the
+  // working-path leg is emitted INAPPLICABLE — present in the evidence, with no
+  // verdict. Every other leg passes.
+  assert.ok(r.adoption.evidence.every((e) => e.applicable === false || e.pass === true));
+  assert.equal(r.adoption.evidence.find((e) => e.id === 'working-path').applicable, false);
 
   // Independent retrieval: the detail carries every leg, and the child
   // conversation genuinely has no row (404), like the real child.

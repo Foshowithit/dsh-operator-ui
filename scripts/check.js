@@ -693,10 +693,31 @@ check('admission: execution admission — typed refusals, derived entry, three-w
   if (fnIdx < 0 || wIdx < fnIdx) throw new Error('the registry write must live inside admitExecution');
   if (/from '\.\/tasks\.js'/.test(a)) throw new Error('admission must read the stored envelope directly, never the reconciling task read path');
   if (a.includes('upsertTask')) throw new Error('admission must never upsert task records');
-  // goal/teach/acquire/marketplace must not import the admission module
+  // goal/teach/acquire/marketplace must not IMPORT the admission module.
+  //
+  // This is an import check, so it has to read IMPORTS. It used to be
+  // `src.includes('admission.js')` — a raw substring test — and on 2026-09-25 that
+  // made this check RED while the code it describes was correct: lib/teach.js
+  // carries a comment explaining that its ENOENT split matches lib/admission.js's
+  // workflow-bytes read, and a COMMENT satisfied the substring. The check was
+  // reading PROSE and reporting a DEPENDENCY — the same defect class this repo is
+  // removing, one level up: a claim about the code derived from something that is
+  // not the code. It was green at HEAD and red in the working tree, so it read as a
+  // regression in the very change-set that added the explanatory comment.
+  // A substring cannot distinguish a dependency from a mention, and this file's own
+  // subject matter makes such mentions likely — so match the STATEMENT forms.
+  const importsModule = (src, file) => {
+    const q = "['\"][^'\"]*" + file.replace(/\./g, '\\.') + "['\"]";
+    return [
+      new RegExp('(?:^|[^\\w.$])(?:import|export)\\s[^;]*?from\\s*' + q), // static import / export-from
+      new RegExp('(?:^|[^\\w.$])import\\s*' + q),                         // side-effect import
+      new RegExp('\\bimport\\s*\\(\\s*' + q + '\\s*\\)'),                 // dynamic import()
+      new RegExp('\\brequire\\s*\\(\\s*' + q + '\\s*\\)'),                // require()
+    ].some((re) => re.test(src));
+  };
   for (const f of ['goal.js', 'teach.js', 'acquire.js', 'marketplace.js']) {
     const src = readFileSync(join(root, 'lib', f), 'utf8');
-    if (src.includes('admission.js')) throw new Error('lib/' + f + ' must never import the admission module');
+    if (importsModule(src, 'admission.js')) throw new Error('lib/' + f + ' must never import the admission module');
   }
   // three-writer census across ALL lib modules
   const libFiles = readdirSync(join(root, 'lib')).filter((f) => f.endsWith('.js'));

@@ -64,8 +64,20 @@ test('real record: parent-linked adoption verifies on all five legs', () => {
     'parent-platform-id',
     'user-message',
     'workflow-name',
+    'working-path',
   ]);
-  for (const leg of check.evidence) assert.equal(leg.pass, true, leg.id);
+  // The real association predates expectedWorkspacePath, so the working-path
+  // leg is present but NOT APPLICABLE (no `pass`) — an absence that is
+  // recorded, not a leg that silently passes.
+  for (const leg of check.evidence) {
+    if (leg.id === 'working-path') {
+      assert.equal(leg.applicable, false, leg.id);
+      assert.equal(Object.hasOwn(leg, 'pass'), false, leg.id + ' must carry no pass when inapplicable');
+      assert.match(leg.reason, /no workspace path/);
+    } else {
+      assert.equal(leg.pass, true, leg.id);
+    }
+  }
 });
 
 test('real record: adoption record binds the child verbatim with provenance', () => {
@@ -131,7 +143,7 @@ for (const m of MUTATIONS) {
     m.mutate(mutated);
     const check = verifyParentLinkage(mutated, a, WF, MSG);
     assert.equal(check.pass, false, `${m.id} leg did not reject`);
-    const failing = check.evidence.filter((e) => !e.pass).map((e) => e.id);
+    const failing = check.evidence.filter((e) => e.applicable !== false && !e.pass).map((e) => e.id);
     assert.deepEqual(failing, m.expectFailing);
   });
 }

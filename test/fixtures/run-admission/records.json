@@ -1,0 +1,809 @@
+{
+  "note": [
+    "FROZEN external run records for the deterministic run-admission harness.",
+    "These are the RECORDS ONLY. They say nothing about the verdict — the",
+    "harness holds the expected refusal and its expected named reason. Nothing",
+    "in here is read from a live Archon, and nothing in here is a re-implementation",
+    "of the admission rules: lib/goal.js discoverRun() consumes exactly these",
+    "records through the same fetch boundary it uses in production.",
+    "Field names mirror the real run row (scripts/mock-archon.mjs / the OP-4R",
+    "fixtures): id, conversation_id, parent_conversation_id, parent_platform_id,",
+    "codebase_id, working_path, workflow_name, user_message, status, output.",
+    "",
+    "ONE DELIBERATE DEVIATION from this file's own naming convention: every other",
+    "child row names its conversation_id after the row (web-child-harness-ok,",
+    "-wrongproj, -wrongmsg, ...). The absent-case PAIR -- no-expected-workspace and",
+    "wrong-workspace -- instead SHARES one conversation_id (web-child-harness-wspair),",
+    "because that pair's entire content is 'the same run bytes judged against two",
+    "associations differing only in expectedWorkspacePath'. The harness asserts that",
+    "byte-identity directly (the absent-case test's identityOf guard in",
+    "test/run-admission-harness.test.mjs). Both rows were originally written",
+    "row-named, which FAILED that guard: the pair differed on conversation_id as well",
+    "as on the association, so comparing their two outcomes proved less than it",
+    "claimed. The row-named convention is right for every other row and wrong for",
+    "exactly these two -- do not 'restore' them."
+  ],
+  "identity": {
+    "workflowName": "verify-echo-v1",
+    "wrongWorkflowName": "example-echo-ground-v1",
+    "conversationId": "web-harness-bound-0001",
+    "dbId": "db-harness-1",
+    "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+    "foreignCodebaseId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+    "workingPath": "/srv/workspaces/p1x-ws",
+    "foreignWorkingPath": "/srv/workspaces/p2x-ws",
+    "dispatchedMessage": "task task-harness1: verify echo running total seed values",
+    "wrongMessage": "task task-harness1: something else entirely",
+    "output": "rcos-verify-seed:rcos-verify-echo-v1",
+    "startedAt": "2026-09-23T12:00:00.000Z"
+  },
+  "association": {
+    "provisioningState": "associated",
+    "archonConversationId": "web-harness-bound-0001",
+    "dbId": "db-harness-1",
+    "projectName": "p1x-csv-fixture",
+    "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+    "expectedWorkspacePath": "/srv/workspaces/p1x-ws",
+    "boundAt": "2026-09-23T11:00:00.000Z",
+    "verifiedAt": "2026-09-23T11:00:00.000Z",
+    "verifiedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053"
+  },
+  "rows": [
+    {
+      "name": "known-good-direct",
+      "what": "the dispatch materialised a direct run on the bound conversation: adopted",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-direct-1",
+          "conversation_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "output": "rcos-verify-seed:rcos-verify-echo-v1",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-direct-1": {
+          "run": {
+            "id": "run-harness-direct-1",
+            "conversation_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "known-good-parent",
+      "what": "the dispatch forked a child conversation; every linkage leg is on the run record: adopted",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-ok",
+          "conversation_id": "web-child-harness-ok",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "output": "rcos-verify-seed:rcos-verify-echo-v1",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-ok": {
+          "run": {
+            "id": "run-harness-child-ok",
+            "conversation_id": "web-child-harness-ok",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "no-expected-workspace",
+      "what": "THE ABSENT CASE. A fully-linked child whose working_path is the FOREIGN path, judged against an association that records NO expected workspace path. It must still be ADOPTED, because the working-path leg is not-applicable rather than failed. Deliberately fixtured with the foreign path: `wrong-workspace` carries these SAME bytes and is REFUSED, so the pair isolates the applicability decision alone — with an expectation the leg is a verdict, without one it is not. The assertion is that the leg EXISTS and is marked inapplicable, not merely that adoption still works: a deleted leg would adopt too, and that difference is the entire content of the absent-case decision",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "associationOmit": ["expectedWorkspacePath"],
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-nows",
+          "conversation_id": "web-child-harness-wspair",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p2x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "output": "rcos-verify-seed:rcos-verify-echo-v1",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-nows": {
+          "run": {
+            "id": "run-harness-child-nows",
+            "conversation_id": "web-child-harness-wspair",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p2x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong-workflow",
+      "what": "the dispatch named a run token; the record it names carries a different workflow",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": "run-harness-wrongwf" },
+      "preIds": [],
+      "list": [],
+      "details": {
+        "run-harness-wrongwf": {
+          "run": {
+            "id": "run-harness-wrongwf",
+            "conversation_id": "web-child-harness-wrongwf",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "example-echo-ground-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong-project",
+      "what": "a fully-linked child whose codebase_id is a foreign project",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-wrongproj",
+          "conversation_id": "web-child-harness-wrongproj",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-wrongproj": {
+          "run": {
+            "id": "run-harness-child-wrongproj",
+            "conversation_id": "web-child-harness-wrongproj",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong-workspace",
+      "what": "a fully-linked child that ran in a DIFFERENT workspace path on the SAME project",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-wrongws",
+          "conversation_id": "web-child-harness-wspair",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p2x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-wrongws": {
+          "run": {
+            "id": "run-harness-child-wrongws",
+            "conversation_id": "web-child-harness-wspair",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p2x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "wrong-user-message",
+      "what": "a fully-linked child whose user_message is not the dispatched message",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-wrongmsg",
+          "conversation_id": "web-child-harness-wrongmsg",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: something else entirely",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-wrongmsg": {
+          "run": {
+            "id": "run-harness-child-wrongmsg",
+            "conversation_id": "web-child-harness-wrongmsg",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: something else entirely",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "direct-wrong-user-message",
+      "what": "a DIRECT run on the bound conversation with the right workflow but the wrong user_message",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-direct-wrongmsg",
+          "conversation_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: something else entirely",
+          "status": "completed",
+          "output": "rcos-verify-seed:rcos-verify-echo-v1",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-direct-wrongmsg": {
+          "run": {
+            "id": "run-harness-direct-wrongmsg",
+            "conversation_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: something else entirely",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "direct-wrong-project",
+      "what": "a DIRECT run on the bound conversation with the right workflow but a foreign codebase_id",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-direct-wrongproj",
+          "conversation_id": "web-harness-bound-0001",
+          "codebase_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "output": "rcos-verify-seed:rcos-verify-echo-v1",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-direct-wrongproj": {
+          "run": {
+            "id": "run-harness-direct-wrongproj",
+            "conversation_id": "web-harness-bound-0001",
+            "codebase_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "pre-dispatch",
+      "what": "a provably-linked run that was already present in the pre-dispatch snapshot (history, not identity)",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": ["run-harness-child-predispatch"],
+      "list": [
+        {
+          "id": "run-harness-child-predispatch",
+          "conversation_id": "web-child-harness-predispatch",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T09:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-predispatch": {
+          "run": {
+            "id": "run-harness-child-predispatch",
+            "conversation_id": "web-child-harness-predispatch",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T09:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "ambiguous-pair",
+      "what": "two fresh children that EACH independently prove the same dispatch",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-amb-a",
+          "conversation_id": "web-child-harness-amb-a",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:01.000Z"
+        },
+        {
+          "id": "run-harness-child-amb-b",
+          "conversation_id": "web-child-harness-amb-b",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:02.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-amb-a": {
+          "run": {
+            "id": "run-harness-child-amb-a",
+            "conversation_id": "web-child-harness-amb-a",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:01.000Z"
+          }
+        },
+        "run-harness-child-amb-b": {
+          "run": {
+            "id": "run-harness-child-amb-b",
+            "conversation_id": "web-child-harness-amb-b",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-harness-bound-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:02.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "record-absent",
+      "what": "Archon answered successfully and named no run at all",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [],
+      "details": {}
+    },
+    {
+      "name": "detail-unavailable",
+      "what": "the list read succeeds but the detail read cannot be completed (5xx)",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-detaildown",
+          "conversation_id": "web-child-harness-detaildown",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-detaildown": { "fault": "SERVER_ERROR" } }
+    },
+    {
+      "name": "detail-timeout",
+      "what": "the detail read is aborted by the transport timeout",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-detailtimeout",
+          "conversation_id": "web-child-harness-detailtimeout",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-detailtimeout": { "fault": "TIMEOUT" } }
+    },
+    {
+      "name": "poisoned-detail",
+      "what": "the LIST row looks right but the DETAIL contradicts a parent leg",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-poisoned",
+          "conversation_id": "web-child-harness-poisoned",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": {
+        "run-harness-child-poisoned": {
+          "run": {
+            "id": "run-harness-child-poisoned",
+            "conversation_id": "web-child-harness-poisoned",
+            "parent_conversation_id": "db-harness-1",
+            "parent_platform_id": "web-poisoned-detail",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-harness1: verify echo running total seed values",
+            "status": "completed",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "poisoned-invalid-json",
+      "what": "the detail read completes with HTTP 200 but the body is not parseable JSON",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-badjson",
+          "conversation_id": "web-child-harness-badjson",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-badjson": { "fault": "INVALID_JSON" } }
+    },
+    {
+      "name": "poisoned-not-a-record",
+      "what": "the detail read completes with HTTP 200 but the body is a bare JSON string, so it is refused by the 'body was not a record' leg (typeof/Array.isArray) — NOT by the no-run-id leg",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-notobj",
+          "conversation_id": "web-child-harness-notobj",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-notobj": { "fault": "NOT_OBJECT" } }
+    },
+    {
+      "name": "poisoned-no-run-id",
+      "what": "the detail read completes with HTTP 200 and an OBJECT body that self-identifies as neither a run nor an error envelope, so it is refused by the 'carried no run id' leg — the object-carrying-no-id shape, which the bare-string row above does NOT reach",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-norunid",
+          "conversation_id": "web-child-harness-norunid",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-norunid": { "fault": "NOT_RUN_OBJECT" } }
+    },
+    {
+      "name": "poisoned-id-mismatch",
+      "what": "the detail for the requested id returns a run carrying a DIFFERENT id",
+      "dispatch": { "workflowName": "verify-echo-v1", "conversationId": "web-harness-bound-0001", "message": "task task-harness1: verify echo running total seed values", "dispatchedRunId": null },
+      "preIds": [],
+      "list": [
+        {
+          "id": "run-harness-child-idmismatch",
+          "conversation_id": "web-child-harness-idmismatch",
+          "parent_conversation_id": "db-harness-1",
+          "parent_platform_id": "web-harness-bound-0001",
+          "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+          "working_path": "/srv/workspaces/p1x-ws",
+          "workflow_name": "verify-echo-v1",
+          "user_message": "task task-harness1: verify echo running total seed values",
+          "status": "completed",
+          "started_at": "2026-09-23T12:00:00.000Z"
+        }
+      ],
+      "details": { "run-harness-child-idmismatch": { "fault": "ID_MISMATCH" } }
+    }
+  ],
+  "goalLevel": {
+    "note": [
+      "The reads BELOW discoverRun, reached only through runGoal() (_run): the",
+      "stray-run diagnostic (findConversationRun), the terminal-state poll",
+      "(pollRun), and the dispatch-token detail read whose typed outcome decides",
+      "what the discovered-none refusal may claim. discoverRun's own boundary",
+      "cannot reach them, so they get their own scenario block. Same discipline:",
+      "the fixture supplies records and read outcomes; the harness supplies the",
+      "verdict.",
+      "ONE ROW HERE IS NOT BELOW discoverRun AT ALL: goal-list-body-unreadable",
+      "faults a read INSIDE discoverRun's discovery loop. It lives here rather than",
+      "at the admission-level boundary because its content is a VERDICT — UNKNOWN,",
+      "and the reason absence would be the wrong answer instead — and a verdict only",
+      "exists on the goal path: the admission-level rows assert refusal NAMES. It",
+      "also needs the dispatch-keyed fault, which that boundary does not key on.",
+      "The fault is keyed on the DISPATCH POST, never on a read counter — a counter",
+      "would have to know how many reads tasks.js hydration and the pre-dispatch",
+      "snapshot happen to make, which is not a stable contract. 'afterDispatchOkReads'",
+      "therefore means: reads before the dispatch always answer, then exactly this",
+      "many post-dispatch reads answer, then the fault.",
+      "ONE ROW HERE IS A CONTROL RATHER THAN A REFUSAL FINDING:",
+      "goal-poll-run-not-terminal serves a readable, non-terminal record on every",
+      "poll, so its 30 s terminal window is paid in full (RUN_TERMINAL_WINDOW_MS is a",
+      "bare const in lib/goal.js and is NOT injectable — the cost is real and is",
+      "recorded, not hidden). It pins that a run which WAS read and simply never",
+      "finished is a TIMEOUT, an answer about the run, and never an OUTAGE.",
+      "TWO ROWS PAY A FULL DISCOVERY WINDOW BY CONSTRUCTION:",
+      "goal-list-body-unreadable faults every post-dispatch list read, and",
+      "goal-stray-list-body-unreadable answers the first one and faults the rest,",
+      "so in both cases no run is ever adopted and discovery can only end by",
+      "reaching ADOPTION_DEADLINE_MS (10000 ms in lib/goal.js, also a bare const",
+      "and not injectable). And ONE ROW PAYS THE 30 s TERMINAL WINDOW for the same",
+      "structural reason: goal-poll-run-not-a-record serves a non-record body on",
+      "every poll, so that window cannot close early either. All of it is recorded",
+      "here for the same reason — the cost is real, not a number the fixture can",
+      "shrink."
+    ],
+    "objective": "verify echo running total seed values",
+    "authorityPreset": "AUTO_WITHIN_POLICY",
+    "registry": {
+      "registry_version": "v1",
+      "capabilities": [
+        {
+          "id": "verify-echo",
+          "name": "Verify echo",
+          "description": "Deterministic seeded echo verification for running totals",
+          "version": "1.0.0",
+          "status": "active",
+          "workflow": "verify-echo-v1",
+          "tags": ["verify", "echo", "running", "total", "seed", "values"],
+          "requires": ["shell:execute"],
+          "verification": { "terminalStatus": "completed", "expectOutput": "rcos-verify-seed:rcos-verify-echo-v1" },
+          "objectiveEvaluation": { "kind": "output-contains", "value": "rcos-verify-seed:rcos-verify-echo-v1" }
+        }
+      ]
+    },
+    "association": {
+      "provisioningState": "associated",
+      "dbId": "db-goal-1",
+      "projectName": "p1x-csv-fixture",
+      "expectedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053",
+      "boundAt": "2026-09-23T11:00:00.000Z",
+      "verifiedAt": "2026-09-23T11:00:00.000Z",
+      "verifiedCodebaseId": "dc92aa5a4a569d452a2fa65a2a0e2053"
+    },
+    "rows": [
+      {
+        "name": "goal-find-conversation-unavailable",
+        "what": "the run list is readable during discovery (an ANSWERED empty absence) but the stray-run diagnostic read then fails — the outage must be recorded, never reported as a workflow mismatch",
+        "taskId": "task-9a0b1c2d",
+        "conversationId": "web-goal-find-0001",
+        "dispatch": { "accepted": true, "status": "started" },
+        "list": { "runs": [], "afterDispatchOkReads": 1, "then": "FAIL" },
+        "detail": {}
+      },
+      {
+        "name": "goal-stray-list-body-unreadable",
+        "what": "THE FORMER GATE GAP, NOW CLOSED — AND THE ROW DID NOT CHANGE TO GO GREEN. The same axis as goal-find-conversation-unavailable — the stray-run diagnostic's read fails — differing in exactly ONE thing: HOW it fails. Discovery's first post-dispatch list read answers {runs: []} (an authoritative absence, so the counter reaches 1), discovery therefore exits 'none' and reaches the stray diagnostic; the STRAY read then answers HTTP 200 with a body that is not a run list. findConversationRun had no body-shape gate at all — `const runs = (lb && lb.runs) || []` — so it collapsed 'no runs key' and 'an empty runs array' into one value and returned status 'none', which its own doc-comment calls 'an ANSWERED absence'. The caller then recorded NOTHING (the 'unavailable' branch is the only one that sets strayDiagnostic) and refused with run-not-found / 'dispatch accepted but no run appeared': an unreadable list reported as an authoritative absence, the collapse defect in its SHAPE form rather than its parse form. The row asserts the CORRECT end state — the same code, verdict and strayDiagnostic the THROW case already produces — which is exactly why it needed no edit when the fix landed: only the missing strayDiagnostic was ever wrong, and the landed predicate (`if (!lb || !Array.isArray(lb.runs)) return { status: 'unavailable', … }`) supplied it while leaving a json() throw and {\"runs\": []} untouched. It is kept as a pin because reverting that predicate turns it red again",
+        "taskId": "task-9a0b1c34",
+        "conversationId": "web-goal-straybody-0001",
+        "dispatch": { "accepted": true, "status": "started" },
+        "list": { "runs": [], "afterDispatchOkReads": 1, "thenBody": { "error": "unexpected shape" } },
+        "detail": {}
+      },
+      {
+        "name": "goal-list-body-unreadable",
+        "what": "THE LIST-SURFACE COUNTER PIN, and the goal.js-side counterpart of storefaults' #48 rows: every post-dispatch list read answers HTTP 200 with valid JSON that is NOT a run list, so no read is ever completed. The discovery counter must stay at zero, and at the adoption deadline that is an OUTAGE (`archon-unavailable`, verdict UNKNOWN) — never the ABSENCE the deadline fall-through would otherwise report. Absence is the dangerous answer here: it prescribes a RETRY, and a retry can double-run a workflow that is alive. The body carries no `runs` ARRAY rather than being unparseable, because 'the body parsed' and 'the body is a run list' are different questions and only the second one is a read: the reader's predicate is `Array.isArray(lb.runs)`. The unparseable-body shape reaches the same branch and is covered on the other reader by storefaults' listMode 'garbage'; this row isolates the contract-level predicate, which is one axis. It has NO dispatch-provided runId, so the dispatch-token branch is skipped and discovery polling is the only path — that is what makes it the discovery-list row rather than another detail row",
+        "taskId": "task-9a0b1c33",
+        "conversationId": "web-goal-listbody-0001",
+        "dispatch": { "accepted": true, "status": "started" },
+        "list": { "runs": [], "afterDispatchOkReads": 0, "thenBody": { "error": "unexpected shape" } },
+        "detail": {}
+      },
+      {
+        "name": "goal-poll-run-unavailable",
+        "what": "the run is adopted, then every terminal-state poll fails — an outage, never a run timeout",
+        "taskId": "task-9a0b1c2e",
+        "conversationId": "web-goal-poll-0001",
+        "dispatch": { "accepted": true, "status": "started", "runId": "run-goal-direct" },
+        "list": { "runs": [] },
+        "detail": {
+          "afterDispatchOkReads": 1,
+          "thenStatus": 500,
+          "run": {
+            "id": "run-goal-direct",
+            "conversation_id": "web-goal-poll-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-9a0b1c2e: verify echo running total seed values",
+            "status": "completed",
+            "output": "rcos-verify-seed:rcos-verify-echo-v1",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      },
+      {
+        "name": "goal-poll-run-not-terminal",
+        "what": "THE OVER-CORRECTION CONTROL for #64, and a positive control rather than a refusal finding: every post-dispatch detail read returns a WELL-FORMED record whose status is 'running', so every read SUCCEEDS and the run simply never finishes. That is an ANSWER about the run — it did not reach a terminal state inside the named window — so it must refuse as run-timeout with verdict FAILED. It exists so that tightening the poll's success predicate (today `parsed` means only 'the body parsed', so a 200 whose body is `null` or `{ok:true}` counts as a successful read and the window can end in run-timeout for a record we never obtained) cannot over-correct: a readable, well-formed, NON-TERMINAL record must still count as a successful read. A predicate that requires a terminal status, or that treats a `running` record as unreadable, turns this row into archon-unavailable/UNKNOWN and it goes red. Deliberately identical to `goal-poll-run-unavailable` in dispatch shape and run identity, differing in exactly two ways that are the POINT of the pair: that row faults the read and this one never does, and its record is terminal while this one never becomes terminal — so the pair separates the READ OUTCOME from the RUN STATE instead of conflating them",
+        "taskId": "task-9a0b1c32",
+        "conversationId": "web-goal-running-0001",
+        "dispatch": { "accepted": true, "status": "started", "runId": "run-goal-running" },
+        "list": { "runs": [] },
+        "detail": {
+          "run": {
+            "id": "run-goal-running",
+            "conversation_id": "web-goal-running-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-9a0b1c32: verify echo running total seed values",
+            "status": "running",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      },
+      {
+        "name": "goal-poll-run-not-a-record",
+        "what": "THE KNOWN GATE GAP, and the DETAIL-surface counterpart of the list-surface counter pins: the run IS adopted (read #1 is a well-formed record, so dispatch-provided adoption succeeds), and then every terminal-state poll answers HTTP 200 with valid JSON that is not a run record — `{ok:true}`. The poll's success predicate is PARSE-level (`parsed = true` on any successful res.json()), so every one of those reads counts as a success, no status is ever read, and the window closes as run-timeout: 'the run did not reach a terminal state' — a claim about the WORK, sealed FAILED, for a record we never obtained. The expected outcome is the one the DETAIL READER IN THE SAME FILE already produces for this exact body: lib/goal.js fetchRunDetail classifies `{ok:true}` as INVALID, and its comment names that very body ('{ok:true} and {status:…} carry no id and are INVALID here rather than FOUND with a fabricated id'). INVALID maps to evidence-invalid, which is in OUTCOME_UNKNOWN_CODES, so the verdict is UNKNOWN — an outcome we could not establish, not a verdict about the capability. The body is deliberately `{ok:true}` rather than `{run:null}`: both are non-records, but `{run:null}` is the shape boundary's KNOWN RESIDUAL names as the flip hazard, and this row must not walk into it. It is also INVARIANT under the one sub-question still open for #64 (does the poll stop at the first INVALID read, or keep polling and classify at the deadline?): every poll read is a non-record, so there is never a record read to weigh, and both variants classify it evidence-invalid. This is the sibling of goal-stray-list-body-unreadable: same defect class, the other surface, and the one that has NOT been fixed",
+        "taskId": "task-9a0b1c35",
+        "conversationId": "web-goal-pollnotrecord-0001",
+        "dispatch": { "accepted": true, "status": "started", "runId": "run-goal-not-record" },
+        "list": { "runs": [] },
+        "detail": {
+          "afterDispatchOkReads": 1,
+          "thenBody": { "ok": true },
+          "run": {
+            "id": "run-goal-not-record",
+            "conversation_id": "web-goal-pollnotrecord-0001",
+            "codebase_id": "dc92aa5a4a569d452a2fa65a2a0e2053",
+            "working_path": "/srv/workspaces/p1x-ws",
+            "workflow_name": "verify-echo-v1",
+            "user_message": "task task-9a0b1c35: verify echo running total seed values",
+            "status": "running",
+            "started_at": "2026-09-23T12:00:00.000Z"
+          }
+        }
+      },
+      {
+        "name": "goal-detail-invalid",
+        "what": "the dispatch names a run id whose detail read is INVALID: the child serves { run: null }, so fetchRunDetail reaches the 'carried no run id' guard. The none-branch must DERIVE evidence-invalid from the typed rejection instead of claiming run-not-found — a run we hold an id for did appear and its record could not be used as evidence, so the outcome is unknown and a retry could double-run a workflow that may be alive",
+        "taskId": "task-9a0b1c30",
+        "conversationId": "web-goal-invalid-0001",
+        "dispatch": { "accepted": true, "status": "started", "runId": "run-goal-invalid" },
+        "list": { "runs": [] },
+        "detail": { "run": null }
+      },
+      {
+        "name": "goal-detail-unavailable",
+        "what": "the dispatch names a run id and EVERY post-dispatch detail read returns 500 — an outage, never an absence. `run` is null rather than a record because no read ever succeeds: a populated record would be dead data implying a readable run exists, and it makes the row fail diagnosably — if the fault ever failed to fire, a { run: null } read classifies as INVALID, so the row would report evidence-invalid instead of the expected archon-unavailable and go red loudly",
+        "taskId": "task-9a0b1c31",
+        "conversationId": "web-goal-detaildown-0001",
+        "dispatch": { "accepted": true, "status": "started", "runId": "run-goal-detaildown" },
+        "list": { "runs": [] },
+        "detail": { "afterDispatchOkReads": 0, "thenStatus": 500, "run": null }
+      }
+    ]
+  }
+}
