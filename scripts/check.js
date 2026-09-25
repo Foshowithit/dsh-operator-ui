@@ -3,12 +3,16 @@
 // Validates the four-way name alignment the DSH plugin loader requires plus
 // basic file integrity. Exit 1 on any failure.
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
 import * as compat from '../lib/compat.js';
+// The canonical test set is defined ONCE, in the gate. check.js imports it
+// rather than restating the glob, so the two cannot drift into disagreeing
+// about which files constitute the suite.
+import { CANONICAL_TEST_GLOB, expandTestSet } from './gate.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 let failures = 0;
@@ -832,6 +836,71 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
       try { loadCmd(join(libDir, f)); } catch { broken.push(f); }
     }
     if (broken.length) throw new Error('failed to load: ' + broken.join(', '));
+  });
+}
+
+// 14. Release gate: an EXPLICIT test set, and the helper boundary that makes it
+//     necessary. Node's test discovery convention matches every .mjs under a
+//     `test/` directory, so `node --test test/` also runs the argv-driven
+//     `*-case.mjs` CHILD RUNNERS. Three of them exit non-zero when invoked as
+//     test entrypoints (measured 2026-09-25: `node --test test/` adds 6
+//     mis-discovered files of which conversation-case, marketplace-case and
+//     run-admission-goal-case fail). Those failures establish that the runner
+//     invoked something that was not designed to be a test — NOT that the
+//     product is broken — and they were carried for a while as "known reds",
+//     which is exactly the mistake this section exists to prevent from
+//     recurring. Claim-grade verification names its files; it does not rely on
+//     discovery. The three checks below pin the glob, the boundary, and the
+//     fact that every excluded file is a genuine helper rather than an orphan
+//     test that nothing runs.
+{
+  const testDir = join(root, 'test');
+
+  check('release gate: scripts/gate.mjs present and owns the canonical test glob', () => {
+    if (!existsSync(join(root, 'scripts', 'gate.mjs'))) throw new Error('scripts/gate.mjs is missing');
+    if (CANONICAL_TEST_GLOB !== 'test/*.test.mjs') {
+      throw new Error('the canonical test glob moved to ' + CANONICAL_TEST_GLOB + ' — re-derive the gate and this section together');
+    }
+  });
+
+  check('release gate: package.json routes test/check/gate through the gate (one definition of the set)', () => {
+    const s = pkg.scripts || {};
+    if (!s.check || !s.test || !s.gate) throw new Error('package.json must declare check, test and gate scripts');
+    // `test` must go through the gate rather than naming a second glob, so
+    // there is exactly one definition of which files constitute the suite.
+    if (!s.test.includes('scripts/gate.mjs')) {
+      throw new Error('npm test must route through scripts/gate.mjs, not restate the test set — got: ' + s.test);
+    }
+    if (!s.gate.includes('scripts/gate.mjs')) throw new Error('the gate script must invoke scripts/gate.mjs');
+    if (!s.check.includes('scripts/check.js')) throw new Error('the check script must invoke scripts/check.js');
+  });
+
+  check('release gate: the canonical set is non-empty and admits no child runner', () => {
+    const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+    if (set.length === 0) throw new Error('the canonical test set expanded to zero files');
+    const offenders = set.filter((f) => /-case\.mjs$/.test(f));
+    if (offenders.length) {
+      throw new Error('child runners admitted as test entrypoints: ' + offenders.join(', '));
+    }
+  });
+
+  check('release gate: every non-entrypoint .mjs under test/ is a spawned helper, not an orphan', () => {
+    const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+    const inSet = new Set(set.map((p) => p.split('/').pop()));
+    const others = readdirSync(testDir).filter((f) => f.endsWith('.mjs') && !inSet.has(f)).sort();
+    if (others.length === 0) return; // nothing excluded; the boundary is vacuous
+    const sources = set.map((rel) => readFileSync(join(root, rel), 'utf8')).join('\n');
+    const orphans = [];
+    for (const f of others) {
+      // A helper earns its exclusion by being INVOKED by a test entrypoint. One
+      // that nothing spawns is either a test nothing runs (a silent coverage
+      // hole) or dead code — both of which this check must refuse to wave
+      // through, because either way the exclusion would be unjustified.
+      if (!sources.includes(f)) orphans.push(f);
+    }
+    if (orphans.length) {
+      throw new Error('excluded from the test set but spawned by no test entrypoint: ' + orphans.join(', '));
+    }
   });
 }
 
