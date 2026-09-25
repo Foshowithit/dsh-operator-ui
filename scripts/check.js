@@ -12,7 +12,7 @@ import * as compat from '../lib/compat.js';
 // The canonical test set is defined ONCE, in the gate. check.js imports it
 // rather than restating the glob, so the two cannot drift into disagreeing
 // about which files constitute the suite.
-import { CANONICAL_TEST_GLOB, expandTestSet } from './gate.mjs';
+import { CANONICAL_TEST_GLOBS, expandTestSet, discoverableNonEntrypoints } from './gate.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 let failures = 0;
@@ -854,12 +854,21 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
 //     fact that every excluded file is a genuine helper rather than an orphan
 //     test that nothing runs.
 {
-  const testDir = join(root, 'test');
-
   check('release gate: scripts/gate.mjs present and owns the canonical test glob', () => {
     if (!existsSync(join(root, 'scripts', 'gate.mjs'))) throw new Error('scripts/gate.mjs is missing');
-    if (CANONICAL_TEST_GLOB !== 'test/*.test.mjs') {
-      throw new Error('the canonical test glob moved to ' + CANONICAL_TEST_GLOB + ' — re-derive the gate and this section together');
+    // Pinned by VALUE, and the value is a NAME rule, not a directory. A
+    // directory-scoped canonical set cannot see a test entrypoint outside
+    // `test/` — that is not a style preference, it is a coverage hole that
+    // reports PASS (measured 2026-09-25: `test/*.test.mjs` dropped 14 tests,
+    // including the one genuine failure on this tree, while the gate said
+    // 399/399/0). If this constant moves, re-derive the gate and this section
+    // together.
+    const expected = ['*.test.mjs', 'test-*.mjs'];
+    if (JSON.stringify(CANONICAL_TEST_GLOBS) !== JSON.stringify(expected)) {
+      throw new Error('the canonical test globs moved to ' + JSON.stringify(CANONICAL_TEST_GLOBS) + ' — re-derive the gate and this section together');
+    }
+    if (CANONICAL_TEST_GLOBS.some((g) => g.includes('/'))) {
+      throw new Error('a canonical test pattern is directory-scoped, so it silently misses every entrypoint outside that directory: ' + CANONICAL_TEST_GLOBS.join(', '));
     }
   });
 
@@ -876,7 +885,7 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
   });
 
   check('release gate: the canonical set is non-empty and admits no child runner', () => {
-    const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+    const set = expandTestSet(root);
     if (set.length === 0) throw new Error('the canonical test set expanded to zero files');
     const offenders = set.filter((f) => /-case\.mjs$/.test(f));
     if (offenders.length) {
@@ -884,19 +893,36 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
     }
   });
 
-  check('release gate: every non-entrypoint .mjs under test/ is a spawned helper, not an orphan', () => {
-    const set = expandTestSet(root, CANONICAL_TEST_GLOB);
-    const inSet = new Set(set.map((p) => p.split('/').pop()));
-    const others = readdirSync(testDir).filter((f) => f.endsWith('.mjs') && !inSet.has(f)).sort();
-    if (others.length === 0) return; // nothing excluded; the boundary is vacuous
+  check('release gate: the canonical set is name-based, so it reaches entrypoints outside test/', () => {
+    // The regression this pins, stated as a falsifiable consequence rather than a
+    // restatement of the glob: if the set is defined by NAME and expanded
+    // recursively, then on this repo at least one member must lie outside
+    // `test/`. When `test/*.test.mjs` was the rule the gate reported PASS while
+    // dropping every entrypoint outside that one directory. If this assertion
+    // ever fails, the rule has been narrowed back to a directory — and that must
+    // be a decision someone makes, not a glob that quietly stops reaching.
+    const set = expandTestSet(root);
+    const outside = set.filter((f) => !f.startsWith('test/'));
+    if (outside.length === 0) {
+      throw new Error('the canonical set contains nothing outside test/ — the rule has been narrowed to a directory, which silently drops entrypoints (this is the 2026-09-25 regression)');
+    }
+  });
+
+  check('release gate: every non-entrypoint .mjs under a test/ dir is a spawned helper, not an orphan', () => {
+    const set = expandTestSet(root);
     const sources = set.map((rel) => readFileSync(join(root, rel), 'utf8')).join('\n');
     const orphans = [];
-    for (const f of others) {
+    // The universe is repo-wide and recursive, matching the inclusion rule's
+    // universe. It used to be `readdirSync(join(root, 'test'))`, which shared the
+    // glob's directory blind spot and so could only ever report exclusions it
+    // already knew about.
+    for (const f of discoverableNonEntrypoints(root, set)) {
       // A helper earns its exclusion by being INVOKED by a test entrypoint. One
       // that nothing spawns is either a test nothing runs (a silent coverage
       // hole) or dead code — both of which this check must refuse to wave
       // through, because either way the exclusion would be unjustified.
-      if (!sources.includes(f)) orphans.push(f);
+      // Matched on the basename: a spawn names the file, not its path.
+      if (!sources.includes(f.split('/').pop())) orphans.push(f);
     }
     if (orphans.length) {
       throw new Error('excluded from the test set but spawned by no test entrypoint: ' + orphans.join(', '));

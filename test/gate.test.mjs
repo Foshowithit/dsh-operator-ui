@@ -29,7 +29,7 @@ import {
   hashTestSet,
   testSetDrift,
   parseTestTotals,
-  CANONICAL_TEST_GLOB,
+  CANONICAL_TEST_GLOBS,
 } from '../scripts/gate.mjs';
 
 // ---------------------------------------------------------------------------
@@ -193,7 +193,7 @@ test('hashTestSet: pins real bytes and throws on a member it cannot read', () =>
 
 test('hashTestSet: the real set hashes every member of the real set', () => {
   const root = join(import.meta.dirname, '..');
-  const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+  const set = expandTestSet(root);
   const hashes = hashTestSet(root, set);
   assert.equal(Object.keys(hashes).length, set.length);
   for (const rel of set) assert.match(hashes[rel], /^[0-9a-f]{64}$/);
@@ -212,12 +212,47 @@ test('admission: VOID, PASS and FAIL are three distinct values', () => {
 // Explicit test-set expansion
 // ---------------------------------------------------------------------------
 
-test('expandTestSet: the canonical glob expands to the real test files, sorted', () => {
+test('expandTestSet: the canonical set expands to the real test files, sorted', () => {
   const root = join(import.meta.dirname, '..');
-  const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+  const set = expandTestSet(root);
   assert.ok(set.length > 0, 'the canonical glob must not be empty');
   assert.deepEqual(set, [...set].sort(), 'the set must be sorted so the receipt is stable');
-  for (const f of set) assert.match(f, /^test\/.+\.test\.mjs$/);
+  // The set is defined by NAME at any depth, so a member is any file whose
+  // basename is a test-entrypoint name. Pinning the DIRECTORY here instead was
+  // the regression: `assert.match(f, /^test\/.+\.test\.mjs$/)` required every
+  // member to live under `test/`, which is why four `eval/lib/test-*.mjs`
+  // entrypoints and `p6b/runner-vnext/runner-vnext.test.mjs` could be dropped
+  // while this test stayed green.
+  for (const f of set) {
+    const base = f.split('/').pop();
+    assert.match(base, /^(.*\.test\.mjs|test-.*\.mjs)$/, f + ' is not a test-entrypoint name');
+  }
+  // The falsifiable consequence of being name-based: at least one member must
+  // lie outside `test/` on this repo. If this ever fails, the rule has been
+  // narrowed back to a directory.
+  assert.ok(
+    set.some((f) => !f.startsWith('test/')),
+    'the canonical set contains nothing outside test/ — the rule has been narrowed to a directory',
+  );
+});
+
+test('expandTestSet: the entrypoints a directory-scoped glob dropped are present', () => {
+  // The regression, named. `test/*.test.mjs` reported PASS 399/399/0 while these
+  // five files — 14 tests, one of them the single genuine failure on this tree —
+  // were not run at all. A test set that silently stops reaching a file is
+  // indistinguishable from a file that passes, which is the whole reason this
+  // boundary is pinned by name rather than by a glob.
+  const root = join(import.meta.dirname, '..');
+  const set = expandTestSet(root);
+  for (const rel of [
+    'eval/lib/test-preflight.mjs',
+    'eval/lib/test-devsuite-graders.mjs',
+    'eval/lib/test-scored-controls.mjs',
+    'eval/lib/test-grader-controls.mjs',
+    'p6b/runner-vnext/runner-vnext.test.mjs',
+  ]) {
+    assert.ok(set.includes(rel), rel + ' must be in the canonical test set');
+  }
 });
 
 test('expandTestSet: the canonical set EXCLUDES every *-case.mjs child runner', () => {
@@ -225,7 +260,7 @@ test('expandTestSet: the canonical set EXCLUDES every *-case.mjs child runner', 
   // .mjs under a `test/` directory, so `node --test test/` mis-discovers the
   // argv-driven child runners. The explicit set must not contain one.
   const root = join(import.meta.dirname, '..');
-  const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+  const set = expandTestSet(root);
   const offenders = set.filter((f) => /-case\.mjs$/.test(f));
   assert.deepEqual(offenders, [], 'a child runner must never be a test entrypoint');
 });
@@ -247,7 +282,7 @@ test('expandTestSet: a missing directory is a named failure, not a silent empty 
 
 test('discoverableNonEntrypoints: reports exactly the .mjs files the set excludes', () => {
   const root = join(import.meta.dirname, '..');
-  const set = expandTestSet(root, CANONICAL_TEST_GLOB);
+  const set = expandTestSet(root);
   const excluded = discoverableNonEntrypoints(root, set);
   const setNames = new Set(set.map((p) => p.split('/').pop()));
   for (const f of excluded) {

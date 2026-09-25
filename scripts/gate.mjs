@@ -75,7 +75,24 @@ import { homedir } from 'node:os';
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = dirname(HERE);
 
-export const CANONICAL_TEST_GLOB = 'test/*.test.mjs';
+// The canonical test set is defined by NAME, at any depth -- which is how node's
+// own implicit discovery matches a test file (`**/*.test.mjs`, `**/test-*.mjs`).
+//
+// It is deliberately NOT defined by directory. `test/*.test.mjs` was the previous
+// value, and a directory-scoped glob cannot see a test entrypoint that lives
+// outside `test/`: measured 2026-09-25 it silently dropped four
+// `eval/lib/test-*.mjs` entrypoints and `p6b/runner-vnext/runner-vnext.test.mjs`,
+// 14 tests in total -- one of them the single genuine failure on this tree. The
+// gate reported PASS 399/399/0 while the real suite was 413/412/1, and `npm test`
+// routes through the gate, so the default command on this repo was green by
+// exclusion. An excluded thing reported as a clean result is the exact defect
+// class this gate exists to catch.
+//
+// The directory rule is also what sweeps in the argv-driven `*-case.mjs` child
+// runners, so dropping it fixes that boundary in the same move: those files match
+// neither name pattern and are excluded by construction, not by a deny-list.
+export const CANONICAL_TEST_GLOBS = ['*.test.mjs', 'test-*.mjs'];
+export const CANONICAL_TEST_GLOB = CANONICAL_TEST_GLOBS.join(' ');
 
 // ---------------------------------------------------------------------------
 // Explicit test-set expansion
@@ -83,20 +100,57 @@ export const CANONICAL_TEST_GLOB = 'test/*.test.mjs';
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Expand a single-`*` glob in the basename of a repo-relative path. Deliberately
-// tiny and dependency-free: the set is small and fixed, and an explicit expander
-// is the point (it yields NAMES we can record, where a shell glob yields the
-// same thing but leaves no record). Returns sorted repo-relative paths.
-export function expandTestSet(root, glob) {
-  const dir = dirname(glob);
-  const base = basename(glob);
-  const abs = join(root, dir);
-  if (!existsSync(abs)) throw new Error('test-set directory does not exist: ' + dir);
-  const re = new RegExp('^' + base.split('*').map(escapeRe).join('.*') + '$');
-  return readdirSync(abs)
-    .filter((f) => re.test(f))
-    .sort()
-    .map((f) => join(dir, f));
+// Every file under `root` except node_modules/.git, as repo-relative paths.
+// Recursive, because a directory-scoped scan IS the blind spot being fixed: the
+// exclusion audit and the inclusion rule must draw from the same universe, or the
+// audit cannot name a file the inclusion rule missed. An unreadable directory
+// contributes no files and does not throw.
+function walkFiles(root, onFile, relDir = '') {
+  const absDir = relDir ? join(root, relDir) : root;
+  let entries;
+  try {
+    entries = readdirSync(absDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const ent of entries) {
+    if (ent.name === 'node_modules' || ent.name === '.git') continue;
+    const rel = relDir ? relDir + '/' + ent.name : ent.name;
+    if (ent.isDirectory()) walkFiles(root, onFile, rel);
+    else if (ent.isFile()) onFile(rel);
+  }
+}
+
+// Expand the test set. Deliberately tiny and dependency-free: the set is small
+// and fixed, and an explicit expander is the point (it yields NAMES we can
+// record, where a shell glob yields the same thing but leaves no record).
+//
+//   bare basename pattern  ('*.test.mjs')       -> matched at ANY depth
+//   directory-scoped glob  ('test/*.test.mjs')  -> resolved against that directory
+//
+// The second form is kept for explicit `--test-glob` overrides. A directory that
+// does not exist stays a NAMED FAILURE rather than an empty set: "ran nothing"
+// and "could not run" must never both look like success.
+// Returns sorted, de-duplicated repo-relative paths.
+export function expandTestSet(root, globs = CANONICAL_TEST_GLOBS) {
+  const list = Array.isArray(globs) ? globs : [globs];
+  const out = new Set();
+  for (const glob of list) {
+    if (glob.includes('/')) {
+      const dir = dirname(glob);
+      const base = basename(glob);
+      const abs = join(root, dir);
+      if (!existsSync(abs)) throw new Error('test-set directory does not exist: ' + dir);
+      const re = new RegExp('^' + base.split('*').map(escapeRe).join('.*') + '$');
+      for (const f of readdirSync(abs)) if (re.test(f)) out.add(join(dir, f));
+    } else {
+      const re = new RegExp('^' + glob.split('*').map(escapeRe).join('.*') + '$');
+      walkFiles(root, (rel) => {
+        if (re.test(rel.split('/').pop())) out.add(rel);
+      });
+    }
+  }
+  return [...out].sort();
 }
 
 // Pin the BYTES of every file in the explicit set, not just its name.
@@ -129,17 +183,25 @@ export function testSetDrift(before, after) {
   return changed;
 }
 
-// Every `.mjs` under `test/` is a candidate for implicit discovery, whether or
-// not it is a test entrypoint. Recorded so the receipt can state how many
-// non-entrypoint programs the explicit set is deliberately excluding.
+// Every `.mjs` under a `test/` directory -- at any depth, anywhere in the repo --
+// that the explicit set does not contain. Node's implicit discovery sweeps
+// `**/test/**/*.mjs`, so THIS is the universe an exclusion audit must draw from.
+//
+// It used to be `readdirSync(join(root, 'test'))`, which shared the inclusion
+// glob's directory blind spot: it could only ever report exclusions it already
+// knew about, and it was structurally incapable of naming the four
+// `eval/lib/test-*.mjs` entrypoints the set was dropping. An audit scoped to the
+// same directory as the rule it audits is not an audit.
 export function discoverableNonEntrypoints(root, explicitSet) {
-  const testDir = join(root, 'test');
-  if (!existsSync(testDir)) return [];
-  const chosen = new Set(explicitSet.map((p) => basename(p)));
-  return readdirSync(testDir)
-    .filter((f) => f.endsWith('.mjs') && !chosen.has(f))
-    .sort()
-    .map((f) => join('test', f));
+  const chosen = new Set(explicitSet);
+  const out = [];
+  walkFiles(root, (rel) => {
+    if (!rel.endsWith('.mjs')) return;
+    if (!rel.split('/').slice(0, -1).includes('test')) return;
+    if (chosen.has(rel)) return;
+    out.push(rel);
+  });
+  return out.sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -305,7 +367,9 @@ const has = (flag) => process.argv.includes(flag);
 
 async function main() {
   const root = ROOT;
-  const glob = arg('--test-glob', CANONICAL_TEST_GLOB);
+  const globArg = arg('--test-glob', null);
+  const globs = globArg ? [globArg] : CANONICAL_TEST_GLOBS;
+  const globLabel = globArg || CANONICAL_TEST_GLOB;
   const quiet = has('--quiet');
   const noRun = has('--no-run');
   const checkOnly = has('--check-only');
@@ -318,19 +382,19 @@ async function main() {
   // --- the explicit set, expanded and named BEFORE anything runs -------------
   let testSet;
   try {
-    testSet = expandTestSet(root, glob);
+    testSet = expandTestSet(root, globs);
   } catch (e) {
     console.error('GATE COULD NOT RUN: ' + e.message);
     process.exit(3);
   }
   if (!testSet.length) {
-    console.error('GATE COULD NOT RUN: the explicit test set ' + glob + ' expanded to zero files');
+    console.error('GATE COULD NOT RUN: the explicit test set ' + globLabel + ' expanded to zero files');
     process.exit(3);
   }
   const excluded = discoverableNonEntrypoints(root, testSet);
 
   if (noRun) {
-    console.log('explicit test set (' + testSet.length + ' files) from ' + glob + ':');
+    console.log('explicit test set (' + testSet.length + ' files) from ' + globLabel + ':');
     for (const f of testSet) console.log('  ' + f);
     console.log('\ndeliberately EXCLUDED from the explicit set (' + excluded.length + '):');
     for (const f of excluded) console.log('  ' + f);
@@ -411,7 +475,7 @@ async function main() {
     tracked_files: contentBefore.files,
     porcelain_before: porcelainBefore,
     porcelain_after: porcelainAfter,
-    test_glob: glob,
+    test_glob: globLabel,
     expanded_test_set: testSet,
     expanded_test_set_count: testSet.length,
     // The exact BYTES that produced the numbers, not only the filenames that
@@ -437,7 +501,7 @@ async function main() {
   console.log('HEAD          : ' + headBefore + (headBefore === headAfter ? '  (unchanged)' : '  -> ' + headAfter));
   console.log('tree          : ' + contentBefore.id.slice(0, 16) + '...' + (contentBefore.id === contentAfter.id ? '  (unchanged)' : '  -> ' + contentAfter.id.slice(0, 16) + '...'));
   console.log('tracked files : ' + contentBefore.files);
-  console.log('explicit set  : ' + testSet.length + ' files from ' + glob + ' (' + excluded.length + ' non-entrypoint .mjs excluded)');
+  console.log('explicit set  : ' + testSet.length + ' files from ' + globLabel + ' (' + excluded.length + ' non-entrypoint .mjs excluded)');
   console.log('set bytes     : ' + Object.keys(setHashesBefore).length + ' hashed' + (setChanged.length ? '  ' + setChanged.length + ' CHANGED: ' + setChanged.join(', ') : '  (unchanged)'));
   for (const l of legs) {
     const totals = l.totals
