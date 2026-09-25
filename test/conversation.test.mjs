@@ -327,11 +327,15 @@ test('case 9b: T1 — a wrong-workflow run on the bound conversation is refused 
 
   // The dispatch is accepted but never materializes; a wrong-workflow run
   // lands on the bound conversation AFTER the child's pre-dispatch snapshot
-  // so the mismatch path (not the snapshot filter) is what catches it.
+  // so the mismatch path (not the snapshot filter) is what catches it. The
+  // ordering is PROVEN by the dispatch POST, not timed — see
+  // dispatchAndSeedAfterSnapshot.
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const stray = await postJson('/api/_mock/seed-run', { conversationId: p.conversationId, workflowName: 'example-echo-ground-v1', delayMs: 2500 });
-
-  const r = await runCase('dispatch-only', home, { taskId: 'task-beefcafe' }, 90000);
+  const { seed: stray, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-beefcafe',
+    seedArgs: { conversationId: p.conversationId, workflowName: 'example-echo-ground-v1' },
+  });
   assert.equal(r.ok, true);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['workflow-name-mismatch']);
@@ -360,13 +364,23 @@ const SEED_OUTPUT = 'rcos-verify-seed:rcos-verify-echo-v1';
 
 // A fork-style seeded child: linkage lives ON the run record (parent legs),
 // exactly like the real OP-4 child whose conversation row does not exist.
-// delayMs 2500 lands it AFTER the case child's pre-dispatch snapshot but well
-// inside the 10s adoption deadline.
+//
+// THE SEED MATERIALIZES IMMEDIATELY (delayMs 0). WHETHER IT LANDS BEFORE OR
+// AFTER THE CASE CHILD'S PRE-DISPATCH SNAPSHOT IS DECIDED BY *WHEN* THIS IS
+// CALLED, NEVER BY A TIMER. A timer cannot express that ordering: it is a bet
+// on how fast a child process boots, and when the bet loses the case is decided
+// by the temporal filter instead of the leg it exists to test. Two sanctioned
+// orderings, both causal:
+//   * PRE-snapshot  — call seedChild(...) and await waitRow(seed.id) BEFORE
+//     starting the case (case 9j: the snapshot boundary must be the ONLY thing
+//     excluding a fully-linked run).
+//   * POST-snapshot — use dispatchAndSeedAfterSnapshot(...) below, which proves
+//     the snapshot has already happened by waiting for the dispatch POST.
 const seedChild = (over) => postJson('/api/_mock/seed-run', {
   status: 'completed',
   output: SEED_OUTPUT,
   workflowName: 'verify-echo-v1',
-  delayMs: 2500,
+  delayMs: 0,
   ...over,
 });
 
@@ -380,6 +394,51 @@ const waitRow = async (runId, timeoutMs = 8000) => {
     await new Promise((r) => setTimeout(r, 150));
   }
 };
+
+// Start the dispatch-only case and seed a run that is GUARANTEED to land after
+// the case child's pre-dispatch snapshot.
+//
+// THE ORDERING IS CAUSAL, AND THAT IS THE WHOLE POINT. The case child takes its
+// pre-dispatch snapshot (one run-list read) and only THEN POSTs the dispatch,
+// so "the mock has served the dispatch POST" is a PROOF that the snapshot is
+// already behind us — not an estimate of it. The form this replaces seeded with
+// `delayMs: 2500` and asserted in a comment that 2500 ms "lands it AFTER the
+// case child's pre-dispatch snapshot": a 2.5 s bet on child-process boot time.
+// When the bet loses, the run lands INSIDE the snapshot and the case is decided
+// by the temporal filter instead of the leg it exists to test — 9b's stray
+// becomes a pre-dispatch EXCLUSION, so the mismatch diagnostic never names it,
+// and 9e-9i's poisoned child is "never considered" at all, so the leg reason
+// the case asserts is never produced. That is a FLAKY NEGATIVE TEST, which is
+// not evidence: it fails by naming a different leg, or none.
+//
+// FALSIFIED, NOT ARGUED: forcing the old default to `delayMs: 0` (i.e. the run
+// materializing before the snapshot, which is what a slow boot produces)
+// reproduces case 9i's failure exactly — "the poisoned child was never
+// considered" — with the user-message leg never evaluated. The load-dependent
+// red was this race losing, not a defect in the leg checks.
+//
+// THE MARGIN IS LARGE AND ONE-SIDED. Discovery re-lists every ADOPTION_POLL_MS
+// (500 ms) until its 10 s deadline; this helper seeds within milliseconds of
+// the dispatch, so the run is visible to the FIRST discovery poll. There is no
+// upper bound on how slow a loaded box may be, and none is needed.
+//
+// Returns the seed handle AND the case result, because the cases assert on both
+// (9b names the stray id in the refusal text; 9e-9i match on the leg reason).
+async function dispatchAndSeedAfterSnapshot({ home, taskId, seedArgs, timeoutMs = 90000 }) {
+  const before = (await mockCalls()).dispatchPosts;
+  const pending = runCase('dispatch-only', home, { taskId }, timeoutMs);
+  const deadline = Date.now() + 60000;
+  for (;;) {
+    if ((await mockCalls()).dispatchPosts > before) break;
+    if (Date.now() > deadline) {
+      throw new Error('case ' + taskId + ' never dispatched — cannot prove the pre-dispatch snapshot was taken, so the seed ordering is unproven');
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  const seed = await seedChild(seedArgs);
+  await waitRow(seed.id);
+  return { seed, r: await pending };
+}
 
 test('case 9c: T1 — a parent-linked child is adopted on five verified legs, association intact', async () => {
   const calls0 = await mockCalls();
@@ -463,14 +522,17 @@ test('case 9e: T1 — a child with a wrong parent db id is refused, leg named', 
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-wrongdb',
-    parentConversationId: 'db-not-ours',
-    parentPlatformId: p.conversationId,
-    codebaseId: P1_ID,
-    message: taskMsg('task-9e0a3333'),
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9e0a3333',
+    seedArgs: {
+      conversationId: 'rcos-child-wrongdb',
+      parentConversationId: 'db-not-ours',
+      parentPlatformId: p.conversationId,
+      codebaseId: P1_ID,
+      message: taskMsg('task-9e0a3333'),
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9e0a3333' }, 90000);
   assert.equal(r.ok, true);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
@@ -492,14 +554,17 @@ test('case 9f: T1 — a child with a wrong parent platform id is refused, leg na
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-wrongplat',
-    parentConversationId: p.dbId,
-    parentPlatformId: 'web-wrongplatform',
-    codebaseId: P1_ID,
-    message: taskMsg('task-9f0a4444'),
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9f0a4444',
+    seedArgs: {
+      conversationId: 'rcos-child-wrongplat',
+      parentConversationId: p.dbId,
+      parentPlatformId: 'web-wrongplatform',
+      codebaseId: P1_ID,
+      message: taskMsg('task-9f0a4444'),
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9f0a4444' }, 90000);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
   assert.equal(r.adoption, null);
@@ -517,14 +582,17 @@ test('case 9g: T1 — a child from the wrong project is refused, leg named', asy
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-wrongproj',
-    parentConversationId: p.dbId,
-    parentPlatformId: p.conversationId,
-    codebaseId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
-    message: taskMsg('task-9g0a5555'),
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9g0a5555',
+    seedArgs: {
+      conversationId: 'rcos-child-wrongproj',
+      parentConversationId: p.dbId,
+      parentPlatformId: p.conversationId,
+      codebaseId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
+      message: taskMsg('task-9g0a5555'),
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9g0a5555' }, 90000);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
   assert.equal(r.adoption, null);
@@ -542,15 +610,18 @@ test('case 9h: T1 — a wrong-workflow child of the correct parent is never adop
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  await seedChild({
-    conversationId: 'rcos-child-wrongwf',
-    workflowName: 'example-echo-ground-v1',
-    parentConversationId: p.dbId,
-    parentPlatformId: p.conversationId,
-    codebaseId: P1_ID,
-    message: taskMsg('task-9h0a6666'),
+  const { r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9h0a6666',
+    seedArgs: {
+      conversationId: 'rcos-child-wrongwf',
+      workflowName: 'example-echo-ground-v1',
+      parentConversationId: p.dbId,
+      parentPlatformId: p.conversationId,
+      codebaseId: P1_ID,
+      message: taskMsg('task-9h0a6666'),
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9h0a6666' }, 90000);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
   assert.equal(r.adoption, null);
@@ -570,14 +641,17 @@ test('case 9i: T1 — a child carrying a different user_message is refused, leg 
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-wrongmsg',
-    parentConversationId: p.dbId,
-    parentPlatformId: p.conversationId,
-    codebaseId: P1_ID,
-    message: 'task task-9i0a7777: something else entirely',
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9i0a7777',
+    seedArgs: {
+      conversationId: 'rcos-child-wrongmsg',
+      parentConversationId: p.dbId,
+      parentPlatformId: p.conversationId,
+      codebaseId: P1_ID,
+      message: 'task task-9i0a7777: something else entirely',
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9i0a7777' }, 90000);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
   assert.equal(r.adoption, null);
@@ -646,18 +720,22 @@ test('case 9l: T1 — parent legs hidden from LIST are recovered from the detail
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-hidden',
-    parentConversationId: p.dbId,
-    parentPlatformId: p.conversationId,
-    codebaseId: P1_ID,
-    message: taskMsg('task-9l0aaaaa'),
-    listHidesParent: true,
+  // The seed must be FRESH when the child snapshots (its parent legs are
+  // hidden from the LIST, so the projection assertions only mean something if
+  // the run was not already history). FRESH is now PROVEN by the dispatch POST
+  // rather than assumed from a timer — see dispatchAndSeedAfterSnapshot.
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9l0aaaaa',
+    seedArgs: {
+      conversationId: 'rcos-child-hidden',
+      parentConversationId: p.dbId,
+      parentPlatformId: p.conversationId,
+      codebaseId: P1_ID,
+      message: taskMsg('task-9l0aaaaa'),
+      listHidesParent: true,
+    },
   });
-  // The seed must be FRESH when the child snapshots: projection assertions
-  // happen after the case, not before it (a pre-dispatch waitRow would push
-  // the seed into the snapshot, making it history by construction).
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9l0aaaaa' }, 90000);
   assert.equal(r.verdict, 'SHIP');
   assert.equal(r.adoption.mode, 'parent-linked');
   assert.equal(r.runId, seed.id);
@@ -682,15 +760,18 @@ test('case 9m: T1 — a detail-poisoned leg refuses adoption even when the list 
   assert.equal(p.ok, true);
 
   await postJson('/api/_mock/drop-next-dispatch', {});
-  const seed = await seedChild({
-    conversationId: 'rcos-child-detailpoison',
-    parentConversationId: p.dbId,
-    parentPlatformId: p.conversationId,
-    codebaseId: P1_ID,
-    message: taskMsg('task-9m0abbbb'),
-    detailOnly: { parent_platform_id: 'web-poisoned-detail' },
+  const { seed, r } = await dispatchAndSeedAfterSnapshot({
+    home,
+    taskId: 'task-9m0abbbb',
+    seedArgs: {
+      conversationId: 'rcos-child-detailpoison',
+      parentConversationId: p.dbId,
+      parentPlatformId: p.conversationId,
+      codebaseId: P1_ID,
+      message: taskMsg('task-9m0abbbb'),
+      detailOnly: { parent_platform_id: 'web-poisoned-detail' },
+    },
   });
-  const r = await runCase('dispatch-only', home, { taskId: 'task-9m0abbbb' }, 90000);
   assert.equal(r.verdict, 'FAILED');
   assert.deepEqual(r.failureCodes, ['run-not-found']);
   assert.equal(r.adoption, null);
