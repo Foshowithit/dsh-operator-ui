@@ -31,9 +31,11 @@
 //
 // ADMISSION RULE
 //
-//   content_before == content_after    tracked working-tree content
-//   HEAD_before    == HEAD_after       the commit
-//   test_set_bytes == test_set_bytes   the files that constituted the run
+// The run executes inside a FROZEN SNAPSHOT of the tracked tree, never in the
+// live worktree. The identity that must be immutable is the SNAPSHOT's:
+//
+//   snapshot_content_before == snapshot_content_after   the execution inputs
+//   snapshot_set_bytes      == snapshot_set_bytes       the files that ran
 //   else  VERDICT = VOID, reason = execution-provenance-changed
 //
 // The third clause is not redundant with the first. The tree identity hashes
@@ -42,20 +44,51 @@
 // decided the verdict changed underneath it. Hashing the set directly closes
 // that gap.
 //
-// The two identities are reported SEPARATELY on purpose. A concurrent COMMIT by
-// another writer moves HEAD without touching one tracked file; that is a real
-// provenance event and still voids the run, but it is a different fact from
-// "the tested content changed", and a reader must be able to tell them apart
-// rather than being told only that the run was thrown away.
+// WHY A SNAPSHOT, AND WHY IT CHANGES WHAT VOIDS (P0.4, agreed 2026-09-25)
+//
+// The first version of this gate sampled the LIVE tree before and after. That
+// proves ENDPOINT EQUALITY, which is weaker than immutability: a file can go
+// A -> B -> A inside the window and both samples agree while different test
+// processes loaded different bytes. The run then observed a MIXED system.
+//
+// Sampling harder cannot fix that, so the fix is ISOLATION. Claim-grade
+// execution runs in a detached worktree at one commit, and only THAT tree is
+// required to hold still.
+//
+// The consequence is deliberate and it is the whole point for a box with
+// several concurrent writers:
+//
+//   live tree moves during the run  ->  RECORDED as provenance, does NOT void
+//   snapshot moves during the run   ->  VOID, reason = execution-provenance-changed
+//
+// A sibling committing Y while this gate certifies X no longer throws away
+// X's evidence. More builders must not mean mutually voided evidence. What the
+// receipt asserts is: "these numbers describe exactly commit X", and
+// source_repo_moved_during_run is information about the development tree, not
+// contamination of the measurement.
+//
+// The snapshot is created by `git worktree add --detach <dest> <commit>`, so
+// "the snapshot is commit X" is a git fact rather than a claim about a copy.
+// A file-by-file copy would be non-atomic: a writer landing mid-copy yields a
+// snapshot that is a mixture of two trees, which is the exact defect this gate
+// exists to catch. A worktree cannot be a mixture.
+//
+// The tree must be CLEAN for a claim-grade run. Uncommitted content has no
+// commit identity, so there is nothing to bind the receipt to; the gate
+// refuses (exit 3) rather than certifying a tree that no commit describes.
+// `--in-place` retains the old sample-the-live-tree behaviour for ad-hoc use.
 //
 // USAGE
 //
-//   node scripts/gate.mjs                  check.js leg + test leg
+//   node scripts/gate.mjs                  check.js leg + test leg, in a snapshot
 //   node scripts/gate.mjs --tests-only     skip the contract check leg
 //   node scripts/gate.mjs --check-only     skip the test leg
 //   node scripts/gate.mjs --no-run         dry: print the expanded test set
 //   node scripts/gate.mjs --out <path>     receipt path
 //   node scripts/gate.mjs --quiet          suppress leg output on the console
+//   node scripts/gate.mjs --in-place       legacy: run in the live worktree
+//   node scripts/gate.mjs --keep-snapshot  do not delete the snapshot afterwards
+//   node scripts/gate.mjs --snapshot-dir <path>  place the snapshot here
 //
 // EXIT CODES (distinct so a caller cannot mistake VOID for FAIL)
 //
@@ -64,13 +97,16 @@
 // The receipt is written OUTSIDE the tree by default. A gate that writes into
 // the tree it just certified would dirty that tree and make its own next run
 // inadmissible — the receipt path is therefore deliberately not inside the repo.
+// The snapshot is likewise outside the live worktree and is removed on exit.
 
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync,
+} from 'node:fs';
 import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = dirname(HERE);
@@ -265,6 +301,92 @@ export function porcelain(root) {
 }
 
 // ---------------------------------------------------------------------------
+// Frozen snapshot (P0.4) — the execution inputs, isolated from the dev tree
+// ---------------------------------------------------------------------------
+
+// Every tracked path, repo-relative and sorted. The file list is fixed at
+// snapshot time and reused for every later identity read, so "before" and
+// "after" hash the SAME set of paths and a vanished file cannot silently drop
+// out of the comparison.
+export function trackedFiles(root) {
+  return git(root, ['ls-files', '-z']).toString('utf8').split('\0').filter(Boolean).sort();
+}
+
+// Content identity over an EXPLICIT file list: (relpath, sha256(bytes))*.
+//
+// Applied unchanged to both the source tree and the snapshot, which is what
+// lets the gate PROVE the snapshot is the tracked content rather than assert
+// it: identical inputs must produce an identical digest, and any difference is
+// a named failure instead of a silently different test subject.
+//
+// A tracked file that is missing or unreadable hashes as UNREADABLE rather than
+// being skipped — "could not read it" is a distinct state from "it is
+// unchanged", and skipping would make a deleted file look like a match.
+export function manifestIdentity(dir, files) {
+  const h = createHash('sha256');
+  for (const rel of files) {
+    h.update(rel);
+    h.update('\0');
+    let bytes;
+    try {
+      bytes = readFileSync(join(dir, rel));
+    } catch {
+      h.update('UNREADABLE');
+      h.update('\0');
+      continue;
+    }
+    h.update(sha256(bytes));
+    h.update('\0');
+  }
+  return h.digest('hex');
+}
+
+// A claim-grade run binds to a COMMIT. Uncommitted content has no commit
+// identity, so there is nothing for the receipt to be evidence about — refuse
+// rather than certify a tree that no commit describes.
+export function workingTreeClean(root) {
+  const p = porcelain(root);
+  return p !== null && p.trim() === '';
+}
+
+// Create the frozen snapshot as a DETACHED WORKTREE at one commit.
+//
+// A file-by-file copy is not atomic: a writer landing mid-copy produces a
+// snapshot that is a MIXTURE of two trees, which is precisely the failure mode
+// this gate exists to detect. A worktree is materialised from the object store
+// at a fixed commit, so "the snapshot is commit X" is a git fact.
+//
+// `node_modules` is symlinked in, never copied: it is gitignored, so it is
+// ENVIRONMENT rather than content and contributes nothing to the identity.
+export function createFrozenSnapshot({ root, dest, commit }) {
+  git(root, ['worktree', 'add', '--detach', dest, commit]);
+  const nm = join(root, 'node_modules');
+  if (existsSync(nm)) {
+    try {
+      symlinkSync(nm, join(dest, 'node_modules'), 'dir');
+    } catch (e) {
+      // A snapshot without the resolved dependency tree is not the environment
+      // the numbers came from. Say so rather than running without it.
+      throw new Error('could not link node_modules into the snapshot: ' + ((e && e.message) || e));
+    }
+  }
+  return dest;
+}
+
+// Drop the snapshot. `worktree remove --force` because the run legitimately
+// writes artifacts (stdout/stderr, caches) into it; those are not tracked
+// content and must not stop the cleanup. `prune` then clears the admin entry
+// so a later `git worktree list` does not accumulate dead paths.
+export function removeFrozenSnapshot({ root, dest }) {
+  try {
+    git(root, ['worktree', 'remove', '--force', dest]);
+  } catch {
+    try { rmSync(dest, { recursive: true, force: true }); } catch { /* best effort */ }
+  }
+  try { git(root, ['worktree', 'prune']); } catch { /* best effort */ }
+}
+
+// ---------------------------------------------------------------------------
 // Verdict derivation (pure — the whole admission rule is testable without a run)
 // ---------------------------------------------------------------------------
 
@@ -403,24 +525,84 @@ async function main() {
 
   mkdirSync(artifactDir, { recursive: true });
 
-  const headBefore = headId(root);
-  const contentBefore = contentIdentity(root);
-  const porcelainBefore = porcelain(root);
+  const inPlace = has('--in-place');
+  const keepSnapshot = has('--keep-snapshot');
+  const startedAt = new Date().toISOString();
+
+  // --- the execution root: a frozen snapshot, or (legacy) the live tree ------
+  //
+  // `files` is fixed HERE and reused for every identity read, so "before" and
+  // "after" hash the same path list and a file that vanished mid-run cannot
+  // silently drop out of the comparison.
+  let execRoot = root;
+  let files = null;
+  let snap = null;
+  let sourceBefore = null;
+
+  if (!inPlace) {
+    // A claim-grade receipt binds to a commit. Uncommitted content has no
+    // commit identity, so there is nothing for the run to be evidence about.
+    if (!workingTreeClean(root)) {
+      console.error('GATE COULD NOT RUN: the tracked working tree is dirty, so no commit describes the content under test.');
+      console.error('  A claim-grade receipt binds to a commit. Commit first, or use --in-place for an ad-hoc sample of the live tree.');
+      process.exit(3);
+    }
+    const commit = headId(root);
+    if (String(commit).startsWith('UNREADABLE')) {
+      console.error('GATE COULD NOT RUN: HEAD is unreadable — ' + commit);
+      process.exit(3);
+    }
+    try {
+      files = trackedFiles(root);
+    } catch (e) {
+      console.error('GATE COULD NOT RUN: the tracked file list could not be read — ' + ((e && e.message) || e));
+      process.exit(3);
+    }
+    sourceBefore = { head: commit, tree: manifestIdentity(root, files) };
+
+    const dest = arg('--snapshot-dir', null) || mkdtempSync(join(tmpdir(), 'rcos-snapshot-'));
+    try {
+      createFrozenSnapshot({ root, dest, commit });
+    } catch (e) {
+      console.error('GATE COULD NOT RUN: could not create the frozen snapshot — ' + ((e && e.message) || e));
+      process.exit(3);
+    }
+    execRoot = dest;
+
+    // PROVE the snapshot is the tracked content of `commit`, rather than
+    // asserting it. A mismatch here means the execution inputs are not what the
+    // receipt would have claimed, which is a refusal, not a warning.
+    const atCreate = manifestIdentity(dest, files);
+    if (atCreate !== sourceBefore.tree) {
+      removeFrozenSnapshot({ root, dest });
+      console.error('GATE COULD NOT RUN: the snapshot is not the tracked content of ' + commit);
+      console.error('  source   ' + sourceBefore.tree.slice(0, 16) + '...');
+      console.error('  snapshot ' + atCreate.slice(0, 16) + '...');
+      process.exit(3);
+    }
+    snap = { dir: dest, commit, identity_at_create: atCreate, tracked_files: files.length, kept: keepSnapshot };
+  }
+
+  // --- the explicit set, hashed from the EXECUTION root ----------------------
+  const execHeadBefore = snap ? snap.commit : headId(execRoot);
+  const execBefore = snap ? snap.identity_at_create : contentIdentity(execRoot).id;
+  const trackedCount = snap ? snap.tracked_files : contentIdentity(execRoot).files;
+  const porcelainBefore = porcelain(execRoot);
   let setHashesBefore;
   try {
-    setHashesBefore = hashTestSet(root, testSet);
+    setHashesBefore = hashTestSet(execRoot, testSet);
   } catch (e) {
+    if (snap) removeFrozenSnapshot({ root, dest: snap.dir });
     console.error('GATE COULD NOT RUN: the explicit test set could not be hashed — ' + ((e && e.message) || e));
     process.exit(3);
   }
-  const startedAt = new Date().toISOString();
 
   const legs = [];
   if (!testsOnly) {
     legs.push(runLeg({
       name: 'contract-check',
       argv: ['scripts/check.js'],
-      cwd: root, artifactDir, quiet,
+      cwd: execRoot, artifactDir, quiet,
     }));
   }
   if (!checkOnly) {
@@ -429,17 +611,19 @@ async function main() {
     legs.push(runLeg({
       name: 'tests',
       argv: ['--test', ...testSet],
-      cwd: root, artifactDir, quiet,
+      cwd: execRoot, artifactDir, quiet,
     }));
   }
 
   const finishedAt = new Date().toISOString();
-  const headAfter = headId(root);
-  const contentAfter = contentIdentity(root);
-  const porcelainAfter = porcelain(root);
+
+  // --- the identity that must hold still: the EXECUTION root -----------------
+  const execAfter = snap ? manifestIdentity(execRoot, files) : contentIdentity(execRoot).id;
+  const execHeadAfter = snap ? snap.commit : headId(execRoot);
+  const porcelainAfter = porcelain(execRoot);
   let setHashesAfter;
   try {
-    setHashesAfter = hashTestSet(root, testSet);
+    setHashesAfter = hashTestSet(execRoot, testSet);
   } catch (e) {
     // A member that vanished mid-run is a set change, not a crash: the run's
     // evidence no longer corresponds to the set it named.
@@ -450,31 +634,58 @@ async function main() {
     ? testSet.slice()
     : testSetDrift(setHashesBefore, setHashesAfter);
 
+  // --- source-tree movement is PROVENANCE, not contamination -----------------
+  //
+  // A sibling committing Y while this gate certifies X must not discard X's
+  // evidence. The snapshot is what had to hold still; the development tree
+  // moving is a fact worth recording and nothing more.
+  let source = null;
+  if (snap) {
+    const srcTreeAfter = manifestIdentity(root, files);
+    const srcHeadAfter = headId(root);
+    source = {
+      commit_under_test: snap.commit,
+      tree_before: sourceBefore.tree,
+      tree_after: srcTreeAfter,
+      head_before: sourceBefore.head,
+      head_after: srcHeadAfter,
+      repo_moved_during_run: sourceBefore.tree !== srcTreeAfter,
+      head_moved_during_run: sourceBefore.head !== srcHeadAfter,
+      note: 'the development tree is not the measured system; movement here does not void the run',
+    };
+  }
+
   const v = deriveVerdict({
-    contentBefore: contentBefore.id, contentAfter: contentAfter.id,
-    headBefore, headAfter,
+    contentBefore: execBefore, contentAfter: execAfter,
+    headBefore: execHeadBefore, headAfter: execHeadAfter,
     testSetChanged: setChanged,
     legs,
   });
 
   const receipt = {
     gate: 'scripts/gate.mjs',
-    gate_version: 1,
+    gate_version: 2,
+    mode: snap ? 'snapshot' : 'in-place',
     verdict: v.verdict,
     reason: v.reason,
     moved: v.moved,
     head_only_move: v.headOnlyMove,
-    admission_rule: 'content_before == content_after AND HEAD_before == HEAD_after, else VOID',
+    admission_rule: snap
+      ? 'snapshot_content_before == snapshot_content_after AND snapshot_set_bytes == snapshot_set_bytes, else VOID'
+      : 'content_before == content_after AND HEAD_before == HEAD_after, else VOID',
     repo: root,
+    exec_root: execRoot,
     started_at: startedAt,
     finished_at: finishedAt,
-    tree_before: contentBefore.id,
-    tree_after: contentAfter.id,
-    head_before: headBefore,
-    head_after: headAfter,
-    tracked_files: contentBefore.files,
+    tree_before: execBefore,
+    tree_after: execAfter,
+    head_before: execHeadBefore,
+    head_after: execHeadAfter,
+    tracked_files: trackedCount,
     porcelain_before: porcelainBefore,
     porcelain_after: porcelainAfter,
+    snapshot: snap,
+    source,
     test_glob: globLabel,
     expanded_test_set: testSet,
     expanded_test_set_count: testSet.length,
@@ -496,11 +707,22 @@ async function main() {
   console.log('\n' + bar);
   console.log('RCOS FROZEN-PROVENANCE GATE');
   console.log(bar);
+  console.log('mode          : ' + receipt.mode + (snap ? '  (detached worktree at ' + snap.commit.slice(0, 12) + ')' : '  (live tree)'));
   console.log('verdict       : ' + v.verdict + (v.reason ? '  (' + v.reason + ')' : ''));
   if (v.moved.length) console.log('moved         : ' + v.moved.join(', ') + (v.headOnlyMove ? '  [HEAD-only: a concurrent commit, no tracked file changed]' : ''));
-  console.log('HEAD          : ' + headBefore + (headBefore === headAfter ? '  (unchanged)' : '  -> ' + headAfter));
-  console.log('tree          : ' + contentBefore.id.slice(0, 16) + '...' + (contentBefore.id === contentAfter.id ? '  (unchanged)' : '  -> ' + contentAfter.id.slice(0, 16) + '...'));
-  console.log('tracked files : ' + contentBefore.files);
+  if (snap) {
+    console.log('snapshot      : ' + snap.identity_at_create.slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
+    if (source) {
+      console.log('source tree   : ' + (source.repo_moved_during_run || source.head_moved_during_run
+        ? 'MOVED during the run (provenance only — does not void): '
+          + [source.repo_moved_during_run ? 'tracked-content' : null, source.head_moved_during_run ? 'head' : null].filter(Boolean).join(', ')
+        : 'unchanged'));
+    }
+  } else {
+    console.log('HEAD          : ' + execHeadBefore + (execHeadBefore === execHeadAfter ? '  (unchanged)' : '  -> ' + execHeadAfter));
+    console.log('tree          : ' + String(execBefore).slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
+  }
+  console.log('tracked files : ' + receipt.tracked_files);
   console.log('explicit set  : ' + testSet.length + ' files from ' + globLabel + ' (' + excluded.length + ' non-entrypoint .mjs excluded)');
   console.log('set bytes     : ' + Object.keys(setHashesBefore).length + ' hashed' + (setChanged.length ? '  ' + setChanged.length + ' CHANGED: ' + setChanged.join(', ') : '  (unchanged)'));
   for (const l of legs) {
@@ -512,6 +734,9 @@ async function main() {
   console.log('receipt       : ' + outPath);
   console.log('artifacts     : ' + artifactDir);
   console.log(bar);
+
+  if (snap && !keepSnapshot) removeFrozenSnapshot({ root, dest: snap.dir });
+  else if (snap) console.log('snapshot kept : ' + snap.dir);
 
   if (v.verdict === 'VOID') {
     console.log('VOID is neither a pass nor a failure: the run does not correspond to one tree.');

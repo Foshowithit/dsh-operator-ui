@@ -17,7 +17,8 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -30,6 +31,11 @@ import {
   testSetDrift,
   parseTestTotals,
   CANONICAL_TEST_GLOBS,
+  trackedFiles,
+  manifestIdentity,
+  headId,
+  createFrozenSnapshot,
+  removeFrozenSnapshot,
 } from '../scripts/gate.mjs';
 
 // ---------------------------------------------------------------------------
@@ -346,4 +352,109 @@ test('the default receipt path is outside the repo', async () => {
   const src = readFileSync(join(import.meta.dirname, '..', 'scripts', 'gate.mjs'), 'utf8');
   assert.match(src, /arg\('--out',\s*join\(homedir\(\)/, 'the default receipt must be under homedir()');
   assert.doesNotMatch(src, /arg\('--out',\s*join\(root/, 'the default receipt must not be inside the repo');
+});
+
+// ---------------------------------------------------------------------------
+// Frozen snapshot (P0.4) — isolation, and what does and does not void
+// ---------------------------------------------------------------------------
+
+test('manifestIdentity: same bytes under the same name is the same identity', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'gate-manifest-'));
+  try {
+    writeFileSync(join(dir, 'a.txt'), 'one\n');
+    writeFileSync(join(dir, 'b.txt'), 'two\n');
+    const id = manifestIdentity(dir, ['a.txt', 'b.txt']);
+    assert.match(id, /^[0-9a-f]{64}$/);
+    assert.equal(manifestIdentity(dir, ['a.txt', 'b.txt']), id);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('manifestIdentity: a changed byte, a renamed path, or a vanished file all change it', () => {
+  // Three distinct ways the execution inputs can move, each of which must be
+  // observable — this function is the mechanism the VOID branch depends on.
+  const dir = mkdtempSync(join(tmpdir(), 'gate-manifest-'));
+  try {
+    writeFileSync(join(dir, 'a.txt'), 'one\n');
+    const id = manifestIdentity(dir, ['a.txt']);
+    // 1. content change
+    writeFileSync(join(dir, 'a.txt'), 'two\n');
+    assert.notEqual(manifestIdentity(dir, ['a.txt']), id);
+    // 2. the SAME bytes under a different path is a different subject
+    writeFileSync(join(dir, 'renamed.txt'), 'two\n');
+    assert.notEqual(manifestIdentity(dir, ['renamed.txt']), manifestIdentity(dir, ['a.txt']));
+    // 3. a file that cannot be read must not be skipped: skipping would make a
+    //    deleted file look like an unchanged one.
+    const withMissing = manifestIdentity(dir, ['a.txt', 'gone.txt']);
+    assert.notEqual(withMissing, manifestIdentity(dir, ['a.txt']));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('trackedFiles: non-empty, sorted, and the real repo list', () => {
+  const root = join(import.meta.dirname, '..');
+  const files = trackedFiles(root);
+  assert.ok(files.length > 0, 'a repo with no tracked files cannot be gated');
+  assert.deepEqual(files, [...files].sort(), 'sorted so before/after hash the same order');
+});
+
+test('createFrozenSnapshot: a detached worktree at the commit, with deps linked', () => {
+  // The snapshot is the measured system, so its provenance is a git fact:
+  // assert the snapshot really is a worktree AT the requested commit rather
+  // than a copy that merely looks like one.
+  const root = join(import.meta.dirname, '..');
+  const commit = headId(root);
+  assert.ok(!String(commit).startsWith('UNREADABLE'), 'HEAD must be readable for this test');
+  const dest = mkdtempSync(join(tmpdir(), 'gate-snap-'));
+  rmSync(dest, { recursive: true, force: true });   // worktree add wants to create it
+  try {
+    createFrozenSnapshot({ root, dest, commit });
+    const inSnap = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dest, encoding: 'utf8' }).trim();
+    assert.equal(inSnap, commit, 'the snapshot must be at exactly the requested commit');
+    assert.ok(existsSync(join(dest, 'node_modules')), 'deps must be linked or the numbers are from another environment');
+    assert.ok(existsSync(join(dest, 'scripts', 'gate.mjs')), 'the snapshot must carry the tracked tree');
+  } finally {
+    removeFrozenSnapshot({ root, dest });
+  }
+  // Cleanup must leave no dead worktree entry behind.
+  const list = execFileSync('git', ['worktree', 'list'], { cwd: root, encoding: 'utf8' });
+  assert.ok(!list.includes(dest), 'the snapshot must not linger in git worktree list');
+});
+
+test('admission: the verdict consumes the EXECUTION identity, never the dev tree', () => {
+  // THE P0.4 SEMANTIC. Under snapshot isolation the development tree is not the
+  // measured system, so a sibling committing during the run must not discard
+  // this run's evidence. That holds structurally: source movement is not an
+  // input to the rule at all — only the execution root's identity is. If a
+  // future edit starts feeding the live tree in here, a busy box would start
+  // voiding good runs again and this test is what catches it.
+  const v = deriveVerdict({
+    contentBefore: 'snapshot-id', contentAfter: 'snapshot-id',
+    headBefore: 'commitX', headAfter: 'commitX',
+    testSetChanged: [], legs: GREEN,
+  });
+  assert.equal(v.verdict, 'PASS', 'a still snapshot is admissible no matter what the dev tree does');
+  assert.deepEqual(v.moved, []);
+
+  // ...and a snapshot that DOES move still voids, green leg or not.
+  const moved = deriveVerdict({
+    contentBefore: 'snapshot-id', contentAfter: 'snapshot-id-MUTATED',
+    headBefore: 'commitX', headAfter: 'commitX',
+    testSetChanged: [], legs: GREEN,
+  });
+  assert.equal(moved.verdict, 'VOID');
+  assert.equal(moved.reason, 'execution-provenance-changed');
+});
+
+test('the gate refuses a dirty tree instead of certifying an uncommitted subject', async () => {
+  // A claim-grade receipt binds to a commit. Uncommitted content has no commit
+  // identity, so there is nothing for the receipt to be evidence ABOUT — the
+  // gate must refuse (exit 3) rather than silently testing HEAD while the user
+  // believes their working copy was measured.
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(join(import.meta.dirname, '..', 'scripts', 'gate.mjs'), 'utf8');
+  assert.match(src, /workingTreeClean\(root\)/, 'the snapshot path must gate on a clean tree');
+  assert.match(src, /--in-place/, 'the legacy live-tree mode must remain reachable for ad-hoc use');
 });

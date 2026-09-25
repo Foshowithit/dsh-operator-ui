@@ -5,14 +5,66 @@
 // Run: node eval/lib/test-preflight.mjs   (exit 0 = all refusals proven)
 
 import { runContext, assertParity, assertBaselineFresh, observeLive } from './experiment.mjs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const baseline = JSON.parse(await readFile(join(root, 'eval', 'baseline-config.json'), 'utf8'));
 const ctx = await runContext({ lane: 'dsh' });
-const live = await observeLive({ laneHome: '/tmp/opui-shakedown-dsh', budgetMs: baseline.budget.wall_ms_per_objective, corpusPath: join(root, 'eval', 'corpus-manifest.json') });
+
+// ---------------------------------------------------------------- lane home
+//
+// The lane home is an EXTERNAL RECORD, and this test must CONTROL it rather
+// than inherit whatever a past live run happened to leave in /tmp.
+//
+// It used to read a fixed `/tmp/opui-shakedown-dsh` — a directory created by
+// eval/lib/run-dsh-lane.mjs and destroyed by any reboot or tmp-clean. The
+// positive control therefore silently degraded into a test of whether /tmp
+// still held a stale lane home. Measured 2026-09-25 with the lane home absent:
+//
+//   control 1 (unmutated)      -> "refused unexpectedly" (a FALSE red)
+//   controls 2,4,5,6 (mutated) -> pass VACUOUSLY, because they EXPECT refusal
+//                                 and a parity check that refuses everything
+//                                 satisfies them
+//
+// So only control 1 can detect a broken live observation, and only control 1
+// was failing. The suite was red for an environment reason and green for the
+// wrong reason at the same time.
+//
+// The fixture below is built from the lane the baseline actually recorded. This
+// is NOT a mock of the parity logic: observeLive really parses a real
+// settings.yaml through the real regexes and assertParity really runs. Only the
+// external record is synthesised — fixtures control the records, never the
+// verdict.
+const ml = baseline.model_lane || {};
+if (!ml.model_id || !ml.endpoint) {
+  console.error('PREFLIGHT TESTS: 1 FAILURE(S)');
+  console.error('  the baseline model lane is unresolved (model_id/endpoint null), so the');
+  console.error('  positive control cannot be established — re-freeze eval/baseline-config.json');
+  process.exit(1);
+}
+const laneHome = await mkdtemp(join(tmpdir(), 'preflight-lane-'));
+const laneSettings = [
+  'agent-default-model:',
+  '  provider: preflight-fixture',
+  '  model: ' + ml.model_id,
+  'providers:',
+  '    preflight-fixture:',
+  '      baseURL: ' + ml.endpoint,
+  // A reasoningEffort line is what observeLive maps to 'reasoningEffort=<x>';
+  // absent, it reports 'provider defaults'. Emit it only when the baseline
+  // recorded an explicit effort, so the observed sampling matches either way.
+  ...(typeof ml.sampling === 'string' && ml.sampling.startsWith('reasoningEffort=')
+    ? ['      reasoningEffort: ' + ml.sampling.slice('reasoningEffort='.length)]
+    : []),
+  'telemetry: off',
+  '',
+].join('\n');
+await writeFile(join(laneHome, 'settings.yaml'), laneSettings, 'utf8');
+
+const live = await observeLive({ laneHome, budgetMs: baseline.budget.wall_ms_per_objective, corpusPath: join(root, 'eval', 'corpus-manifest.json') });
 
 let failures = 0;
 const expectRefuse = (name, fn) => {
@@ -74,8 +126,10 @@ console.log('8. rcos no-cognitive-model records ARCHITECTURAL (not a refusal):')
   console.log(`  ✓ ${arch.length} model rows recorded as ARCHITECTURAL, ${rows.length - arch.length} rows SAME`);
 }
 
+await rm(laneHome, { recursive: true, force: true });
+
 if (failures) {
   console.log(`\nPREFLIGHT TESTS: ${failures} FAILURE(S)`);
   process.exit(1);
 }
-console.log('\nPREFLIGHT TESTS: all refusals proven.');
+console.log('\nPREFLIGHT TESTS: all refusals proven, positive control accepted');
