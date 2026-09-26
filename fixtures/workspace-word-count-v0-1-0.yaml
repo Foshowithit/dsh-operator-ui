@@ -1,0 +1,42 @@
+# workspace-word-count-v0-1-0.yaml — the REAL learned capability, bundled so a
+# fresh clone can run it. Bundled verbatim from the deterministic composer in
+# lib/teach.js (composeWorkflowYaml('workspace-word-count','0.1.0')) — the same
+# bytes the teach path wrote to the workflows dir before promotion.
+#
+# Install (bootstrap debt, one copy step — same as verify-echo-v1):
+#   mkdir -p ~/.archon/workflows/
+#   cp fixtures/workspace-word-count-v0-1-0.yaml ~/.archon/workflows/
+# then dispatch workflow "workspace-word-count-v0-1-0" via Archon.
+#
+# Lifecycle honesty: this workflow WAS executed and evaluated on the real
+# Archon before promotion (provenance.evalSet in the registry fixture carries
+# the 3 real eval run IDs). The workflow content below is not hand-edited.
+
+# LEARNED by RCOS teaching (M2) — candidate workspace-word-count v0.1.0.
+# Composed deterministically by lib/teach.js; executed + evaluated on the
+# real Archon against a held-out fixture set BEFORE promotion was offered.
+
+name: workspace-word-count-v0-1-0
+description: >
+  LEARNED capability: counts lines, words, and bytes across EVERY .txt
+  file in the run workspace and reports per-file lines plus totals
+  (deterministic, zero-credential).
+
+nodes:
+  - id: measure-all
+    bash: >
+      total_lines=0; total_words=0; total_bytes=0; found=0;
+      for f in *.txt; do
+        [ -e "$f" ] || continue; found=1;
+        l=$(wc -l < "$f" | tr -d " ");
+        w=$(wc -w < "$f" | tr -d " ");
+        b=$(wc -c < "$f" | tr -d " ");
+        echo "file $f: Lines: $l Words: $w Bytes: $b";
+        total_lines=$((total_lines + l)); total_words=$((total_words + w)); total_bytes=$((total_bytes + b));
+      done;
+      if [ "$found" -eq 0 ]; then echo "no .txt files in workspace"; total_lines=0; total_words=0; total_bytes=0; fi;
+      echo "TOTAL Lines: $total_lines Words: $total_words Bytes: $total_bytes"
+
+  - id: report
+    depends_on: [measure-all]
+    bash: echo 'learned-workspace-word-count:done'

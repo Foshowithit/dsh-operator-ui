@@ -24,6 +24,11 @@
   "files": [
     "lib",
     "bin",
+    "fixtures",
+    "capabilities/*/README.md",
+    "capabilities/*/adapter",
+    "capabilities/*/contract.json",
+    "capabilities/*/registry-entry.json",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
