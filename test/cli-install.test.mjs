@@ -18,7 +18,7 @@
 
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, writeFileSync, cpSync, renameSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, renameSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startStubArchon, makeHost, makeSourceCopy, runCli, scratch, NODE, REPO } from './cli-harness.mjs';
@@ -265,11 +265,70 @@ test('verify: VERIFIED when the installed runtime matches its receipt', async ()
   // Host compatibility has its own tests; here it is pinned.
   const rep = await verifyInstalled({
     home, profile: 'web', env: host.env,
-    deps: { hostCompatFn: () => ({ state: 'VERIFIED', version: PINNED_DSH, pin: PINNED_DSH, headline: 'pinned' }) },
+    deps: { hostCompatibilityFn: () => ({ state: 'VERIFIED', version: PINNED_DSH, pin: PINNED_DSH, headline: 'pinned' }) },
   });
   assert.equal(rep.exit_code, EXIT.OK, JSON.stringify(rep.findings));
   assert.equal(rep.state, 'VERIFIED');
   assert.deepEqual(rep.findings.filter((f) => f.state !== 'OK'), []);
+});
+
+test('verify: the host version is measured the SAME WAY install measured it', async () => {
+  // THE DEFECT THIS PINS. `install` read the host version from the resolved
+  // `dsh` BINARY's own --version; `verify` re-measured it by walking the
+  // filesystem from argv[1]/cwd. With DSH_OPERATOR_UI_DSH_BIN set — the very
+  // situation that override exists for — an install would succeed and the next
+  // verify would call the same host UNVERIFIED. Two commands disagreeing about
+  // the host version is a defect in the surface, not a property of the host.
+  //
+  // The harness host's stub binary reports exactly the pin, so no injection is
+  // needed: this asserts the two commands agree BY CONSTRUCTION.
+  const dir = scratch('opui-inst');
+  const home = join(dir, 'home');
+  const host = makeHost({ home, archonPort: archon.port });
+
+  const ins = JSON.parse(runCli(['install', '--json'], { env: host.env }).stdout);
+  assert.equal(ins.state, 'INSTALLED');
+  assert.equal(ins.registration_authority.state, 'OK', 'the binary-decided authority must be granted');
+
+  const r = runCli(['verify', '--json'], { env: host.env, cwd: tmpdir() });
+  const rep = JSON.parse(r.stdout);
+  const hc = rep.findings.find((f) => f.id === 'host-compat');
+  assert.equal(hc.state, 'OK', 'verify must agree with install about the host: ' + JSON.stringify(hc));
+  assert.equal(hc.detail.detected, PINNED_DSH);
+  assert.equal(hc.detail.measured_from, 'binary:--version',
+    'verify must read the binary, not walk the filesystem');
+});
+
+test('hostCompatibility: an off-pin binary is UNVERIFIED, and no binary falls back to the walk', async () => {
+  const { hostCompatibility } = await import('../lib/cli.js');
+  const dir = scratch('opui-hc');
+  const offPin = makeHost({ home: join(dir, 'a'), archonPort: archon.port, dshVersion: '0.0.0-ancient' });
+  const onPin = makeHost({ home: join(dir, 'b'), archonPort: archon.port });
+
+  const off = hostCompatibility({ env: offPin.env });
+  assert.equal(off.source, 'binary:--version');
+  assert.equal(off.state, 'UNVERIFIED');
+  assert.equal(off.version, '0.0.0-ancient');
+
+  assert.equal(hostCompatibility({ env: onPin.env }).state, 'VERIFIED');
+
+  // No resolvable binary -> the walk is the fallback, and it is the ONLY place
+  // the walk is consulted. Injected here so the assertion does not depend on
+  // whatever DSH happens to sit above the test's cwd.
+  // An empty PATH too: a real `dsh` on this box would win the binary branch and
+  // the walk would never be consulted, making the assertion about the box
+  // rather than about the code.
+  const emptyPath = join(dir, 'empty-path');
+  mkdirSync(emptyPath, { recursive: true });
+  const noBin = { ...process.env, PATH: emptyPath };
+  delete noBin.DSH_OPERATOR_UI_DSH_BIN;
+  let consulted = false;
+  const viaWalk = hostCompatibility({
+    env: noBin,
+    hostCompatFn: () => { consulted = true; return { state: 'UNVERIFIED', version: null, pin: PINNED_DSH, headline: 'walked' }; },
+  });
+  assert.equal(consulted, true, 'with no binary the walk must be consulted');
+  assert.equal(viaWalk.state, 'UNVERIFIED');
 });
 
 test('verify: UNVERIFIED (not BLOCKED) when the installed artifact cannot name its commit', async () => {
