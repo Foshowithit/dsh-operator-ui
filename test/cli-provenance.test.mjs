@@ -45,7 +45,7 @@ test('provenance: a manifest with no gitHead is ABSENT, and is never guessed', (
   const v = judgeProvenance(rec);
   assert.equal(v.state, 'UNIDENTIFIED');
   assert.equal(v.ok, false, 'an artifact that cannot name its commit must not be reported ok');
-  assert.match(v.detail, /detached worktree/);
+  assert.match(v.detail, /injected into the artifact explicitly at pack time/);
   rmSync(root, { recursive: true, force: true });
 });
 

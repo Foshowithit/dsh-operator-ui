@@ -9,7 +9,7 @@
   },
   "main": "./lib/index.js",
   "bin": {
-    "dsh-operator-ui": "./bin/dsh-operator-ui.mjs"
+    "dsh-operator-ui": "bin/dsh-operator-ui.mjs"
   },
   "scripts": {
     "check": "node scripts/check.js",

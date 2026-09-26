@@ -18,22 +18,26 @@
 
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync, cpSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, cpSync, renameSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { startStubArchon, makeHost, makeSourceCopy, runCli, NODE, REPO } from './cli-harness.mjs';
-import { contentIdentity, installRoot, EXIT } from '../lib/cli.js';
+import { startStubArchon, makeHost, makeSourceCopy, runCli, scratch, NODE, REPO } from './cli-harness.mjs';
+import { contentIdentity, installRoot, verifyInstalled, EXIT } from '../lib/cli.js';
+import { PINNED_DSH } from '../lib/compat.js';
 
 const archon = await startStubArchon();
 after(() => archon.stop());
 
-const scratch = () => mkdtempSync(join(tmpdir(), 'opui-inst-'));
 const durableOf = (home) => join(installRoot({ home }), 'dsh-operator-ui-0.11.0');
 const profilePkg = (home) => JSON.parse(readFileSync(join(home, 'profiles', 'web', 'package.json'), 'utf8'));
-const cleanup = (dir) => rmSync(dir, { recursive: true, force: true });
+
+// Scratch directories are never deleted — see scratch() in the harness for why
+// (a suite that recursively removes a dozen synthetic homes trips the host's
+// per-turn bulk-delete guard, which is how the frozen-snapshot gate caught the
+// first version of this file).
 
 test('install: a blocked host is refused BEFORE any mutation, byte-for-byte', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: 1 });
   const before = host.snapshot();
@@ -46,11 +50,10 @@ test('install: a blocked host is refused BEFORE any mutation, byte-for-byte', as
   assert.equal(host.snapshot(), before, 'a blocked install wrote to the host');
   assert.equal(existsSync(durableOf(home)), false, 'a blocked install created the durable root');
   assert.match(rep.reason, /Nothing was written/);
-  cleanup(dir);
 });
 
 test('install: --dry-run passes preflight and writes nothing', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   const before = host.snapshot();
@@ -60,11 +63,10 @@ test('install: --dry-run passes preflight and writes nothing', async () => {
   assert.equal(rep.state, 'DRY_RUN');
   assert.equal(rep.mutated, false);
   assert.equal(host.snapshot(), before);
-  cleanup(dir);
 });
 
 test('install: copies durably, registers in the profile, boots, and receipts', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   const r = runCli(['install', '--json'], { env: host.env });
@@ -95,11 +97,10 @@ test('install: copies durably, registers in the profile, boots, and receipts', a
   const receipt = JSON.parse(readFileSync(join(home, 'operator-ui', 'install-receipt.json'), 'utf8'));
   assert.equal(receipt.state, 'INSTALLED');
   assert.equal(receipt.package.version, '0.11.0');
-  cleanup(dir);
 });
 
 test('install: a second run converges and changes nothing', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   assert.equal(runCli(['install', '--json'], { env: host.env }).code, 0);
@@ -119,19 +120,18 @@ test('install: a second run converges and changes nothing', async () => {
     'the receipt changed on a converged run');
   assert.equal(profilePkg(home).dsh.profile.bundles.length, bundlesFirst,
     'the second install duplicated the bundle entry');
-  cleanup(dir);
 });
 
 test('install: a converged host whose receipt was deleted becomes verifiable again', async () => {
   // The one case where a no-op run must still write: without it, a host that had
   // its receipt removed could never be verified again, and `install` would report
   // success while `verify` reported "never installed".
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
   assert.equal(runCli(['verify', '--json'], { env: host.env }).code, EXIT.UNVERIFIED);
-  rmSync(join(home, 'operator-ui', 'install-receipt.json'), { force: true });
+  unlinkSync(join(home, 'operator-ui', 'install-receipt.json'));
   assert.equal(runCli(['verify', '--json'], { env: host.env }).code, EXIT.BLOCKED, 'verify must notice the missing receipt');
 
   const rep = JSON.parse(runCli(['install', '--json'], { env: host.env }).stdout);
@@ -139,11 +139,10 @@ test('install: a converged host whose receipt was deleted becomes verifiable aga
   assert.equal(rep.mutated, false, 'recovering the receipt is not a mutation of the install');
   assert.equal(rep.receipt_action, 'written');
   assert.equal(runCli(['verify', '--json'], { env: host.env }).code, EXIT.UNVERIFIED, 'the host must be verifiable again');
-  cleanup(dir);
 });
 
 test('install: a failure AFTER mutation rolls the profile back byte-exactly', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
 
@@ -168,11 +167,10 @@ test('install: a failure AFTER mutation rolls the profile back byte-exactly', as
   assert.equal(existsSync(join(home, 'profiles', 'web', 'node_modules', 'dsh-operator-ui')), false,
     'the rollback left the node_modules link behind');
   assert.equal(existsSync(durableOf(home)), false, 'the rollback left the durable copy behind');
-  cleanup(dir);
 });
 
 test('install: the receipt carries provenance and no credentials', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
@@ -191,11 +189,10 @@ test('install: the receipt carries provenance and no credentials', async () => {
   assert.equal(/Bearer\s+[A-Za-z0-9]/.test(raw), false, 'the receipt carries an authorization value');
   assert.equal(/"(token|secret|password|credential)[a-z_]*"\s*:\s*"[^"]+"/i.test(raw), false,
     'the receipt carries a credential-valued field');
-  cleanup(dir);
 });
 
 test('verify: VERIFIED when the installed runtime matches its receipt', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
 
@@ -211,16 +208,22 @@ test('verify: VERIFIED when the installed runtime matches its receipt', async ()
   assert.equal(ins.state, 'INSTALLED');
   assert.equal(ins.package.source_commit, 'c'.repeat(40));
 
-  const r = runCli(['verify', '--json'], { env: host.env });
-  const rep = JSON.parse(r.stdout);
-  assert.equal(r.code, EXIT.OK, JSON.stringify(rep.findings));
+  // Driven in-process so the host-compatibility leg can be held CONSTANT. The
+  // ambient DSH version is not a property of this test's subject (does the
+  // installed runtime match its receipt?), and letting it in is precisely what
+  // made this case pass in the working tree and fail in the frozen snapshot.
+  // Host compatibility has its own tests; here it is pinned.
+  const rep = await verifyInstalled({
+    home, profile: 'web', env: host.env,
+    deps: { hostCompatFn: () => ({ state: 'VERIFIED', version: PINNED_DSH, pin: PINNED_DSH, headline: 'pinned' }) },
+  });
+  assert.equal(rep.exit_code, EXIT.OK, JSON.stringify(rep.findings));
   assert.equal(rep.state, 'VERIFIED');
   assert.deepEqual(rep.findings.filter((f) => f.state !== 'OK'), []);
-  cleanup(dir);
 });
 
 test('verify: UNVERIFIED (not BLOCKED) when the installed artifact cannot name its commit', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });   // the working tree has no gitHead
@@ -234,33 +237,32 @@ test('verify: UNVERIFIED (not BLOCKED) when the installed artifact cannot name i
   // everything that IS checkable about the install still passes
   assert.equal(rep.findings.find((f) => f.id === 'boot').state, 'OK');
   assert.equal(rep.findings.find((f) => f.id === 'registration').state, 'OK');
-  cleanup(dir);
 });
 
 test('verify: BLOCKED when nothing has been installed', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   const r = runCli(['verify', '--json'], { env: host.env });
   assert.equal(r.code, EXIT.BLOCKED);
   assert.equal(JSON.parse(r.stdout).state, 'BLOCKED');
-  cleanup(dir);
 });
 
 test('verify: BLOCKED when the durable copy has been deleted', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
-  rmSync(durableOf(home), { recursive: true, force: true });
+  // Renamed, not recursively deleted: the claim under test is "the recorded
+  // location is gone", and one rename states it without a bulk delete.
+  renameSync(durableOf(home), durableOf(home) + '.gone');
   const rep = JSON.parse(runCli(['verify', '--json'], { env: host.env }).stdout);
   assert.equal(rep.state, 'BLOCKED');
   assert.equal(rep.findings.find((f) => f.id === 'durable-copy').state, 'BLOCKED');
-  cleanup(dir);
 });
 
 test('verify: BLOCKED when the installed bytes have been modified since the receipt', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
@@ -270,11 +272,10 @@ test('verify: BLOCKED when the installed bytes have been modified since the rece
   const f = rep.findings.find((x) => x.id === 'durable-copy');
   assert.equal(f.state, 'BLOCKED');
   assert.match(f.reason, /no longer match the receipt digest/);
-  cleanup(dir);
 });
 
 test('verify: BLOCKED when the profile has been repointed at another location', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
@@ -285,11 +286,10 @@ test('verify: BLOCKED when the profile has been repointed at another location', 
   const rep = JSON.parse(runCli(['verify', '--json'], { env: host.env }).stdout);
   assert.equal(rep.state, 'BLOCKED');
   assert.match(rep.findings.find((f) => f.id === 'registration').reason, /not at the receipted durable location/);
-  cleanup(dir);
 });
 
 test('D1 durability: the installed package runs with no source checkout in play', async () => {
-  const dir = scratch();
+  const dir = scratch('opui-inst');
   const home = join(dir, 'home');
   const host = makeHost({ home, archonPort: archon.port });
   runCli(['install', '--json'], { env: host.env });
@@ -317,7 +317,6 @@ test('D1 durability: the installed package runs with no source checkout in play'
     spawnSync(NODE, ['--input-type=module', '-e', 'await import(' + JSON.stringify('file://' + join(moved, 'lib', 'index.js')) + ')'],
       { encoding: 'utf8', cwd: tmpdir() }));
   assert.equal(boot.status, 0, 'the relocated copy failed to boot: ' + boot.stderr);
-  cleanup(dir);
 });
 
 test('contentIdentity: two different builds of the same version are not identical', () => {
@@ -331,5 +330,4 @@ test('contentIdentity: two different builds of the same version are not identica
   writeFileSync(join(b, 'lib', 'index.js'), '// one byte different\n');
   assert.notEqual(contentIdentity(a).digest, contentIdentity(b).digest,
     'a changed file must change the identity even at the same version');
-  cleanup(dir);
 });

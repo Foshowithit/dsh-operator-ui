@@ -11,10 +11,11 @@
 // harness only controls the ENVIRONMENT those rules are evaluated against, so a
 // passing test cannot diverge from the production path.
 
-import { mkdirSync, writeFileSync, rmSync, readFileSync, chmodSync, readdirSync, statSync, copyFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, readFileSync, chmodSync, readdirSync, statSync, copyFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 export const NODE = process.execPath;
@@ -67,12 +68,28 @@ export async function startStubArchon({ offline = false } = {}) {
 }
 
 /**
- * Create a synthetic host. Returns handles plus a `snapshot()` that hashes the
- * whole home, which is how the read-only and preflight-before-mutation claims
- * are measured rather than asserted.
+ * A fresh scratch directory.
+ *
+ * Scratch directories are deliberately NOT deleted by these tests. The host
+ * enforces a per-turn bulk-delete guard (`SAFE_DELETE_BULK_CONFIRM_REQUIRED`),
+ * and a suite that recursively removes a dozen synthetic DSH homes crosses it —
+ * measured: the frozen-snapshot gate failed 12 cases that pass in the live tree,
+ * two of them solely because a cleanup delete tripped the guard. Nothing here
+ * needs a tree to be destroyed in order to be tested, so nothing destroys one.
+ * The OS reaps its own temp area; the cost is a few MB of files under $TMPDIR.
+ */
+export function scratch(label = 'opui') {
+  return mkdtempSync(join(tmpdir(), label + '-'));
+}
+
+/**
+ * Create a synthetic host.
+ *
+ * Returns handles plus a `snapshot()` that hashes the whole home, which is how
+ * the read-only and preflight-before-mutation claims are measured rather than
+ * asserted.
  */
 export function makeHost({ home, archonPort, profile = 'web', bundles = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'], registry = 'valid', dshVersion = '0.1.0-rc.6', withProfile = true } = {}) {
-  rmSync(home, { recursive: true, force: true });
   mkdirSync(join(home, 'operator-ui'), { recursive: true });
 
   if (withProfile) {
@@ -180,7 +197,6 @@ export async function runCliInProcess(args, { env, cwd } = {}) {
  * does not.
  */
 export function makeSourceCopy(dest, { corruptEntry = false } = {}) {
-  rmSync(dest, { recursive: true, force: true });
   mkdirSync(join(dest, 'lib'), { recursive: true });
   mkdirSync(join(dest, 'bin'), { recursive: true });
   copyFileSync(join(REPO, 'package.json'), join(dest, 'package.json'));
@@ -190,6 +206,16 @@ export function makeSourceCopy(dest, { corruptEntry = false } = {}) {
     if (!f.endsWith('.js')) continue;
     copyFileSync(join(REPO, 'lib', f), join(dest, 'lib', f));
   }
+  // `copyFileSync` propagates a FILE's mode, and these tests may be running out of
+  // a tree whose write bits the gate has cleared. A fixture whose stated purpose
+  // is to be EDITED must be editable, so the modes are normalised rather than
+  // inherited — otherwise the test fails with EACCES in the snapshot and passes
+  // in the working tree, which is exactly the divergence the gate caught.
+  for (const dir of [dest, join(dest, 'lib'), join(dest, 'bin')]) chmodSync(dir, 0o755);
+  for (const rel of ['package.json', 'cordis.patch.yml', 'bin/dsh-operator-ui.mjs']) {
+    chmodSync(join(dest, ...rel.split('/')), 0o644);
+  }
+  for (const f of readdirSync(join(dest, 'lib'))) chmodSync(join(dest, 'lib', f), 0o644);
   if (corruptEntry) {
     // A module graph that cannot load. This is the failure the rollback path
     // exists for: it happens AFTER the durable copy and the registration exist.
