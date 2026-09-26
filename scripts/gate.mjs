@@ -98,6 +98,10 @@
 // exits 3, because an immutability precondition that was not established must
 // never appear as a hopeful field in an otherwise well-formed receipt.
 //
+// The lock clears the WRITE bits and touches nothing else. It must not set a
+// constant mode: an executable tracked file has to stay executable, or the
+// snapshot is no longer the tracked content of the commit it claims to be.
+//
 // WHAT THE LOCK COVERS, AND WHAT IT DOES NOT, is stated in the receipt's
 // `provenance_boundary` block rather than left for a reader to infer.
 // `node_modules` is a symlink to the live gitignored dependency tree: it is
@@ -428,8 +432,21 @@ export function removeFrozenSnapshot({ root, dest }) {
 // Read-only execution inputs (P0.4, final clause)
 // ---------------------------------------------------------------------------
 
-const FILE_READONLY = 0o444;
-const DIR_READONLY = 0o555;
+// Clear the WRITE bits and change nothing else.
+//
+// A constant mode is wrong, and measurement caught it. The first version locked
+// every tracked file to 0444, which strips the EXECUTE bit off an executable
+// tracked file — so the snapshot was no longer the tracked content of the commit
+// it claimed to be, in a way the receipt asserted it was not. It surfaced
+// through `test/isolation-guard.test.mjs`: `cpSync` copies the locked mode, the
+// eval's adapter arrived at 0644, and the run exited 4 with
+// "adapter could not execute: not_executable". A lock that changes the thing it
+// locks is not a lock.
+//
+// 0755 -> 0555, 0644 -> 0444, 0700 -> 0500: readable and searchable exactly as
+// before, and unwritable. This is the same principle `unlockTrackedInputs`
+// applies in the other direction — never set a mode, always derive it.
+const stripWrite = (mode) => (mode & 0o7777) & ~0o222;
 
 // Every directory that HOLDS tracked content, repo-relative and sorted. Derived
 // from the tracked file list, so the set of directories the lock touches is the
@@ -462,12 +479,13 @@ export function trackedDirs(files) {
 export function lockTrackedInputs(dir, files) {
   const modes = new Map();
   const failed = [];
-  const lockOne = (abs, label, mode) => {
+  const lockOne = (abs, label) => {
     try {
       const st = lstatSync(abs);
       if (st.isSymbolicLink()) return false;
-      modes.set(abs, st.mode & 0o7777);
-      chmodSync(abs, mode);
+      const mode = st.mode & 0o7777;
+      modes.set(abs, mode);
+      chmodSync(abs, stripWrite(mode));
       return true;
     } catch (e) {
       failed.push(label + ': ' + ((e && e.message) || e));
@@ -475,10 +493,10 @@ export function lockTrackedInputs(dir, files) {
     }
   };
   let fileCount = 0;
-  for (const rel of files) if (lockOne(join(dir, rel), rel, FILE_READONLY)) fileCount++;
+  for (const rel of files) if (lockOne(join(dir, rel), rel)) fileCount++;
   let dirCount = 0;
-  for (const rel of trackedDirs(files)) if (lockOne(join(dir, rel), rel, DIR_READONLY)) dirCount++;
-  const rootLocked = lockOne(dir, '.', DIR_READONLY);
+  for (const rel of trackedDirs(files)) if (lockOne(join(dir, rel), rel)) dirCount++;
+  const rootLocked = lockOne(dir, '.');
   return {
     files_locked: fileCount, dirs_locked: dirCount, root_locked: rootLocked, failed, modes,
   };
@@ -884,7 +902,7 @@ async function main() {
   };
 
   const lockReceipt = {
-    mechanism: 'tracked files 0444; directories holding tracked content (and the snapshot root) 0555',
+    mechanism: 'the WRITE bits are cleared on tracked files and on the directories holding them (and the snapshot root); every other mode bit is preserved, so an executable tracked file stays executable',
     files_locked: lock.files_locked,
     dirs_locked: lock.dirs_locked + (lock.root_locked ? 1 : 0),
     root_locked: lock.root_locked,

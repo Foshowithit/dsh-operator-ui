@@ -481,19 +481,29 @@ test('the gate refuses a dirty tree instead of certifying an uncommitted subject
 // the unlock must restore the tree exactly — including git's executable bit.
 
 // A disposable tree shaped like a checkout, with a nested directory and an
-// executable file, because the exec bit is the thing a careless unlock drops.
+// executable file, because the exec bit is the thing a careless lock or unlock
+// drops.
+//
+// Every mode is set EXPLICITLY rather than inherited. `mkdtempSync` makes a 0700
+// root and `mkdirSync`/`writeFileSync` apply the ambient umask, so a test that
+// reads the resulting modes is asserting an environment property, not the code
+// under test — measured 2026-09-26: this box's umask made `lib` 0700 and the
+// first version of the lock assertion failed on a correct implementation.
 function fakeTree(t) {
   const dir = mkdtempSync(join(tmpdir(), 'gate-lock-'));
   mkdirSync(join(dir, 'lib', 'deep'), { recursive: true });
   writeFileSync(join(dir, 'lib', 'deep', 'a.js'), 'export const a = 1;\n');
   writeFileSync(join(dir, 'lib', 'b.js'), 'export const b = 2;\n');
   writeFileSync(join(dir, 'run.sh'), '#!/bin/sh\necho hi\n');
-  chmodSync(join(dir, 'run.sh'), 0o755);
-  const files = ['lib/b.js', 'lib/deep/a.js', 'run.sh'];
-  const modes = new Map();
-  for (const rel of [...files, 'lib', 'lib/deep', '.']) {
-    modes.set(rel, statSync(rel === '.' ? dir : join(dir, rel)).mode & 0o7777);
+  const declared = {
+    '.': 0o755, 'lib': 0o755, 'lib/deep': 0o755,
+    'lib/b.js': 0o644, 'lib/deep/a.js': 0o644, 'run.sh': 0o755,
+  };
+  for (const [rel, mode] of Object.entries(declared)) {
+    chmodSync(rel === '.' ? dir : join(dir, rel), mode);
   }
+  const files = ['lib/b.js', 'lib/deep/a.js', 'run.sh'];
+  const modes = new Map(Object.entries(declared));
   t.after(() => {
     for (const rel of ['.', 'lib', 'lib/deep']) {
       try { chmodSync(rel === '.' ? dir : join(dir, rel), 0o755); } catch { /* best effort */ }
@@ -553,6 +563,19 @@ test('lockTrackedInputs: the tracked content becomes read-only and the probe ver
   assert.equal(p.verified, true, 'a locked tree must probe as locked');
   for (const probe of p.probes) assert.equal(probe.refused, true, probe.probe + ' must be refused');
   for (const probe of p.probes) assert.equal(probe.code, 'EACCES');
+
+  // THE MODE MUST BE DERIVED, NOT SET. `run.sh` is 0755 in this tree, so the lock
+  // must yield 0555 — readable and still EXECUTABLE, just not writable. A
+  // constant 0444 lock would strip the execute bit, and that is not a cosmetic
+  // difference: measured 2026-09-26, it made the snapshot stop being the tracked
+  // content of its commit, `cpSync` propagated the stripped mode into a fixture,
+  // and the p6b eval exited 4 with "adapter could not execute: not_executable".
+  // A lock that changes the thing it locks is not a lock.
+  assert.equal(statSync(join(dir, 'run.sh')).mode & 0o7777, 0o555,
+    'the lock must clear write bits only — an executable tracked file stays executable');
+  assert.equal(statSync(join(dir, 'lib', 'b.js')).mode & 0o7777, 0o444);
+  assert.equal(statSync(join(dir, 'lib')).mode & 0o7777, 0o555);
+  assert.equal(statSync(dir).mode & 0o7777, 0o555);
 });
 
 test('unlockTrackedInputs: restores every mode exactly, exec bit included', (t) => {
