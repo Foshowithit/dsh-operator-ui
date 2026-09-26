@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
+import { shippedFiles } from '../lib/cli.js';
 
 const root = join(fileURLToPath(import.meta.url), '..', '..');
 const readJson = (relativePath) => JSON.parse(readFileSync(join(root, relativePath), 'utf8'));
@@ -34,6 +35,16 @@ test('the runtime package declares the seeded registry and capability fleet', ()
     assert.ok(existsSync(join(root, `capabilities/${id}/adapter`)), `${id} must ship an adapter`);
   }
   assert.ok(existsSync(join(root, 'fixtures/workspace-word-count-v0-1-0.yaml')));
+  const expanded = shippedFiles(pkg, root);
+  for (const id of [
+    'video-forensics-receipt',
+    'filmstrip-verify',
+    'audio-offline-verify',
+    'qr-camo-embed',
+  ]) {
+    assert.ok(expanded.some((entry) => entry.startsWith(`capabilities/${id}/adapter/`)), `${id} adapter must be copied by install`);
+  }
+  assert.equal(expanded.some((entry) => entry.includes('/evals/') || entry.endsWith('/EVIDENCE.md')), false);
   assert.equal(
     pkg.files.some((entry) => entry.includes('/evals') || entry.includes('EVIDENCE')),
     false,
