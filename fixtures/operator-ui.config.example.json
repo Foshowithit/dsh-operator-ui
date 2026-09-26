@@ -29,6 +29,7 @@
   "authority": {
     "preset": "ASK_BEFORE_ACTION"
   },
+  "allowRun": false,
   "teaching": {
     "workflowsDir": "",
     "workspaceDir": ""
