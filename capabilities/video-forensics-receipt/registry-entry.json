@@ -1,0 +1,53 @@
+{
+  "id": "video-forensics-receipt",
+  "name": "Video forensics receipt",
+  "kind": "script",
+  "version": "1.0.0",
+  "status": "candidate",
+  "workflow": null,
+  "requires": ["filesystem:read", "shell:execute"],
+  "verification": null,
+  "objectiveEvaluation": null,
+  "admitted_after": [],
+  "evals": [],
+  "reuse_count": 0,
+  "last_eval": "2026-09-25",
+  "description": "Measures a video into a forensics receipt (ebur128 integrated loudness / LRA / true peak, canvas mean luma and saturation, 1s-baseline hold profile) and checks the measurements against the envelope of a declared craft register (explainer / brand / kinetic). Batch probe input: one register claim per file. Invocation is the rcos adapter kernel around adapter/run.cjs (wraps adapter/forensics.py; needs ffmpeg/ffprobe and python3).",
+  "tags": ["video", "audio", "loudness", "color", "motion", "forensics", "receipt", "ffmpeg"],
+  "provenance": {
+    "builtBy": "cap-port-a",
+    "portedFrom": "zcode-rcos capabilities/video-forensics-receipt (kind script) — source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+    "adapterEntry": "adapter/run.cjs",
+    "measurer": "adapter/forensics.py",
+    "measurerSha256": "99ffd15cab3f12f657b65bb46430ee993db5eaf81a284fc6377a7fc3d448bae3",
+    "suite": {
+      "id": "video-forensics-receipt-envelope",
+      "runId": "11f9d6ef-5a5d-481b-9c9e-ca3a2646d53e",
+      "exit": 0,
+      "gateChecks": "75/75"
+    },
+    "evalSet": [
+      { "caseId": "control-all-gates-pass", "runId": "f51b6065-aee4-45cc-a23c-cb2a97f5a0fd", "pass": true },
+      { "caseId": "quiet-mix-fails-loudness-floor", "runId": "f67392ac-0cf8-4bce-99ae-60c08ecc0612", "pass": true },
+      { "caseId": "hot-mix-fails-loudness-ceiling", "runId": "5afbab86-8da4-469a-953d-65ae026ec17a", "pass": true },
+      { "caseId": "narrow-lra-fails-lra-floor", "runId": "5c1b7115-a733-450c-8e39-6d077613e54b", "pass": true },
+      { "caseId": "wide-lra-fails-lra-ceiling", "runId": "981a79e1-d683-498d-ace9-c822cc8be9fb", "pass": true },
+      { "caseId": "desaturated-fails-sat-floor", "runId": "95408b9d-0c86-4966-8a1e-3dc8664629a9", "pass": true },
+      { "caseId": "overbright-fails-luma-ceiling", "runId": "72b81521-8816-4e8b-88f0-46cf0d00b0df", "pass": true },
+      { "caseId": "slideshow-trips-both-motion-gates", "runId": "b4c1743f-8646-49cc-b732-7cd037ffb927", "pass": true },
+      { "caseId": "silent-stream-is-n-a-not-failed", "runId": "642f41f1-d448-476d-b2f3-24dd86f17900", "pass": true },
+      { "caseId": "register-choice-changes-the-verdict", "runId": "8ae35f8a-eed6-4690-b364-93ca7cc49869", "pass": true },
+      { "caseId": "luma-floor-arm-is-dead", "runId": "f93ac393-9042-455b-9853-56fd43f7e509", "pass": true },
+      { "caseId": "sat-ceiling-arm-is-dead", "runId": "ca28fa72-f91c-4a17-83a9-2db99bf86d4d", "pass": true }
+    ],
+    "negativeControl": {
+      "caseId": "control-all-gates-pass",
+      "perturb": "fixture swapped envelope-pass -> slideshow",
+      "suiteRunId": "bb2bf41d-0bcb-4021-a6e2-52a9622adfcf",
+      "runId": "ccdbdf52-5af6-4223-ae43-0722fb18b353",
+      "evalExit": 1,
+      "gatesFailed": 4,
+      "confirmed": true
+    }
+  }
+}

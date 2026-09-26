@@ -1,0 +1,154 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "input": {
+    "type": "object",
+    "required": ["probes"],
+    "additionalProperties": false,
+    "properties": {
+      "probes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "file"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "file": { "type": "string", "minLength": 1 },
+            "frames": { "type": "integer", "minimum": 2, "maximum": 24 },
+            "register": { "type": "string", "enum": ["explainer", "brand", "kinetic"] }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["schema", "measurer", "probes"],
+    "additionalProperties": false,
+    "properties": {
+      "schema": { "type": "string", "enum": ["filmstrip-verify-observation/1"] },
+      "measurer": { "type": "string", "minLength": 1 },
+      "measurer_sha256": { "type": ["string", "null"] },
+      "metric_defs": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "frames_extracted": { "type": "string" },
+          "mean_volume_db": { "type": "string" },
+          "hold_share": { "type": "string" },
+          "longest_hold_s": { "type": "string" },
+          "deterministic_legs": { "type": "string" }
+        }
+      },
+      "thresholds": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "frames_default": { "type": "number" },
+          "hold_baseline_fps": { "type": "number" },
+          "hold_eps": { "type": "number" },
+          "hold_share_max": { "type": "number" },
+          "hold_max_s": { "type": "number" },
+          "loudness_floor_db": { "type": "number" },
+          "loudness_ceil_db": { "type": "number" },
+          "analysis_width": { "type": "number" },
+          "analysis_height": { "type": "number" }
+        }
+      },
+      "probes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["name", "file", "exit_status", "outcome"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "file": { "type": "string" },
+            "exit_status": { "type": "integer" },
+            "outcome": { "type": "string", "enum": ["measured-pass", "measured-fail", "could-not-run"] },
+            "stderr": { "type": ["string", "null"] },
+            "observed": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "properties": {
+                "duration_s": { "type": ["number", "null"] },
+                "width": { "type": ["integer", "null"] },
+                "height": { "type": ["integer", "null"] },
+                "fps": { "type": ["number", "null"] },
+                "video_codec": { "type": ["string", "null"] },
+                "has_audio": { "type": "boolean" },
+                "audio_codec": { "type": ["string", "null"] },
+                "frames_requested": { "type": "integer" },
+                "frames_extracted": { "type": ["integer", "null"] },
+                "strip_path": { "type": ["string", "null"] },
+                "mean_volume_db": { "type": ["number", "null"] },
+                "max_volume_db": { "type": ["number", "null"] },
+                "hold_share": { "type": ["number", "null"] },
+                "longest_hold_s": { "type": ["number", "null"] },
+                "hold_samples": { "type": ["integer", "null"] },
+                "hold_sample_count": { "type": ["integer", "null"] },
+                "min_hold_sample": { "type": ["number", "null"] },
+                "analysis_geometry": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "width": { "type": "integer" },
+                    "height": { "type": "integer" },
+                    "baseline_fps": { "type": "integer" },
+                    "eps": { "type": "number" }
+                  }
+                },
+                "failing_legs": { "type": "array", "items": { "type": "string" } },
+                "pass_marker": { "type": "string", "enum": ["FILMSTRIP_PASS", "FILMSTRIP_FAIL"] }
+              }
+            },
+            "legs": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "properties": {
+                "six-frames": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "pass": { "type": "boolean" },
+                    "detail": { "type": "string" }
+                  }
+                },
+                "audio-bed": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "pass": { "type": "boolean" },
+                    "detail": { "type": "string" }
+                  }
+                },
+                "no-slideshow": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "pass": { "type": "boolean" },
+                    "detail": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "strip": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string" },
+                "argv": { "type": "array", "items": { "type": "string" } },
+                "exit_status": { "type": "integer" },
+                "frames_requested": { "type": "integer" },
+                "frames_extracted": { "type": ["integer", "null"] },
+                "strip_width": { "type": ["integer", "null"] },
+                "tile_width": { "type": ["integer", "null"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

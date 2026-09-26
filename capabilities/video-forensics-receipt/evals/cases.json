@@ -1,0 +1,157 @@
+{
+  "schema": "dsh-capability-eval/1",
+  "eval_id": "video-forensics-receipt-envelope",
+  "capability_id": "video-forensics-receipt",
+  "adapter": "../adapter/run.cjs",
+  "measurer": "../adapter/forensics.py",
+  "description": "Port of the register-envelope eval for the local video measurer, re-run from scratch on the shipping host. Every register-envelope metric is driven to an end of its declared band by its own fixture, one arm per fixture, so a failure is attributable rather than merely present. The slideshow trips BOTH motion gates while staying inside every colour and loudness band, so it is evidence for motion and not for colour. A clip with no audio stream reports null loudness and reads n/a rather than FAIL. Two bound probes pin the canvas metric's actual reachable range (black frame = the luma floor of the metric; magenta canvas = the saturation ceiling of the metric), and their gates assert the DECLARED band ends lie outside that range — so the two dead arms are measured, not faked. The same bytes measured under three registers must produce three different verdict sets: the register is load-bearing, not decorative.",
+  "fixtures": {
+    "envelope-pass": { "file": "fixtures/envelope-pass.mp4", "sha256": "70864de4db19c651a378e5d8cc100d4792a8c92855f0f6001b306e17f8c6b400" },
+    "desaturated": { "file": "fixtures/desaturated.mp4", "sha256": "8ae73333e4d0bdb3559303dc19bfde849c4ad4224f5268aee5cc53cd984a2aa1" },
+    "overbright": { "file": "fixtures/overbright.mp4", "sha256": "43f7e9712d5cece3fbbb5b627719db4447834f85b14b2b09620dc5ad87b9de9c" },
+    "quiet-mix": { "file": "fixtures/quiet-mix.mp4", "sha256": "0b1ca30adb64dcfd3d7bdec9e0b6e3fbf197166f7b1d0f288e91c85c4d16268c" },
+    "hot-mix": { "file": "fixtures/hot-mix.mp4", "sha256": "91e854c30291260696e17064d4b5f1439f32df992128935bb7126999a33be8f4" },
+    "narrow-lra": { "file": "fixtures/narrow-lra.mp4", "sha256": "a37d190251829c583171caf3585e5c4951b442bbd8fe6293dda4059a11dd0110" },
+    "wide-lra": { "file": "fixtures/wide-lra.mp4", "sha256": "407118cf9209add62f930671fe1c10c98bd80d1520ebad5e4a21bbb550dc8584" },
+    "slideshow": { "file": "fixtures/slideshow.mp4", "sha256": "96a85c4a9062a3c198f87921d2ae4134f74a89862c1f1607b36f7be621b1e20b" },
+    "silent-motion": { "file": "fixtures/silent-motion.mp4", "sha256": "475e06139bea78cf8e123c9bdd5977e704329d5c0b4617b86d1b06f4b699115a" },
+    "black-frame": { "file": "fixtures/black-frame.mp4", "sha256": "a1fcf61442e1031540bb9ce632b298c53ae607053249e6f159b36aee48aca1d0" },
+    "magenta-canvas": { "file": "fixtures/magenta-canvas.mp4", "sha256": "f312c3d35d82e78c6b623a6d236e81ad6552a9bd4d29314d7581fa92ae4f07c7" }
+  },
+  "expectation_forms": {
+    "null": "the observed value must be exactly null (no measurement exists)",
+    "number": "exact equality",
+    "object": "inclusive bounds: min/max, plus strict lt/gt",
+    "set": "array compared as a set (order-free) against the declared members"
+  },
+  "cases": [
+    {
+      "caseId": "control-all-gates-pass",
+      "claim": "the control fixture sits inside every explainer band and trips no motion gate",
+      "probes": [ { "name": "control", "fixture": "envelope-pass", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "control-probe-passed", "probe": "control", "assert": { "outcome": "passed", "failing_gates": [] } },
+        { "id": "control-loudness-in-band", "probe": "control", "assert": { "lufs": { "min": -19.9, "max": -14.3 }, "lra": { "min": 2.8, "max": 6.5 } } },
+        { "id": "control-canvas-in-band", "probe": "control", "assert": { "luma": { "min": 0.06, "max": 0.49 }, "saturation": { "min": 0.10, "max": 0.86 } } },
+        { "id": "control-motion-in-band", "probe": "control", "assert": { "hold_share": { "max": 0.40 }, "longest_hold_s": { "max": 5.0 } } }
+      ]
+    },
+    {
+      "caseId": "quiet-mix-fails-loudness-floor",
+      "claim": "a bed scaled down from the control fails loudness through the FLOOR arm and nothing else",
+      "probes": [ { "name": "quiet", "fixture": "quiet-mix", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "quiet-fails-loudness-only", "probe": "quiet", "assert": { "failing_gates": ["loudness-in-band"], "lufs": { "lt": -19.9 } } }
+      ]
+    },
+    {
+      "caseId": "hot-mix-fails-loudness-ceiling",
+      "claim": "a hotter bed fails loudness through the CEILING arm and nothing else",
+      "probes": [ { "name": "hot", "fixture": "hot-mix", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "hot-fails-loudness-only", "probe": "hot", "assert": { "failing_gates": ["loudness-in-band"], "lufs": { "gt": -14.3 } } }
+      ]
+    },
+    {
+      "caseId": "narrow-lra-fails-lra-floor",
+      "claim": "a constant-level bed fails LRA through the FLOOR arm (LRA is a range; a steady tone has none)",
+      "probes": [ { "name": "narrow", "fixture": "narrow-lra", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "narrow-fails-lra-only", "probe": "narrow", "assert": { "failing_gates": ["lra-in-band"], "lra": { "lt": 2.8 } } }
+      ]
+    },
+    {
+      "caseId": "wide-lra-fails-lra-ceiling",
+      "claim": "a bed with a wide level swing fails LRA through the CEILING arm and nothing else",
+      "probes": [ { "name": "wide", "fixture": "wide-lra", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "wide-fails-lra-only", "probe": "wide", "assert": { "failing_gates": ["lra-in-band"], "lra": { "gt": 6.5 } } }
+      ]
+    },
+    {
+      "caseId": "desaturated-fails-sat-floor",
+      "claim": "a grey canvas fails saturation through the FLOOR arm while luma stays in band",
+      "probes": [ { "name": "grey", "fixture": "desaturated", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "grey-fails-saturation-only", "probe": "grey", "assert": { "failing_gates": ["saturation-in-band"], "saturation": { "lt": 0.10 } } }
+      ]
+    },
+    {
+      "caseId": "overbright-fails-luma-ceiling",
+      "claim": "a bright canvas fails luma through the CEILING arm while saturation stays in band",
+      "probes": [ { "name": "bright", "fixture": "overbright", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "bright-fails-luma-only", "probe": "bright", "assert": { "failing_gates": ["luma-in-band"], "luma": { "gt": 0.49 } } }
+      ]
+    },
+    {
+      "caseId": "slideshow-trips-both-motion-gates",
+      "claim": "five 8s stills trip no-dead-frames AND no-long-hold while every colour and loudness gate passes",
+      "probes": [ { "name": "slideshow", "fixture": "slideshow", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "slideshow-fails-motion-only", "probe": "slideshow", "assert": { "failing_gates": ["no-dead-frames", "no-long-hold"] } },
+        { "id": "slideshow-both-arms-tripped", "probe": "slideshow", "assert": { "hold_share": { "gt": 0.40 }, "longest_hold_s": { "gt": 5.0 } } }
+      ]
+    },
+    {
+      "caseId": "silent-stream-is-n-a-not-failed",
+      "claim": "a clip with no audio stream reports null loudness (no value to compare) and is not charged with a loudness failure",
+      "probes": [ { "name": "silent", "fixture": "silent-motion", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "silent-loudness-is-null", "probe": "silent", "assert": { "lufs": null, "lra": null, "true_peak_dbfs": null } },
+        { "id": "silent-not-charged-with-loudness-failure", "probe": "silent", "assert": { "failing_gates": [] } }
+      ]
+    },
+    {
+      "caseId": "register-choice-changes-the-verdict",
+      "claim": "the SAME bytes produce three different verdict sets under explainer / brand / kinetic — a wrapper that ignored the register would fail this gate",
+      "probes": [
+        { "name": "under_explainer", "fixture": "envelope-pass", "register": "explainer" },
+        { "name": "under_brand", "fixture": "envelope-pass", "register": "brand" },
+        { "name": "under_kinetic", "fixture": "envelope-pass", "register": "kinetic" }
+      ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "explainer-sees-a-clean-piece", "probe": "under_explainer", "assert": { "failing_gates": [] } },
+        { "id": "brand-fails-saturation-floor", "probe": "under_brand", "assert": { "failing_gates": ["saturation-in-band"], "saturation": { "lt": 0.21 } } },
+        { "id": "kinetic-fails-loudness-and-luma", "probe": "under_kinetic", "assert": { "failing_gates": ["loudness-in-band", "luma-in-band"], "lufs": { "gt": -18.0 }, "luma": { "gt": 0.20 } } },
+        { "id": "verdicts-differ-across-registers", "multiProbe": ["under_explainer", "under_brand", "under_kinetic"], "assertDistinctFailingSets": true }
+      ]
+    },
+    {
+      "caseId": "luma-floor-arm-is-dead",
+      "claim": "flat black measures the metric's own black level (16/255 = 0.0627), ABOVE the declared 0.06 floor — luma-in-band can only fail HIGH. Contrast (kept honest by overbright-fails-luma-ceiling): the ceiling arm is live.",
+      "probes": [ { "name": "black", "fixture": "black-frame", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "blackframe-luma-above-declared-floor", "probe": "black", "assert": { "luma": { "gt": 0.06 } } },
+        { "id": "blackframe-luma-check-not-failed", "probe": "black", "assert": { "luma": { "min": 0.06, "max": 0.49 } }, "assertFailingGatesExcludes": ["luma-in-band"] }
+      ]
+    },
+    {
+      "caseId": "sat-ceiling-arm-is-dead",
+      "claim": "the most saturated canvas the metric can see (pure magenta/green) measures its maximum (~0.47), far below the declared 0.86 ceiling — saturation-in-band can only fail LOW. Contrast (kept honest by desaturated-fails-sat-floor): the floor arm is live.",
+      "probes": [ { "name": "magenta", "fixture": "magenta-canvas", "register": "explainer" } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "magenta-saturation-far-below-declared-ceiling", "probe": "magenta", "assert": { "saturation": { "lt": 0.60 } } },
+        { "id": "magenta-saturation-check-not-failed", "probe": "magenta", "assert": { "saturation": { "min": 0.10, "max": 0.86 } }, "assertFailingGatesExcludes": ["saturation-in-band"] }
+      ]
+    }
+  ],
+  "negative_control": {
+    "caseId": "control-all-gates-pass",
+    "perturb": { "type": "swap-fixture", "probe": "control", "fixture": "slideshow" },
+    "expectEvalFailure": true,
+    "why": "the unperturbed case asserts failing_gates: []. Swapping the subject to the slideshow fixture must make the eval FAIL — an eval that cannot fail proves nothing."
+  }
+}

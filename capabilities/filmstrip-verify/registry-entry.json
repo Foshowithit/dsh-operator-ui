@@ -1,0 +1,50 @@
+{
+  "id": "filmstrip-verify",
+  "name": "Filmstrip video verification protocol",
+  "kind": "script",
+  "version": "1.0.0",
+  "status": "candidate",
+  "workflow": null,
+  "requires": ["filesystem:read", "shell:execute"],
+  "verification": null,
+  "objectiveEvaluation": null,
+  "admitted_after": [],
+  "evals": [],
+  "reuse_count": 0,
+  "last_eval": "2026-09-25",
+  "description": "Never trust a video by its size or by prose claims. Extracts N tiles (default 6) at even timestamps and measures three deterministic legs against the strip and the audio: six-frames (the tile count follows the request), audio-bed (volumedetect mean_volume within [-45, -6] dBFS), and a no-slideshow PROXY (hold_share <= 0.40 and longest_hold_s <= 5.0 at a 1s baseline). The sighted distinct-motion leg is deliberately not claimed deterministic. Invocation is the rcos adapter kernel around adapter/run.cjs (needs ffmpeg/ffprobe).",
+  "tags": ["video", "verification", "filmstrip", "frames", "audio", "slideshow", "ffmpeg"],
+  "provenance": {
+    "builtBy": "cap-port-a",
+    "portedFrom": "zcode-rcos capabilities/filmstrip-verify (kind runbook) — source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+    "adapterEntry": "adapter/run.cjs",
+    "measurer": "adapter/run.cjs",
+    "measurerSha256": "d7a65bbe32eeda80bae89e49d7f4f805cd727997f07d626b5d77825b8750851b",
+    "suite": {
+      "id": "filmstrip-verify-protocol",
+      "runId": "01423e6f-317b-468c-b92c-2d58ea32599d",
+      "exit": 0,
+      "gateChecks": "62/62"
+    },
+    "evalSet": [
+      { "caseId": "continuous-passes-all-legs", "runId": "a1ae8594-6258-4443-afdb-ee6ab71c668f", "pass": true },
+      { "caseId": "frame-count-follows-the-request", "runId": "1229b5a8-d5c6-4e49-aa00-1f63e1322e0d", "pass": true },
+      { "caseId": "slideshow-fails-the-share-arm", "runId": "2e6340a6-9612-4a11-b3f9-681c3fad4a6c", "pass": true },
+      { "caseId": "long-hold-fails-the-longest-arm", "runId": "704bc403-8d90-40b9-aa9c-012fcd05be12", "pass": true },
+      { "caseId": "absent-audio-bed-is-reported", "runId": "2b16044d-6b33-47bf-b8a0-7f3bf64cf399", "pass": true },
+      { "caseId": "quiet-bed-fails-the-floor-arm", "runId": "758f552a-0db0-41ed-a6b3-8d3be5811f04", "pass": true },
+      { "caseId": "hot-bed-fails-the-ceiling-arm", "runId": "e5b230bb-bc48-43bc-8d4d-777fff44e470", "pass": true },
+      { "caseId": "unreadable-probe-is-reported-not-fatal", "runId": "ad98a8cf-93e2-44a2-a531-c75884d99149", "pass": true },
+      { "caseId": "adapter-exit-code-is-not-a-verdict", "runId": "3da913c6-f3e9-4f91-893f-ccfe199866a0", "pass": true }
+    ],
+    "negativeControl": {
+      "caseId": "continuous-passes-all-legs",
+      "perturb": "fixture swapped cut-continuous -> slideshow-holds",
+      "suiteRunId": "be847785-eae1-4faf-9577-9cdc3288f107",
+      "runId": "aac9ba45-5815-4f58-930f-b2e41721e0c0",
+      "evalExit": 1,
+      "gatesFailed": 5,
+      "confirmed": true
+    }
+  }
+}

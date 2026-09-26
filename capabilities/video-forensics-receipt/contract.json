@@ -1,0 +1,138 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "input": {
+    "type": "object",
+    "required": ["probes"],
+    "additionalProperties": false,
+    "properties": {
+      "probes": {
+        "type": "array",
+        "minItems": 1,
+        "description": "one entry per file to measure. A batch is the point: the same register across several pieces is what makes an envelope comparable.",
+        "items": {
+          "type": "object",
+          "required": ["name", "file", "register"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "maxLength": 64
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1
+            },
+            "register": {
+              "type": "string",
+              "enum": ["explainer", "brand", "kinetic"],
+              "description": "craft register to assert against. Bands come from creative-study/PLAYBOOK.md per-class envelopes. Choosing a register is a claim about what the piece IS, and the receipt records which claim was tested."
+            }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["schema", "measurer", "probes"],
+    "additionalProperties": false,
+    "properties": {
+      "schema": {
+        "type": "string",
+        "enum": ["video-forensics-receipt-observation/1"]
+      },
+      "measurer": {
+        "type": "object",
+        "required": ["path", "sha256", "documented_exit_codes"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "documented_exit_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer" }
+          }
+        }
+      },
+      "probes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "file", "register", "argv", "exit_status",
+                       "outcome", "duration_ms", "observed", "stdout", "stderr"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "file": { "type": "string" },
+            "register": { "type": "string" },
+            "argv": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "exit_status": { "type": ["integer", "null"] },
+            "signal": { "type": ["string", "null"] },
+            "outcome": {
+              "type": "string",
+              "enum": ["passed", "caught", "could_not_measure", "errored", "timed_out"]
+            },
+            "duration_ms": { "type": "integer", "minimum": 0 },
+            "observed": {
+              "type": "object",
+              "description": "the flat facts a gate reads, lifted out of the receipt. null-valued when the measurer could not produce a receipt, which is NOT a pass.",
+              "required": ["duration_s", "width", "height", "fps", "video_codec",
+                           "audio_codec", "has_audio", "lufs", "lra",
+                           "true_peak_dbfs", "luma", "saturation", "motion_rate",
+                           "hold_share", "longest_hold_s", "failing_gates",
+                           "pass_marker"],
+              "additionalProperties": false,
+              "properties": {
+                "duration_s": { "type": ["number", "null"] },
+                "width": { "type": ["integer", "null"] },
+                "height": { "type": ["integer", "null"] },
+                "fps": { "type": ["number", "null"] },
+                "video_codec": { "type": ["string", "null"] },
+                "audio_codec": { "type": ["string", "null"] },
+                "has_audio": { "type": ["boolean", "null"] },
+                "lufs": { "type": ["number", "null"] },
+                "lra": { "type": ["number", "null"] },
+                "true_peak_dbfs": { "type": ["number", "null"] },
+                "luma": { "type": ["number", "null"] },
+                "saturation": { "type": ["number", "null"] },
+                "motion_rate": { "type": ["number", "null"] },
+                "hold_share": { "type": ["number", "null"] },
+                "longest_hold_s": { "type": ["number", "null"] },
+                "failing_gates": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "pass_marker": { "type": "boolean" }
+              }
+            },
+            "receipt": {
+              "type": "object",
+              "description": "the full receipt the measurer wrote, embedded verbatim. Shape is owned by adapter/forensics.py and versioned by its own schema field.",
+              "additionalProperties": true
+            },
+            "stdout": { "type": "string" },
+            "stderr": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "side_effects": {
+    "writes": ["$RCOS_OUTPUT (observation JSON)", "$RCOS_EVIDENCE_DIR/probe-*.{stdout.txt,stderr.txt,argv.json,receipt.json}", "$RCOS_EVIDENCE_DIR/measurer.sha256"],
+    "network": "none",
+    "temp": "none - receipts are written into the evidence dir, not /tmp"
+  },
+  "exit_codes": {
+    "0": "ran and wrote a result (per-probe verdicts live in the observation)",
+    "2": "bad usage",
+    "3": "gate fail (per-probe: forensics.py exited 3)",
+    "4": "could not measure - interpreter missing, or no probe produced an exit status"
+  }
+}

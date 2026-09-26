@@ -1,0 +1,130 @@
+{
+  "schema": "dsh-capability-eval/1",
+  "eval_id": "filmstrip-verify-protocol",
+  "capability_id": "filmstrip-verify",
+  "adapter": "../adapter/run.cjs",
+  "measurer": "../adapter/run.cjs",
+  "description": "Port of the filmstrip-protocol eval, re-run from scratch on the shipping host. Every deterministic leg of the filmstrip protocol is measured against a fixture built to fail it, and each ARM of each leg gets its own fixture: continuous motion passes with zero tolerance left untested, a six-still slideshow fails the no-slideshow proxy on its SHARE arm while its longest hold stays under the limit, a clip with one long static window fails on the LONGEST arm while its share stays under the limit, an absent audio stream is reported as an absent bed rather than crashing, and a bed below the floor and a bed above the ceiling each fail through opposite ends of one comparison. A probe whose file cannot be read is reported as could-not-run without poisoning the probes beside it, and the adapter's own process still exits 0 while failing probes report per-probe exit_status 3. distinct-motion is a sighted judgment and is deliberately NOT asserted here.",
+  "fixtures": {
+    "cut-continuous": { "file": "fixtures/cut-continuous.mp4", "sha256": "a8863b14dddb3afff1934268db1e3c49bf0e5a6bd02fbaca267ff15031b2f368" },
+    "slideshow-holds": { "file": "fixtures/slideshow-holds.mp4", "sha256": "eefc5261799229db63eace8e3919f62dae6148c92cc86f5a43104292a1b7159d" },
+    "long-hold": { "file": "fixtures/long-hold.mp4", "sha256": "4668e90842af2c00a93eeb857ca891b4ee97b4d1de94668b48caa4234647e955" },
+    "silent-motion": { "file": "fixtures/silent-motion.mp4", "sha256": "17606c4f4e223e2d280016bb4f27a182d64ae607bfdfb7c939c885203e350d33" },
+    "quiet-bed": { "file": "fixtures/quiet-bed.mp4", "sha256": "ff046e7596fa39bfc82e9e6d263c726f783e4487f5acdcdb0b5ad07e8440e8ef" },
+    "hot-bed": { "file": "fixtures/hot-bed.mp4", "sha256": "34d3aead6b5ca2280f1e3b8bccbffbfd74338b387cb05f16cf74b56493151a89" }
+  },
+  "expectation_forms": {
+    "null": "the observed value must be exactly null (no measurement exists)",
+    "number": "exact equality",
+    "boolean": "exact equality (a leg's pass flag)",
+    "object": "inclusive bounds: min/max, plus strict lt/gt",
+    "set": "array compared as a set (order-free) against the declared members"
+  },
+  "cases": [
+    {
+      "caseId": "continuous-passes-all-legs",
+      "claim": "continuous motion plus an in-band bed passes every deterministic leg and yields exactly 6 tiles",
+      "probes": [ { "name": "continuous", "fixture": "cut-continuous", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "continuous-measured-pass", "probe": "continuous", "assert": { "outcome": "measured-pass", "failing_legs": [], "pass_marker": "FILMSTRIP_PASS" } },
+        { "id": "six-frames-is-six-tiles", "probe": "continuous", "assert": { "frames_extracted": 6 } },
+        { "id": "continuous-audio-bed-in-range", "probe": "continuous", "assert": { "mean_volume_db": { "min": -45, "max": -6 } } },
+        { "id": "continuous-no-holds", "probe": "continuous", "assert": { "hold_share": { "max": 0.40 }, "longest_hold_s": { "max": 5.0 } } },
+        { "id": "continuous-leg-flags-all-pass", "probe": "continuous", "assert": { "leg_six_frames": true, "leg_audio_bed": true, "leg_no_slideshow": true } }
+      ]
+    },
+    {
+      "caseId": "frame-count-follows-the-request",
+      "claim": "the SAME bytes requested at 4 frames yield 4 tiles — the count is measured from the strip, not assumed",
+      "probes": [ { "name": "four_frames", "fixture": "cut-continuous", "frames": 4 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "four-frames-is-four-tiles", "probe": "four_frames", "assert": { "frames_extracted": 4 } },
+        { "id": "six-frames-leg-honours-the-request", "probe": "four_frames", "assert": { "leg_six_frames": true } }
+      ]
+    },
+    {
+      "caseId": "slideshow-fails-the-share-arm",
+      "claim": "six stills trip the no-slideshow proxy on its SHARE arm while the longest hold is still under the limit",
+      "probes": [ { "name": "slideshow", "fixture": "slideshow-holds", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "slideshow-fails-no-slideshow", "probe": "slideshow", "assert": { "failing_legs": ["no-slideshow"], "pass_marker": "FILMSTRIP_FAIL" } },
+        { "id": "slideshow-share-arm-is-the-one-tripped", "probe": "slideshow", "assert": { "hold_share": { "gt": 0.40 }, "longest_hold_s": { "max": 5.0 } } },
+        { "id": "slideshow-six-frames-still-measured", "probe": "slideshow", "assert": { "frames_extracted": 6, "leg_six_frames": true } }
+      ]
+    },
+    {
+      "caseId": "long-hold-fails-the-longest-arm",
+      "claim": "one long static window trips the no-slideshow proxy on its LONGEST arm while the share is still under the limit",
+      "probes": [ { "name": "long_hold", "fixture": "long-hold", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "long-hold-fails-no-slideshow", "probe": "long_hold", "assert": { "failing_legs": ["no-slideshow"], "pass_marker": "FILMSTRIP_FAIL" } },
+        { "id": "long-hold-longest-arm-is-the-one-tripped", "probe": "long_hold", "assert": { "longest_hold_s": { "gt": 5.0 }, "hold_share": { "max": 0.40 } } }
+      ]
+    },
+    {
+      "caseId": "absent-audio-bed-is-reported",
+      "claim": "a clip with no audio stream fails the audio-bed leg by REPORTING the absence, not by crashing",
+      "probes": [ { "name": "silent", "fixture": "silent-motion", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "silent-fails-audio-bed-only", "probe": "silent", "assert": { "failing_legs": ["audio-bed"] } },
+        { "id": "silent-mean-volume-is-null", "probe": "silent", "assert": { "mean_volume_db": null } },
+        { "id": "silent-still-measured", "probe": "silent", "assert": { "outcome": "measured-fail", "frames_extracted": 6 } }
+      ]
+    },
+    {
+      "caseId": "quiet-bed-fails-the-floor-arm",
+      "claim": "a bed far below the floor fails audio-bed through the floor end of one comparison",
+      "probes": [ { "name": "quiet_bed", "fixture": "quiet-bed", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "quiet-bed-below-floor", "probe": "quiet_bed", "assert": { "failing_legs": ["audio-bed"], "mean_volume_db": { "lt": -45 } } }
+      ]
+    },
+    {
+      "caseId": "hot-bed-fails-the-ceiling-arm",
+      "claim": "a bed hot enough to clip fails audio-bed through the ceiling end of the SAME comparison",
+      "probes": [ { "name": "hot_bed", "fixture": "hot-bed", "frames": 6 } ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "hot-bed-above-ceiling", "probe": "hot_bed", "assert": { "failing_legs": ["audio-bed"], "mean_volume_db": { "gt": -6 } } }
+      ]
+    },
+    {
+      "caseId": "unreadable-probe-is-reported-not-fatal",
+      "claim": "a probe whose file cannot be read is reported as could-not-run while the probe beside it is still measured",
+      "probes": [
+        { "name": "missing_file", "fixture": "cut-continuous", "frames": 6, "fileOverride": "fixtures/absent-fixture.mp4" },
+        { "name": "bystander", "fixture": "cut-continuous", "frames": 6 }
+      ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "missing-probe-could-not-run", "probe": "missing_file", "assert": { "outcome": "could-not-run", "exit_status": 4 } },
+        { "id": "bystander-still-measured", "probe": "bystander", "assert": { "outcome": "measured-pass", "failing_legs": [] } }
+      ]
+    },
+    {
+      "caseId": "adapter-exit-code-is-not-a-verdict",
+      "claim": "a failing subject makes the probe report exit_status 3 while the adapter's PROCESS still exits 0 — it measured; the gates decide",
+      "probes": [
+        { "name": "failing_subject", "fixture": "slideshow-holds", "frames": 6 },
+        { "name": "passing_subject", "fixture": "cut-continuous", "frames": 6 }
+      ],
+      "adapterExit": 0,
+      "gates": [
+        { "id": "failing-probe-carries-exit-3", "probe": "failing_subject", "assert": { "outcome": "measured-fail", "exit_status": 3 } },
+        { "id": "passing-probe-carries-exit-0", "probe": "passing_subject", "assert": { "outcome": "measured-pass", "exit_status": 0 } }
+      ]
+    }
+  ],
+  "negative_control": {
+    "caseId": "continuous-passes-all-legs",
+    "perturb": { "type": "swap-fixture", "probe": "continuous", "fixture": "slideshow-holds" },
+    "expectEvalFailure": true,
+    "why": "the unperturbed case asserts failing_legs: []. Swapping the subject for the slideshow must make the eval FAIL on the no-slideshow leg — an eval that cannot fail proves nothing."
+  }
+}
