@@ -1,0 +1,101 @@
+{
+  "schema": "qr-camo-embed-expectations/1",
+  "note": "Pinned expectations for the qr-camo-embed port of eval qr-camo-embed-grounding-v1. Every pin below was carried over from the upstream gate pins or measured from executed runs on this machine; upstream pin values are preserved verbatim so the lineage stays checkable.",
+  "pins": {
+    "cases_sha256": "cbd8c9d15be06f35dd2416b5e7984d0ed1c4d9782e888e0e65bfb6762e872872",
+    "script_sha256": "8dc1960468b002dde416d8f27fa5f07fb97febcd015198674fc3f92c4550bdeb",
+    "adapter_sha256": "bb9e0ce1806d1890a104ef7315621f079f620fd21e3d3ea8affe553efdcb90b5",
+    "contract_sha256": "b7296d29c2a0034bce1ff614221c8b54eb5f44b4a8f1de0c1aeb0ead18317bc9",
+    "helpers": {
+      "measure_blend.py": "aaf605a51d0a806b9156151ba76293aa2692191a5f67dc776cd65407c9462449",
+      "stress_ladder.py": "4f1f468939c95b0743debab689d1a655c8597a69d5c923eb30d0cde3736a4f8e",
+      "decode_controls.py": "b03f094485d21d0d1db7bd48df60f42fd86cb83d6e6c264be9a1a91822e9a584"
+    },
+    "prefix_fixture_sha256": "110a747215f68395a363eaa6e1ecdd4f85bf2db34c7bd557473c0a087c3b27cc",
+    "variant_out_sha256": "7c5e75dd3fe63034739485f39d052ee5eced10ae7974b37de39197b99357e23f",
+    "oracle_ship_sha256": "24de696df0bad3f0bab972eabbb715440fca8a666cbf403a61ae8e88214b8b6d",
+    "oracle_pale_sha256": "f8824bc41ca52808beacd341696e4cc94178752fe625d6e31b6bc754acfcc623",
+    "deps": {
+      "cv2": "4.13.0",
+      "qrcode": "8.2",
+      "zxingcpp": "3.1.1",
+      "numpy": "2.4.6",
+      "pillow": "10.4.0"
+    },
+    "python_version": "3.12.13",
+    "upstream_python_pin": "3.14.7",
+    "python_pin_note": "The upstream gate pinned python 3.14.7 (their qr-venv). The interpreter is environment, not capability bytes; this port ran on a python 3.12.13 venv whose five library versions match the upstream pins exactly. The pinned stdout and oracle byte reproduction prove the interpreter difference did not change a single output byte.",
+    "output_geometry": { "width": 1500, "height": 500 }
+  },
+  "fixtures": {
+    "bearing-camo-src.png": { "sha256": "ec7f944766a3eda36d087657bf3647dd483d98782de68a09df392aaa6386300d", "bytes": 2574318 },
+    "dark-camo-src.png": { "sha256": "d48a416011b5c76ab768b393d1256bc57e9f0249be5c8d4aede4ddccc24b6d97", "bytes": 3177670 },
+    "pale-camo-src.png": { "sha256": "14b0c0672dc8912210bf4d6dcb6b29c456934e7fbc7acf0682db7f67cfccdf68", "bytes": 354418 },
+    "oracle-ship-header.png": { "sha256": "24de696df0bad3f0bab972eabbb715440fca8a666cbf403a61ae8e88214b8b6d", "bytes": 868866 },
+    "oracle-pale-header.png": { "sha256": "f8824bc41ca52808beacd341696e4cc94178752fe625d6e31b6bc754acfcc623", "bytes": 428910 },
+    "muse-eval6-ship.txt": { "sha256": "d8f3e7c791ae99b5fa2e0d514ff6af0a2163c0777dd36ff45abb0bd0e01d5f6f", "bytes": 387, "renamed_from": "muse-eval6-ship.log" },
+    "muse-eval5-fail.txt": { "sha256": "5f99e44383c39a25aee20274bbb2af472ee7edd7d4dd7cf90ccaad760f19b019", "bytes": 622, "renamed_from": "muse-eval5-fail.log" },
+    "prefix-orientation-make_header_v2.py": { "sha256": "110a747215f68395a363eaa6e1ecdd4f85bf2db34c7bd557473c0a087c3b27cc", "bytes": 5554 }
+  },
+  "fixture_rename_note": "The two muse receipts are renamed .log -> .txt because this repo's hygiene check bans tracked .log files. The bytes are identical to the upstream fixtures (same sha256); only the file name differs.",
+  "stdout": {
+    "all_pass_line": "ALL SCANS PASS (stress ladder at minimal visible contrast)",
+    "ship": "QR version 3, 37x37 modules\nplaced at (1065,60), smoothness score 25.5\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+    "pale": "QR version 3, 37x37 modules\nplaced at (905,20), smoothness score 32.2\nadaptive contrast: dark_gain top 0.68 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+    "dark": "QR version 3, 37x37 modules\nplaced at (1065,20), smoothness score 40.9\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+    "variant": "QR version 3, 37x37 modules\nplaced at (1065,60), smoothness score 25.5\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+    "overflow_stdout": "QR version 5, 45x45 modules\n",
+    "overflow_stderr": "payload too long: QR 495px does not fit the 1500x500 placement window\n",
+    "refusal_line": "no contrast level survived the stress ladder — payload or cover unusable",
+    "prefix_sizing": "QR version 3, 37x37 modules",
+    "prefix_placement": "placed at (1045,20)"
+  },
+  "measured": {
+    "ship_ring44_delta_sign": "negative",
+    "dark": {
+      "ring44_delta_split_vs_ship_min": 50,
+      "ring44_delta_split_prove": 78.18,
+      "ring44_out_range": [70, 110],
+      "ring44_out_prove": 90.09
+    },
+    "pale": {
+      "ring44_delta_min": 5,
+      "ring44_delta_prove": 15.77,
+      "ring44_out_range": [95, 125],
+      "ring44_out_prove": 108.8,
+      "box_delta_abs_max": 10,
+      "box_delta_prove": 2.51
+    },
+    "decode_fade_legs": {
+      "both_decode": "0.10",
+      "zxing_only": "0.15",
+      "none_decode": "0.20"
+    }
+  },
+  "muse_verdicts": {
+    "muse-eval6-ship.txt": "VERDICT: SHIP — camouflaged but still findable as a QR.",
+    "muse-eval5-fail.txt": "VERDICT: FAIL — flat box / sticker look, not camouflaged into artwork."
+  },
+  "gates": [
+    "ship_frame_reproduced",
+    "pale_cover_reproduced",
+    "stress_ladder_holds",
+    "variant_url_decodes",
+    "payload_overflow_bites",
+    "dark_cover_halo_lifts",
+    "pale_cover_signature",
+    "muse_receipts_sealed",
+    "cv2_weaker_than_zxing",
+    "orientation_fix_bites",
+    "determinism_repeat",
+    "interpreter_declared",
+    "frozen_source_pinned",
+    "artifact_identity_pinned"
+  ],
+  "negative_control": {
+    "mutate": { "case": "ship_bearing_frame", "set": { "url": "https://archon.diy/nc" } },
+    "must_verdict": "FAIL",
+    "must_fail_gates": ["ship_frame_reproduced", "determinism_repeat", "artifact_identity_pinned"],
+    "rationale": "A one-character-class change of the ship case's URL keeps the cover, the exit code, and very likely the pinned stdout identical — but the QR payload bytes change, so the output cannot be the oracle bytes. If the eval were vacuous (judging exit codes and prose instead of bytes), this run would still pass. The oracle byte gate must bite, the twin-case determinism gate must bite (the unmutated repeat no longer matches), and the request-pinning gate must bite (the request no longer matches the pinned case set)."
+  }
+}

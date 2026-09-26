@@ -1,0 +1,37 @@
+{
+  "schema": "audio-offline-verify-expectations/1",
+  "note": "Pinned expectations for the container-sounds eval. Fixture and container facts are the historical pins of the source eval (audio-offline-verify-container-sounds-v1); checker_sha256 is the PORTED checker in this tree (tool resolution is env/PATH instead of baked build paths — the only delta from the upstream artifact, whose hash is kept as upstream_checker_sha256 for lineage).",
+  "pins": {
+    "checker_sha256": "28d9d2faef8ecba65a37ab1f26859c944390ad490dd77c9f3b44c7a7326777ca",
+    "upstream_checker_sha256": "29eb2d8f6f48677ad15d6123d23ae5fedeef68b04aa21b7ea0e5f88a6a8b7b6e",
+    "rms_tolerance_db": 0.5,
+    "fixtures": {
+      "chalk-eval1.mp4": { "sha256": "905b54ff4e88ebbe26d49b5e83869fd04f9bf7cca72ff8083d01beab653c7b2e", "bytes": 108935 },
+      "chalk-eval2.mp4": { "sha256": "c43aae245a1dc031c76a826e2053195a0bc61b998559d5d3a02c4a76a83e39bd", "bytes": 88081 },
+      "rcos-dispatch-eval-2-out.mp4": { "sha256": "a73ae94906f44192414348503fe2452abecd9c9ce2e239db5c80a279ad1d1dfd", "bytes": 10165 },
+      "shot-face-v2-r3.mp4": { "sha256": "596896b57a00f07ec6bb6324a16ff3706d81e6400f047b198af647314b296c84", "bytes": 376623 }
+    }
+  },
+  "container_facts": {
+    "face": { "duration": 2.0, "w": 1080, "h": 1080, "audio": "aac", "rate": "48000", "ch": "2" },
+    "chalk1": { "duration": 4.0, "w": 960, "h": 540, "audio": "aac", "rate": "44100", "ch": "1", "rms": -35.104884 },
+    "chalk2": { "duration": 3.0, "w": 960, "h": 540, "audio": "aac", "rate": "44100", "ch": "1", "rms": -35.113250 },
+    "dispatch": { "duration": 4.0, "w": 1280, "h": 720 }
+  },
+  "gates": [
+    "checker_revision_pinned",
+    "fixture_identity_pinned",
+    "evidence_recorded",
+    "voiced_passes",
+    "envelope_gate_bites",
+    "silence_reported_not_asserted",
+    "mute_caught",
+    "absence_asserted_not_assumed"
+  ],
+  "negative_control": {
+    "description": "Flip the report-only face probe to assert sound: the same silent bytes must then FAIL the run. If the verdict stays PASS the eval cannot detect a mute file and this control fails.",
+    "mutate": { "probe": "face_silent_report", "set": { "audio_must_sound": true } },
+    "must_verdict": "FAIL",
+    "must_fail_gates": ["silence_reported_not_asserted", "mute_caught"]
+  }
+}

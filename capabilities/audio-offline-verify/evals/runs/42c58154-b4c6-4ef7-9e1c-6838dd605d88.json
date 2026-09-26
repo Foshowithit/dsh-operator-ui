@@ -1,0 +1,190 @@
+{
+  "schema": "capability-run-receipt/1",
+  "capability": "audio-offline-verify",
+  "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+  "mode": "positive",
+  "startedAt": "2026-09-26T01:21:21.518Z",
+  "finishedAt": "2026-09-26T01:21:22.453Z",
+  "runner": {
+    "command": "node capabilities/audio-offline-verify/evals/run-evals.mjs",
+    "node": "v22.22.2",
+    "platform": "darwin arm64"
+  },
+  "tools": {
+    "ffprobe": "~/homebrew/bin/ffprobe",
+    "ffmpeg": "~/homebrew/bin/ffmpeg",
+    "python3": "~/homebrew/bin/python3"
+  },
+  "adapter": {
+    "command": "node adapter/run.js",
+    "exit_code": 0,
+    "sha256": "f3052bebe938ecc9f02cf5f8b50fad4752b13c2f5278b0a48ca3a50dba585fed",
+    "output": "checker sha256 28d9d2faef8ecba6  capabilities/audio-offline-verify/adapter/av_check.py\n  chalk2_voiced: exit 0 (passed), rms -35.113250, 131ms\n  chalk1_voiced: exit 0 (passed), rms -35.104884, 122ms\n  chalk2_wrong_envelope: exit 3 (caught), rms -35.113250, 125ms\n  face_silent_report: exit 0 (passed), rms -inf, 125ms\n  face_silent_must_sound: exit 3 (caught), rms -inf, 127ms\n  dispatch_absent_expect_none: exit 0 (passed), rms null, 78ms\n  dispatch_absent_must_sound: exit 3 (caught), rms null, 79ms"
+  },
+  "checker": {
+    "path": "capabilities/audio-offline-verify/adapter/av_check.py",
+    "sha256": "28d9d2faef8ecba65a37ab1f26859c944390ad490dd77c9f3b44c7a7326777ca",
+    "documented_exit_codes": [
+      0,
+      3,
+      4
+    ]
+  },
+  "probes": [
+    {
+      "name": "chalk2_voiced",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": "-35.113250",
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 131
+    },
+    {
+      "name": "chalk1_voiced",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": "-35.104884",
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 122
+    },
+    {
+      "name": "chalk2_wrong_envelope",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": "-35.113250",
+      "fail_lines": [
+        "DURATION 3.000 outside [3.5, 4.5]"
+      ],
+      "pass_marker": false,
+      "duration_ms": 125
+    },
+    {
+      "name": "face_silent_report",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": "-inf",
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 125
+    },
+    {
+      "name": "face_silent_must_sound",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": "-inf",
+      "fail_lines": [
+        "MUST_SOUND but RMS None dBFS below -60 floor (silent track)"
+      ],
+      "pass_marker": false,
+      "duration_ms": 127
+    },
+    {
+      "name": "dispatch_absent_expect_none",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": null,
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 78
+    },
+    {
+      "name": "dispatch_absent_must_sound",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": null,
+      "fail_lines": [
+        "MUST_SOUND but no audio stream"
+      ],
+      "pass_marker": false,
+      "duration_ms": 79
+    }
+  ],
+  "gates": [
+    {
+      "id": "checker_revision_pinned",
+      "pass": true,
+      "detail": "observation.checker.sha256 matches the ported checker (28d9d2faef8ecba6…, upstream lineage 29eb2d8f6f48677a…)"
+    },
+    {
+      "id": "fixture_identity_pinned",
+      "pass": true,
+      "detail": "4 fixtures match their pinned sha256 + bytes"
+    },
+    {
+      "id": "evidence_recorded",
+      "pass": true,
+      "detail": "raw stdout/stderr/argv per probe + checker.sha256 recorded beside the observation"
+    },
+    {
+      "id": "voiced_passes",
+      "pass": true,
+      "detail": "chalk-eval2 -35.11325 dBFS / chalk-eval1 -35.104884 dBFS, both must-sound, both AV_CHECK_PASS"
+    },
+    {
+      "id": "envelope_gate_bites",
+      "pass": true,
+      "detail": "exit 3 on DURATION 3.000 outside [3.5, 4.5]; the identical bytes exit 0 inside the envelope"
+    },
+    {
+      "id": "silence_reported_not_asserted",
+      "pass": true,
+      "detail": "exit 0 on a silent file with RMS -inf reported and not asserted (must-sound absent from argv)"
+    },
+    {
+      "id": "mute_caught",
+      "pass": true,
+      "detail": "exit 3 with \"MUST_SOUND but RMS None dBFS below -60 floor (silent track)\" while the identical bytes exit 0 report-only: the assertion, not the file, caught it"
+    },
+    {
+      "id": "absence_asserted_not_assumed",
+      "pass": true,
+      "detail": "declared absence passes (no audio stream, no RMS line); claimed sound from the same bytes fails \"MUST_SOUND but no audio stream\""
+    }
+  ],
+  "verdict": "PASS",
+  "caseResults": [
+    {
+      "caseId": "checker_revision_pinned",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "fixture_identity_pinned",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "evidence_recorded",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "voiced_passes",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "envelope_gate_bites",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "silence_reported_not_asserted",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "mute_caught",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    },
+    {
+      "caseId": "absence_asserted_not_assumed",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "pass": true
+    }
+  ],
+  "negativeControl": null
+}

@@ -1,0 +1,129 @@
+{
+  "id": "qr-camo-embed",
+  "name": "QR camo embed (scannable payload blended into artwork)",
+  "kind": "script",
+  "version": "1.0.0",
+  "status": "candidate",
+  "workflow": null,
+  "requires": [
+    "filesystem:read",
+    "shell:execute"
+  ],
+  "verification": null,
+  "objectiveEvaluation": null,
+  "admitted_after": [],
+  "evals": [],
+  "reuse_count": 0,
+  "last_eval": "2026-09-26",
+  "description": "Embeds a SHORT payload (~<=35-char URL at ERROR_CORRECT_H in a 1500x500 header window at MODULE=11) into a mid-tone photographic or textured cover so it reads as part of the piece, then verifies it still decodes after a real-world jpeg re-encode. The adapter runs the frozen blend script once per case in its own scratch dir and never re-implements the blend or judges the output itself; refusals are recorded as refusals, not as fabricated case records. Runs the rcos adapter kernel around adapter/run.js (needs a Python with cv2/numpy/PIL).",
+  "tags": [
+    "qr",
+    "image",
+    "steganography",
+    "verification",
+    "blend",
+    "decoder"
+  ],
+  "provenance": {
+    "builtBy": "cap-port-b",
+    "portedFrom": "zcode-rcos capabilities/qr-camo-embed \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+    "adapterEntry": "adapter/run.js",
+    "measurer": "adapter/make_header_v2.py",
+    "measurerSha256": "8dc1960468b002dde416d8f27fa5f07fb97febcd015198674fc3f92c4550bdeb",
+    "suite": {
+      "id": "qr-camo-embed-eval-suite",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "exit": 0,
+      "gateChecks": "14/14",
+      "cases": "14/14",
+      "runner": "node capabilities/qr-camo-embed/evals/run-evals.mjs",
+      "startedAt": "2026-09-26T01:38:11.521Z",
+      "finishedAt": "2026-09-26T01:38:17.262Z"
+    },
+    "evalSet": [
+      {
+        "caseId": "ship_frame_reproduced",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "pale_cover_reproduced",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "stress_ladder_holds",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "variant_url_decodes",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "payload_overflow_bites",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "dark_cover_halo_lifts",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "pale_cover_signature",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "muse_receipts_sealed",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "cv2_weaker_than_zxing",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "orientation_fix_bites",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "determinism_repeat",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "interpreter_declared",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "frozen_source_pinned",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      },
+      {
+        "caseId": "artifact_identity_pinned",
+        "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+        "pass": true
+      }
+    ],
+    "negativeControl": {
+      "caseId": "ship_bearing_frame",
+      "perturb": "{\"case\": \"ship_bearing_frame\", \"set\": {\"url\": \"https://archon.diy/nc\"}}",
+      "runId": "2eff8505-505c-4a2d-91e0-e82124b3db17",
+      "observedVerdict": "FAIL",
+      "gatesFailed": [
+        "ship_frame_reproduced",
+        "determinism_repeat",
+        "artifact_identity_pinned"
+      ],
+      "outcome": "falsified-as-required",
+      "confirmed": true
+    }
+  }
+}

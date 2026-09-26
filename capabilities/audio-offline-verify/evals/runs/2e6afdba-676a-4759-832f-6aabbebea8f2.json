@@ -1,0 +1,210 @@
+{
+  "schema": "capability-run-receipt/1",
+  "capability": "audio-offline-verify",
+  "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+  "mode": "negative-control",
+  "startedAt": "2026-09-26T01:21:27.977Z",
+  "finishedAt": "2026-09-26T01:21:29.009Z",
+  "runner": {
+    "command": "node capabilities/audio-offline-verify/evals/run-evals.mjs --negative-control",
+    "node": "v22.22.2",
+    "platform": "darwin arm64"
+  },
+  "tools": {
+    "ffprobe": "~/homebrew/bin/ffprobe",
+    "ffmpeg": "~/homebrew/bin/ffmpeg",
+    "python3": "~/homebrew/bin/python3"
+  },
+  "adapter": {
+    "command": "node adapter/run.js",
+    "exit_code": 0,
+    "sha256": "f3052bebe938ecc9f02cf5f8b50fad4752b13c2f5278b0a48ca3a50dba585fed",
+    "output": "checker sha256 28d9d2faef8ecba6  capabilities/audio-offline-verify/adapter/av_check.py\n  chalk2_voiced: exit 0 (passed), rms -35.113250, 134ms\n  chalk1_voiced: exit 0 (passed), rms -35.104884, 135ms\n  chalk2_wrong_envelope: exit 3 (caught), rms -35.113250, 134ms\n  face_silent_report: exit 3 (caught), rms -inf, 138ms\n  face_silent_must_sound: exit 3 (caught), rms -inf, 140ms\n  dispatch_absent_expect_none: exit 0 (passed), rms null, 86ms\n  dispatch_absent_must_sound: exit 3 (caught), rms null, 86ms"
+  },
+  "checker": {
+    "path": "capabilities/audio-offline-verify/adapter/av_check.py",
+    "sha256": "28d9d2faef8ecba65a37ab1f26859c944390ad490dd77c9f3b44c7a7326777ca",
+    "documented_exit_codes": [
+      0,
+      3,
+      4
+    ]
+  },
+  "probes": [
+    {
+      "name": "chalk2_voiced",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": "-35.113250",
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 134
+    },
+    {
+      "name": "chalk1_voiced",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": "-35.104884",
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 135
+    },
+    {
+      "name": "chalk2_wrong_envelope",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": "-35.113250",
+      "fail_lines": [
+        "DURATION 3.000 outside [3.5, 4.5]"
+      ],
+      "pass_marker": false,
+      "duration_ms": 134
+    },
+    {
+      "name": "face_silent_report",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": "-inf",
+      "fail_lines": [
+        "MUST_SOUND but RMS None dBFS below -60 floor (silent track)"
+      ],
+      "pass_marker": false,
+      "duration_ms": 138
+    },
+    {
+      "name": "face_silent_must_sound",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": "-inf",
+      "fail_lines": [
+        "MUST_SOUND but RMS None dBFS below -60 floor (silent track)"
+      ],
+      "pass_marker": false,
+      "duration_ms": 140
+    },
+    {
+      "name": "dispatch_absent_expect_none",
+      "exit_status": 0,
+      "outcome": "passed",
+      "rms_token": null,
+      "fail_lines": [],
+      "pass_marker": true,
+      "duration_ms": 86
+    },
+    {
+      "name": "dispatch_absent_must_sound",
+      "exit_status": 3,
+      "outcome": "caught",
+      "rms_token": null,
+      "fail_lines": [
+        "MUST_SOUND but no audio stream"
+      ],
+      "pass_marker": false,
+      "duration_ms": 86
+    }
+  ],
+  "gates": [
+    {
+      "id": "checker_revision_pinned",
+      "pass": true,
+      "detail": "observation.checker.sha256 matches the ported checker (28d9d2faef8ecba6…, upstream lineage 29eb2d8f6f48677a…)"
+    },
+    {
+      "id": "fixture_identity_pinned",
+      "pass": true,
+      "detail": "4 fixtures match their pinned sha256 + bytes"
+    },
+    {
+      "id": "evidence_recorded",
+      "pass": true,
+      "detail": "raw stdout/stderr/argv per probe + checker.sha256 recorded beside the observation"
+    },
+    {
+      "id": "voiced_passes",
+      "pass": true,
+      "detail": "chalk-eval2 -35.11325 dBFS / chalk-eval1 -35.104884 dBFS, both must-sound, both AV_CHECK_PASS"
+    },
+    {
+      "id": "envelope_gate_bites",
+      "pass": true,
+      "detail": "exit 3 on DURATION 3.000 outside [3.5, 4.5]; the identical bytes exit 0 inside the envelope"
+    },
+    {
+      "id": "silence_reported_not_asserted",
+      "pass": false,
+      "detail": "exit 3 (want 0: report-only is a pass) | the checker did not print AV_CHECK_PASS | fail lines [\"MUST_SOUND but RMS None dBFS below -60 floor (silent track)\"] | must-sound was passed, so this probe does not exercise report-only"
+    },
+    {
+      "id": "mute_caught",
+      "pass": false,
+      "detail": "the report-only twin did not pass, so this is not the same-file assertion flip"
+    },
+    {
+      "id": "absence_asserted_not_assumed",
+      "pass": true,
+      "detail": "declared absence passes (no audio stream, no RMS line); claimed sound from the same bytes fails \"MUST_SOUND but no audio stream\""
+    }
+  ],
+  "verdict": "FAIL",
+  "caseResults": [
+    {
+      "caseId": "checker_revision_pinned",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    },
+    {
+      "caseId": "fixture_identity_pinned",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    },
+    {
+      "caseId": "evidence_recorded",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    },
+    {
+      "caseId": "voiced_passes",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    },
+    {
+      "caseId": "envelope_gate_bites",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    },
+    {
+      "caseId": "silence_reported_not_asserted",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": false
+    },
+    {
+      "caseId": "mute_caught",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": false
+    },
+    {
+      "caseId": "absence_asserted_not_assumed",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "pass": true
+    }
+  ],
+  "negativeControl": {
+    "mutate": {
+      "probe": "face_silent_report",
+      "set": {
+        "audio_must_sound": true
+      }
+    },
+    "must_verdict": "FAIL",
+    "must_fail_gates": [
+      "silence_reported_not_asserted",
+      "mute_caught"
+    ],
+    "observed_verdict": "FAIL",
+    "observed_named_gate_pass": {
+      "silence_reported_not_asserted": false,
+      "mute_caught": false
+    },
+    "outcome": "falsified-as-required"
+  }
+}

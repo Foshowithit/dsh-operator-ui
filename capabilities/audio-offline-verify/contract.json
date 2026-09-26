@@ -1,0 +1,122 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "input": {
+    "type": "object",
+    "required": ["probes"],
+    "additionalProperties": false,
+    "properties": {
+      "probes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "file"],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]*$",
+              "maxLength": 64
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expect_video": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expect_audio": {
+              "type": "string",
+              "enum": ["aac", "none"]
+            },
+            "min_duration": {
+              "type": "number",
+              "minimum": 0
+            },
+            "max_duration": {
+              "type": "number",
+              "minimum": 0
+            },
+            "audio_must_sound": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["schema", "checker", "probes"],
+    "additionalProperties": false,
+    "properties": {
+      "schema": {
+        "type": "string",
+        "enum": ["audio-offline-verify-observation/1"]
+      },
+      "checker": {
+        "type": "object",
+        "required": ["path", "sha256", "documented_exit_codes"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "documented_exit_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "integer" }
+          }
+        }
+      },
+      "probes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "file", "argv", "exit_status", "outcome", "duration_ms", "observed", "stdout", "stderr"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "file": { "type": "string" },
+            "argv": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "exit_status": { "type": ["integer", "null"] },
+            "signal": { "type": ["string", "null"] },
+            "outcome": {
+              "type": "string",
+              "enum": ["passed", "caught", "could_not_probe", "errored", "timed_out"]
+            },
+            "duration_ms": { "type": "integer", "minimum": 0 },
+            "observed": {
+              "type": "object",
+              "required": ["container_duration_s", "video_codec", "video_width", "video_height", "audio_codec", "audio_sample_rate", "audio_channels", "rms_token", "rms_dbfs", "fail_lines", "pass_marker"],
+              "additionalProperties": false,
+              "properties": {
+                "container_duration_s": { "type": ["number", "null"] },
+                "video_codec": { "type": ["string", "null"] },
+                "video_width": { "type": ["integer", "null"] },
+                "video_height": { "type": ["integer", "null"] },
+                "audio_codec": { "type": ["string", "null"] },
+                "audio_sample_rate": { "type": ["string", "null"] },
+                "audio_channels": { "type": ["string", "null"] },
+                "rms_token": { "type": ["string", "null"] },
+                "rms_dbfs": { "type": ["number", "null"] },
+                "fail_lines": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "pass_marker": { "type": "boolean" }
+              }
+            },
+            "stdout": { "type": "string" },
+            "stderr": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

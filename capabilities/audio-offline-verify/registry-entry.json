@@ -1,0 +1,98 @@
+{
+  "id": "audio-offline-verify",
+  "name": "Audio offline verify (ffprobe codec + sound presence)",
+  "kind": "script",
+  "version": "1.0.0",
+  "status": "candidate",
+  "workflow": null,
+  "requires": [
+    "filesystem:read",
+    "shell:execute"
+  ],
+  "verification": null,
+  "objectiveEvaluation": null,
+  "admitted_after": [],
+  "evals": [],
+  "reuse_count": 0,
+  "last_eval": "2026-09-26",
+  "description": "Receipts an offline-rendered media file without a human ear: ffprobe JSON asserts the video codec, the audio codec or its explicit absence, and duration inside an envelope; astats RMS is always reported and --audio-must-sound makes RMS below -60 dBFS (or None/-inf) a hard FAIL, so \"has an audio track\" is never confused with \"the track contains sound\". Runs the rcos adapter kernel around adapter/run.js calling adapter/av_check.py (needs ffprobe/ffmpeg).",
+  "tags": [
+    "audio",
+    "video",
+    "verification",
+    "ffprobe",
+    "offline",
+    "receipt"
+  ],
+  "provenance": {
+    "builtBy": "cap-port-b",
+    "portedFrom": "zcode-rcos capabilities/audio-offline-verify \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+    "adapterEntry": "adapter/run.js",
+    "measurer": "adapter/av_check.py",
+    "measurerSha256": "28d9d2faef8ecba65a37ab1f26859c944390ad490dd77c9f3b44c7a7326777ca",
+    "suite": {
+      "id": "audio-offline-verify-eval-suite",
+      "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+      "exit": 0,
+      "gateChecks": "8/8",
+      "cases": "8/8",
+      "runner": "node capabilities/audio-offline-verify/evals/run-evals.mjs",
+      "startedAt": "2026-09-26T01:21:21.518Z",
+      "finishedAt": "2026-09-26T01:21:22.453Z"
+    },
+    "evalSet": [
+      {
+        "caseId": "checker_revision_pinned",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "fixture_identity_pinned",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "evidence_recorded",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "voiced_passes",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "envelope_gate_bites",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "silence_reported_not_asserted",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "mute_caught",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      },
+      {
+        "caseId": "absence_asserted_not_assumed",
+        "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+        "pass": true
+      }
+    ],
+    "negativeControl": {
+      "caseId": "face_silent_report",
+      "perturb": "{\"probe\": \"face_silent_report\", \"set\": {\"audio_must_sound\": true}}",
+      "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+      "observedVerdict": "FAIL",
+      "gatesFailed": [
+        "silence_reported_not_asserted",
+        "mute_caught"
+      ],
+      "outcome": "falsified-as-required",
+      "confirmed": true
+    }
+  }
+}

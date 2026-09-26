@@ -1,0 +1,8 @@
+[0m
+> build · muse-spark-1.3-contributor-free
+[0m
+(1) Yes — no flat white box. Modules and background are tinted to the local beige/gray palette, reads as a watermark, not a pasted sticker. Only a faint edge/shadow.
+
+(2) Yes — on the right side, 3 finder squares and module grid are clearly visible once you look for it.
+
+VERDICT: SHIP — camouflaged but still findable as a QR.

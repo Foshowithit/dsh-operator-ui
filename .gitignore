@@ -11,3 +11,6 @@ eval/records/*/stage/
 # (never sanitize, never modify) and public-release hygiene forbids tracking them
 p6b/live-evidence-v1/*.mjs
 p6b/live-evidence-v3/*.mjs
+
+# local python env used to run the qr-camo-embed evals (cv2/numpy/PIL) — environment, not capability bytes
+.venv-qr312/

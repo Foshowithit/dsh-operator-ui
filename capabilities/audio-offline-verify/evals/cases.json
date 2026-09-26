@@ -1,0 +1,59 @@
+{
+  "schema": "audio-offline-verify-cases/1",
+  "note": "Case inputs for the container-sounds eval. Paths are relative to this evals/ directory; run-evals.mjs resolves them before handing the input document to the adapter. The seven probes reproduce the source eval's capability_input verbatim (fixture names and gate flags unchanged).",
+  "probes": [
+    {
+      "name": "chalk2_voiced",
+      "file": "fixtures/chalk-eval2.mp4",
+      "expect_video": "h264",
+      "expect_audio": "aac",
+      "min_duration": 2.5,
+      "max_duration": 3.5,
+      "audio_must_sound": true
+    },
+    {
+      "name": "chalk1_voiced",
+      "file": "fixtures/chalk-eval1.mp4",
+      "expect_video": "h264",
+      "expect_audio": "aac",
+      "min_duration": 3.5,
+      "max_duration": 4.5,
+      "audio_must_sound": true
+    },
+    {
+      "name": "chalk2_wrong_envelope",
+      "file": "fixtures/chalk-eval2.mp4",
+      "expect_video": "h264",
+      "expect_audio": "aac",
+      "min_duration": 3.5,
+      "max_duration": 4.5
+    },
+    {
+      "name": "face_silent_report",
+      "file": "fixtures/shot-face-v2-r3.mp4",
+      "expect_video": "h264",
+      "expect_audio": "aac"
+    },
+    {
+      "name": "face_silent_must_sound",
+      "file": "fixtures/shot-face-v2-r3.mp4",
+      "expect_video": "h264",
+      "expect_audio": "aac",
+      "audio_must_sound": true
+    },
+    {
+      "name": "dispatch_absent_expect_none",
+      "file": "fixtures/rcos-dispatch-eval-2-out.mp4",
+      "expect_video": "h264",
+      "expect_audio": "none",
+      "min_duration": 3.5,
+      "max_duration": 4.5
+    },
+    {
+      "name": "dispatch_absent_must_sound",
+      "file": "fixtures/rcos-dispatch-eval-2-out.mp4",
+      "expect_video": "h264",
+      "audio_must_sound": true
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "capability_id": "qr-camo-embed",
+  "notes": [
+    "Declared invocation for the qr-camo-embed capability. The adapter executes the",
+    "frozen blend script make_header_v2.py (the exact bytes eval-6 shipped, pinned by",
+    "sha256 in the observation) once per case in its own scratch directory: it copies the",
+    "case's cover to camo-src.png, runs the script with the case URL as argv[1] and the",
+    "scratch dir as cwd (the script's SRC/OUT_PNG are cwd-relative by design), and records",
+    "what the script did. The adapter never re-implements the blend, never decodes the QR",
+    "itself, and never judges the output: every value in the observation is an argv, one of",
+    "the script's own output streams, or a hash/header of a file the script read or wrote.",
+    "",
+    "Exit-code semantics of the ADAPTER (not the script): 0 = ran and wrote the",
+    "observation; 4 = could not run (missing kernel env, malformed input, duplicate case",
+    "names, unreadable source file, or no usable interpreter — see below). The SCRIPT's",
+    "documented exit codes are 0 (embedded and every stress decode passed) and 1, which",
+    "covers BOTH its documented refusals (the exact stderr line 'payload too long: ...' or",
+    "'no contrast level survived the stress ladder — payload or cover unusable') AND any",
+    "uncaught Python error (traceback). The adapter records outcome=refused for script exit",
+    "1 without pre-judging which kind it was: the raw stdout and stderr are recorded and",
+    "the gates tell the two apart by their exact lines.",
+    "",
+    "Interpreter resolution, in order: $RCOS_QR_PYTHON if set, else",
+    "evidence/qr-venv/bin/python under RCOS_HOME. The interpreter and its dependency",
+    "versions are recorded in the observation. The interpreter is ENVIRONMENT, not",
+    "committed capability bytes: cv2/numpy/PIL resolve through the interpreter's normal",
+    "site resolution (which follows the process environment), so the adapter inherits its",
+    "environment unchanged and never embeds absolute user paths. A missing interpreter or",
+    "failing dependency probe is cannotRun (exit 4), never a fabricated case record.",
+    "",
+    "The ~35-char practical payload limit is a property of the placement window at",
+    "MODULE=11 with ERROR_CORRECT_H, not of this contract: the contract accepts URLs up to",
+    "120 chars so the refusal path itself is exercisable (see the overflow case in the",
+    "grounding eval). Covers outside the mid-tone photographic/textured band the README",
+    "documents are likewise accepted by this contract and embedded by the script; whether",
+    "the result is acceptable is the capability's llm gate's call, recorded in the registry",
+    "history, not re-decided here."
+  ],
+  "input": {
+    "type": "object",
+    "required": ["cases"],
+    "additionalProperties": false,
+    "properties": {
+      "cases": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "required": ["name", "operation", "source", "url"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "pattern": "^[a-z0-9_]+$", "minLength": 1, "maxLength": 40 },
+            "operation": { "type": "string", "enum": ["embed"] },
+            "source": { "type": "string", "minLength": 1, "maxLength": 1024 },
+            "url": { "type": "string", "pattern": "^https?://[!-~]+$", "minLength": 1, "maxLength": 120 }
+          }
+        }
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["schema", "frozen", "cases"],
+    "additionalProperties": false,
+    "properties": {
+      "schema": { "type": "string", "enum": ["qr-camo-embed-observation/1"] },
+      "frozen": {
+        "type": "object",
+        "required": ["script", "interpreter"],
+        "additionalProperties": false,
+        "properties": {
+          "script": {
+            "type": "object",
+            "required": ["path", "sha256", "usage", "documented_exit_codes"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "usage": { "type": "string", "minLength": 1, "maxLength": 2048 },
+              "documented_exit_codes": {
+                "type": "array",
+                "items": { "type": "integer", "minimum": 0, "maximum": 255 }
+              }
+            }
+          },
+          "interpreter": {
+            "type": "object",
+            "required": ["path", "version", "deps"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+              "version": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "deps": {
+                "type": "object",
+                "required": ["cv2", "qrcode", "zxingcpp", "numpy", "pillow"],
+                "additionalProperties": false,
+                "properties": {
+                  "cv2": { "type": "string", "minLength": 1, "maxLength": 64 },
+                  "qrcode": { "type": "string", "minLength": 1, "maxLength": 64 },
+                  "zxingcpp": { "type": "string", "minLength": 1, "maxLength": 64 },
+                  "numpy": { "type": "string", "minLength": 1, "maxLength": 64 },
+                  "pillow": { "type": "string", "minLength": 1, "maxLength": 64 }
+                }
+              }
+            }
+          }
+        }
+      },
+      "cases": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 32,
+        "items": {
+          "type": "object",
+          "required": ["name", "operation", "source", "url", "argv", "interpreter_path", "exit_status", "signal", "outcome", "duration_ms", "stdout", "stderr", "out_files"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "pattern": "^[a-z0-9_]+$", "minLength": 1, "maxLength": 40 },
+            "operation": { "type": "string", "enum": ["embed"] },
+            "source": {
+              "type": "object",
+              "required": ["path", "sha256", "bytes", "png"],
+              "additionalProperties": false,
+              "properties": {
+                "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                "bytes": { "type": "integer", "minimum": 0 },
+                "png": {
+                  "type": ["object", "null"],
+                  "required": ["width", "height", "bit_depth", "color_type"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "width": { "type": "integer", "minimum": 1 },
+                    "height": { "type": "integer", "minimum": 1 },
+                    "bit_depth": { "type": "integer", "minimum": 1, "maximum": 16 },
+                    "color_type": { "type": "integer", "minimum": 0, "maximum": 6 }
+                  }
+                }
+              }
+            },
+            "url": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "argv": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 1024 }, "minItems": 1, "maxItems": 8 },
+            "interpreter_path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+            "exit_status": { "type": ["integer", "null"], "minimum": 0, "maximum": 255 },
+            "signal": { "type": ["string", "null"], "minLength": 1, "maxLength": 32 },
+            "outcome": { "type": "string", "enum": ["embedded", "refused", "timed_out", "errored"] },
+            "duration_ms": { "type": "integer", "minimum": 0 },
+            "stdout": { "type": "string", "maxLength": 20000 },
+            "stderr": { "type": "string", "maxLength": 20000 },
+            "out_files": {
+              "type": "array",
+              "minItems": 0,
+              "maxItems": 4,
+              "items": {
+                "type": "object",
+                "required": ["path", "sha256", "bytes", "png"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "string", "minLength": 1, "maxLength": 1024 },
+                  "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                  "bytes": { "type": "integer", "minimum": 0 },
+                  "png": {
+                    "type": ["object", "null"],
+                    "required": ["width", "height", "bit_depth", "color_type"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "width": { "type": "integer", "minimum": 1 },
+                      "height": { "type": "integer", "minimum": 1 },
+                      "bit_depth": { "type": "integer", "minimum": 1, "maximum": 16 },
+                      "color_type": { "type": "integer", "minimum": 0, "maximum": 6 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

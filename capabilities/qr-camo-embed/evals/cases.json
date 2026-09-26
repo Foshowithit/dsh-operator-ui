@@ -1,0 +1,42 @@
+{
+  "schema": "qr-camo-embed-cases/1",
+  "note": "Case inputs for qr-camo-embed, verbatim from the upstream eval qr-camo-embed-grounding-v1 capability_input. Sources are evals-relative; the runner resolves them to absolute paths before handing the request to the adapter.",
+  "cases": [
+    {
+      "name": "ship_bearing_frame",
+      "operation": "embed",
+      "source": "fixtures/bearing-camo-src.png",
+      "url": "https://archon.diy"
+    },
+    {
+      "name": "ship_bearing_frame_repeat",
+      "operation": "embed",
+      "source": "fixtures/bearing-camo-src.png",
+      "url": "https://archon.diy"
+    },
+    {
+      "name": "variant_short_url",
+      "operation": "embed",
+      "source": "fixtures/bearing-camo-src.png",
+      "url": "https://archon.diy/rcos"
+    },
+    {
+      "name": "overflow_hog_url",
+      "operation": "embed",
+      "source": "fixtures/bearing-camo-src.png",
+      "url": "https://foshowithit.github.io/hog-crankers"
+    },
+    {
+      "name": "dark_cover",
+      "operation": "embed",
+      "source": "fixtures/dark-camo-src.png",
+      "url": "https://archon.diy"
+    },
+    {
+      "name": "pale_cover",
+      "operation": "embed",
+      "source": "fixtures/pale-camo-src.png",
+      "url": "https://archon.diy"
+    }
+  ]
+}

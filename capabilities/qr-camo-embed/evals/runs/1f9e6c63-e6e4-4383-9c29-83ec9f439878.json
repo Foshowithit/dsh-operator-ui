@@ -1,0 +1,328 @@
+{
+  "schema": "capability-run-receipt/1",
+  "capability": "qr-camo-embed",
+  "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+  "mode": "positive",
+  "startedAt": "2026-09-26T01:38:11.521Z",
+  "finishedAt": "2026-09-26T01:38:17.262Z",
+  "runner": {
+    "command": "node capabilities/qr-camo-embed/evals/run-evals.mjs",
+    "node": "v22.22.2",
+    "platform": "darwin arm64"
+  },
+  "interpreter": {
+    "path": "~/dsh-operator-ui-wt-port-b/.venv-qr312/bin/python",
+    "version": "3.12.13",
+    "deps": {
+      "cv2": "4.13.0",
+      "qrcode": "8.2",
+      "zxingcpp": "3.1.1",
+      "numpy": "2.4.6",
+      "pillow": "10.4.0"
+    }
+  },
+  "adapter": {
+    "command": "node adapter/run.js",
+    "exit_code": 0,
+    "sha256": "bb9e0ce1806d1890a104ef7315621f079f620fd21e3d3ea8affe553efdcb90b5",
+    "output": "ship_bearing_frame [embed] exit=0 outcome=embedded out_files=1\nship_bearing_frame_repeat [embed] exit=0 outcome=embedded out_files=1\nvariant_short_url [embed] exit=0 outcome=embedded out_files=1\noverflow_hog_url [embed] exit=1 outcome=refused out_files=0\ndark_cover [embed] exit=0 outcome=embedded out_files=1\npale_cover [embed] exit=0 outcome=embedded out_files=1\nobserved 6 cases (script 8dc1960468b0, interpreter .venv-qr312/bin/python)"
+  },
+  "frozen": {
+    "script": {
+      "path": "capabilities/qr-camo-embed/adapter/make_header_v2.py",
+      "sha256": "8dc1960468b002dde416d8f27fa5f07fb97febcd015198674fc3f92c4550bdeb"
+    },
+    "contract_sha256": "b7296d29c2a0034bce1ff614221c8b54eb5f44b4a8f1de0c1aeb0ead18317bc9",
+    "helpers": {
+      "measure_blend.py": "aaf605a51d0a806b9156151ba76293aa2692191a5f67dc776cd65407c9462449",
+      "stress_ladder.py": "4f1f468939c95b0743debab689d1a655c8597a69d5c923eb30d0cde3736a4f8e",
+      "decode_controls.py": "b03f094485d21d0d1db7bd48df60f42fd86cb83d6e6c264be9a1a91822e9a584"
+    }
+  },
+  "cases": [
+    {
+      "name": "ship_bearing_frame",
+      "operation": "embed",
+      "url": "https://archon.diy",
+      "source_sha256": "ec7f944766a3eda36d087657bf3647dd483d98782de68a09df392aaa6386300d",
+      "exit_status": 0,
+      "signal": null,
+      "outcome": "embedded",
+      "duration_ms": 688,
+      "stdout": "QR version 3, 37x37 modules\nplaced at (1065,60), smoothness score 25.5\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+      "stderr": "",
+      "out_files": [
+        {
+          "path": "case-ship_bearing_frame/camo-qr-header.png",
+          "sha256": "24de696df0bad3f0bab972eabbb715440fca8a666cbf403a61ae8e88214b8b6d",
+          "bytes": 868866,
+          "png": {
+            "width": 1500,
+            "height": 500,
+            "bit_depth": 8,
+            "color_type": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "ship_bearing_frame_repeat",
+      "operation": "embed",
+      "url": "https://archon.diy",
+      "source_sha256": "ec7f944766a3eda36d087657bf3647dd483d98782de68a09df392aaa6386300d",
+      "exit_status": 0,
+      "signal": null,
+      "outcome": "embedded",
+      "duration_ms": 585,
+      "stdout": "QR version 3, 37x37 modules\nplaced at (1065,60), smoothness score 25.5\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+      "stderr": "",
+      "out_files": [
+        {
+          "path": "case-ship_bearing_frame_repeat/camo-qr-header.png",
+          "sha256": "24de696df0bad3f0bab972eabbb715440fca8a666cbf403a61ae8e88214b8b6d",
+          "bytes": 868866,
+          "png": {
+            "width": 1500,
+            "height": 500,
+            "bit_depth": 8,
+            "color_type": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "variant_short_url",
+      "operation": "embed",
+      "url": "https://archon.diy/rcos",
+      "source_sha256": "ec7f944766a3eda36d087657bf3647dd483d98782de68a09df392aaa6386300d",
+      "exit_status": 0,
+      "signal": null,
+      "outcome": "embedded",
+      "duration_ms": 574,
+      "stdout": "QR version 3, 37x37 modules\nplaced at (1065,60), smoothness score 25.5\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+      "stderr": "",
+      "out_files": [
+        {
+          "path": "case-variant_short_url/camo-qr-header.png",
+          "sha256": "7c5e75dd3fe63034739485f39d052ee5eced10ae7974b37de39197b99357e23f",
+          "bytes": 870813,
+          "png": {
+            "width": 1500,
+            "height": 500,
+            "bit_depth": 8,
+            "color_type": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "overflow_hog_url",
+      "operation": "embed",
+      "url": "https://foshowithit.github.io/hog-crankers",
+      "source_sha256": "ec7f944766a3eda36d087657bf3647dd483d98782de68a09df392aaa6386300d",
+      "exit_status": 1,
+      "signal": null,
+      "outcome": "refused",
+      "duration_ms": 235,
+      "stdout": "QR version 5, 45x45 modules\n",
+      "stderr": "payload too long: QR 495px does not fit the 1500x500 placement window\n",
+      "out_files": []
+    },
+    {
+      "name": "dark_cover",
+      "operation": "embed",
+      "url": "https://archon.diy",
+      "source_sha256": "d48a416011b5c76ab768b393d1256bc57e9f0249be5c8d4aede4ddccc24b6d97",
+      "exit_status": 0,
+      "signal": null,
+      "outcome": "embedded",
+      "duration_ms": 574,
+      "stdout": "QR version 3, 37x37 modules\nplaced at (1065,20), smoothness score 40.9\nadaptive contrast: dark_gain top 0.8 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+      "stderr": "",
+      "out_files": [
+        {
+          "path": "case-dark_cover/camo-qr-header.png",
+          "sha256": "5c310e719668670bfe022eb5c2793a546b819e633373fd07c72a50c38c68e309",
+          "bytes": 1020927,
+          "png": {
+            "width": 1500,
+            "height": 500,
+            "bit_depth": 8,
+            "color_type": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "pale_cover",
+      "operation": "embed",
+      "url": "https://archon.diy",
+      "source_sha256": "14b0c0672dc8912210bf4d6dcb6b29c456934e7fbc7acf0682db7f67cfccdf68",
+      "exit_status": 0,
+      "signal": null,
+      "outcome": "embedded",
+      "duration_ms": 493,
+      "stdout": "QR version 3, 37x37 modules\nplaced at (905,20), smoothness score 32.2\nadaptive contrast: dark_gain top 0.68 (v1 used 0.52 flat)\nALL SCANS PASS (stress ladder at minimal visible contrast)\n",
+      "stderr": "",
+      "out_files": [
+        {
+          "path": "case-pale_cover/camo-qr-header.png",
+          "sha256": "f8824bc41ca52808beacd341696e4cc94178752fe625d6e31b6bc754acfcc623",
+          "bytes": 428910,
+          "png": {
+            "width": 1500,
+            "height": 500,
+            "bit_depth": 8,
+            "color_type": 2
+          }
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "ship_frame_reproduced",
+      "pass": true,
+      "detail": "the ship case embedded exit 0 with the pinned placement/gain/ALL-SCANS stdout, read the pinned bearing cover, wrote exactly camo-qr-header.png (1500x500), and its bytes are the oracle fixture the eval-6 run shipped (24de696df0ba…)"
+    },
+    {
+      "id": "pale_cover_reproduced",
+      "pass": true,
+      "detail": "the pale case embedded exit 0 with the pinned (905,20)/score 32.2/gain-0.68 stdout, read the pinned pale cover, and its bytes reproduce the pale oracle fixture byte for byte (f8824bc41ca5…)"
+    },
+    {
+      "id": "stress_ladder_holds",
+      "pass": true,
+      "detail": "the pinned ladder helper (zxing-only, on decoded arrays, mirroring the script's own stress_pass) decodes the ship output as its case URL and every leg passes — disk, PNG round-trip, half-size, jpeg q78, jpeg q85"
+    },
+    {
+      "id": "variant_url_decodes",
+      "pass": true,
+      "detail": "the variant case reproduced its pinned bytes (different from the ship oracle — the URL is in the payload), kept the pinned placement, and decodes as its variant URL with every ladder leg passing"
+    },
+    {
+      "id": "payload_overflow_bites",
+      "pass": true,
+      "detail": "the 45x45 payload refuses with exit 1, the exact \"payload too long\" stderr line, the version line as its only stdout, and no file left behind — the documented refusal path is real"
+    },
+    {
+      "id": "dark_cover_halo_lifts",
+      "pass": true,
+      "detail": "measured on the real pixels: the ship embedding darkens its ring while the dark-cover embedding lifts it, the contrast split clears the 50-unit pin (prove run 78.18), the dark ring lands inside the scannable band, and the dark canvas sits far below the ship canvas"
+    },
+    {
+      "id": "pale_cover_signature",
+      "pass": true,
+      "detail": "the pale cover output survives the full stress ladder and its geometry holds the measured signature: ring lifted (+15.77 at prove), ring luma near the pale canvas, box delta 2.51 — the muse SHIP verdict is sealed history this gate does not re-derive"
+    },
+    {
+      "id": "muse_receipts_sealed",
+      "pass": true,
+      "detail": "the sealed muse receipts — eval-6 SHIP and eval-5 FAIL — are the pinned bytes in the package, verdict lines intact; the historical taste ruling stands, unedited and unrerun (the upstream originals live in the source home; this port seals the bytes that travel)"
+    },
+    {
+      "id": "cv2_weaker_than_zxing",
+      "pass": true,
+      "detail": "on identical re-serialized pixels the separation reproduces: both decoders hold at fade 0.10, at 0.15 zxing still reads while cv2 already misses, at 0.20 both miss — cv2 is strictly weaker here and stays out of the oracle seat"
+    },
+    {
+      "id": "orientation_fix_bites",
+      "pass": true,
+      "detail": "the script as eval-4/eval-5 ran it (pinned prefix fixture) refuses the same landscape cover the fixed script ships on: pinned (1045,20) placement line, exact refusal stderr, no output file — the orientation fix is a demonstrated behavior change, not prose"
+    },
+    {
+      "id": "determinism_repeat",
+      "pass": true,
+      "detail": "the repeat case reproduces the ship case exactly — same stdout, same exit, byte-identical output equal to the oracle — determinism as observed, on committed covers, with no randomness in the script"
+    },
+    {
+      "id": "interpreter_declared",
+      "pass": true,
+      "detail": "the interpreter is declared and re-proven: observation, deps.json and a live probe through the exact interpreter the cases ran all report the pinned library versions (cv2 4.13.0, qrcode 8.2, zxingcpp 3.1.1, numpy 2.4.6, pillow 10.4.0) and python 3.12.13, one interpreter across all six cases (upstream ran 3.14.7 — interpreter is environment, and the oracle bytes reproduce identically)"
+    },
+    {
+      "id": "frozen_source_pinned",
+      "pass": true,
+      "detail": "the frozen script, adapter, contract and all three measuring helpers are the pinned revisions on disk, evidence/frozen.sha256 carries the script + interpreter identity the run wrote, and all 6 cases ran that exact script with their own URL (this runner pins everything except itself — its identity rides the commit and the receipt)"
+    },
+    {
+      "id": "artifact_identity_pinned",
+      "pass": true,
+      "detail": "the run is an execution of this exact package revision: cases.json matches its pin, all 8 pinned fixtures agree byte for byte between the package and run-input.json, the run's request is pinned by hash, and the request matches the declared case set"
+    }
+  ],
+  "verdict": "PASS",
+  "caseResults": [
+    {
+      "caseId": "ship_frame_reproduced",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "pale_cover_reproduced",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "stress_ladder_holds",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "variant_url_decodes",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "payload_overflow_bites",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "dark_cover_halo_lifts",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "pale_cover_signature",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "muse_receipts_sealed",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "cv2_weaker_than_zxing",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "orientation_fix_bites",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "determinism_repeat",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "interpreter_declared",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "frozen_source_pinned",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    },
+    {
+      "caseId": "artifact_identity_pinned",
+      "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+      "pass": true
+    }
+  ],
+  "negativeControl": null
+}
