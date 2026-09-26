@@ -535,9 +535,24 @@ test('promote: a registry READ failure is not a do-not-retry 409, and carries a 
     kind: 'teaching',
     status: 'candidate',
     verdict: 'CANDIDATE',
-    candidate: { capabilityId: 'demo', version: '0.1.0', workflow: 'demo-v0-1-0', requires: [], requiresUnknown: [] },
+    // The envelope must be an HONEST candidate now that promoteCandidate
+    // re-derives the verdict from the evidence it carries (D3.B): a record with
+    // no evaluations, or bytes that do not hash to the declared digest, is
+    // refused by that gate BEFORE the registry is read — which would make this
+    // row green for the wrong reason and stop testing the registry-read path at
+    // all. Passing evidence is what lets execution reach the read under test.
+    candidate: {
+      capabilityId: 'demo', version: '0.1.0', workflow: 'demo-v0-1-0',
+      workflowYaml: 'name: demo-v0-1-0\nnodes: []\n',
+      workflowSha256: 'sha256:' + createHash('sha256').update('name: demo-v0-1-0\nnodes: []\n').digest('hex'),
+      requires: [], requiresUnknown: [],
+    },
     provenance: { builtBy: 'test' },
-    evaluations: [],
+    evaluations: [
+      { caseId: 'c1', status: 'completed', runId: 'r1', pass: true },
+      { caseId: 'c2', status: 'completed', runId: 'r2', pass: true },
+      { caseId: 'c3', status: 'completed', runId: 'r3', pass: true },
+    ],
   });
   const r = await teach({ promoteTaskId: 'teach_promote_probe' });
   assert.equal(typeof r.body.code, 'string', 'promoteCandidate must return a typed code for a registry READ failure (lib/teach.js) — this assertion IS the coupling to the other half of the ruling');
