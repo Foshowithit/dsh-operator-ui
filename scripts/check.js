@@ -3,10 +3,11 @@
 // Validates the four-way name alignment the DSH plugin loader requires plus
 // basic file integrity. Exit 1 on any failure.
 
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
 import * as compat from '../lib/compat.js';
 // The canonical test set is defined ONCE, in the gate. check.js imports it
@@ -944,6 +945,9 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
 // be pinned by VALUE rather than by grepping for a literal that a rename would
 // satisfy.
 const cliModule = await import(pathToFileURL(join(root, 'lib', 'cli.js')).href);
+// The provenance reader is imported for the same reason: the refusal states are
+// pinned BY VALUE, so a rename that keeps a string literal alive cannot pass.
+const provModule = await import(pathToFileURL(join(root, 'lib', 'provenance.js')).href);
 
 check('distribution: the bin surface is declared, ships, and parses', () => {
   const bin = pkg.bin && pkg.bin[name];
@@ -962,6 +966,81 @@ check('distribution: the certification instrument does NOT ship', () => {
     }
   }
   if (!existsSync(join(root, 'scripts', 'gate.mjs'))) throw new Error('scripts/gate.mjs is missing from the source tree');
+  if (!existsSync(join(root, 'scripts', 'pack.mjs'))) throw new Error('scripts/pack.mjs is missing from the source tree');
+});
+
+check('distribution: pack-time provenance is deterministic, and the tarball hash stays outside it', () => {
+  const src = readFileSync(join(root, 'scripts', 'pack.mjs'), 'utf8');
+  // The record is written in a DETACHED STAGING WORKTREE. If the packer ever
+  // writes into the live tree, the gate's clean-tree precondition dies and the
+  // release procedure edits tracked files to build an artifact.
+  if (!src.includes("'worktree', 'add', '--detach'")) {
+    throw new Error('scripts/pack.mjs no longer packs from a detached worktree — the injection would land in the live tree');
+  }
+  // Determinism: no clock, no host, no path, no branch may enter the record.
+  for (const forbidden of ['Date.now', 'new Date', 'hrtime', 'os.hostname', 'process.cwd()', 'process.env.HOME']) {
+    if (src.includes(forbidden)) {
+      throw new Error('scripts/pack.mjs reads ' + forbidden + ' — the injected record would stop being a function of the commit alone');
+    }
+  }
+  // The witness must exist, and it must compare the two BYTES.
+  if (!/repack-not-deterministic/.test(src)) {
+    throw new Error('scripts/pack.mjs no longer asserts that two packs of one commit are bit-identical');
+  }
+  // Non-circularity, stated structurally: the tarball's own sha256 is computed
+  // after the pack and written only into the receipt.
+  if (!/tarballSha\s*=\s*sha256File\(a\.tarball\)/.test(src)) {
+    throw new Error('scripts/pack.mjs no longer hashes the finished tarball for the receipt');
+  }
+  // One definition of the injected path: the writer and the reader must agree.
+  const prov = readFileSync(join(root, 'lib', 'provenance.js'), 'utf8');
+  const declared = prov.match(/BUILD_PROVENANCE_FILE\s*=\s*'([^']+)'/);
+  if (!declared) throw new Error('lib/provenance.js lost BUILD_PROVENANCE_FILE');
+  if (!src.includes("'lib/build-provenance.json'")) {
+    throw new Error('scripts/pack.mjs writes a different path than lib/provenance.js reads (' + declared[1] + ')');
+  }
+});
+
+check('distribution: a provenance record that contradicts its own package is REFUSED, not called absent', () => {
+  // The three outcomes must stay distinct. This is the same typed-read rule
+  // lib/goal.js applies to external records: "no record" and "a record that
+  // lies" are different findings with different remedies, and collapsing the
+  // second into the first is how a tampered artifact gets read as merely young.
+  const mk = (provJson, pkgJson) => {
+    const dir = mkdtempSync(join(tmpdir(), 'dsh-prov-'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify(pkgJson));
+    if (provJson !== null) {
+      mkdirSync(join(dir, 'lib'), { recursive: true });
+      writeFileSync(join(dir, 'lib', 'build-provenance.json'), typeof provJson === 'string' ? provJson : JSON.stringify(provJson));
+    }
+    return dir;
+  };
+  const honest = {
+    schema: 1, artifact: 'runtime', package: name, package_version: pkg.version,
+    source_commit: '0'.repeat(40), certified_by_gate_version: GATE_VERSION,
+    compatibility_pin: compat.PINNED_DSH, tools_range: null, node_range: '>=22',
+  };
+  const dirs = [
+    mk(null, { name, version: pkg.version }),                                        // absent
+    mk(honest, { name, version: pkg.version }),                                      // verified
+    mk({ ...honest, package_version: '9.9.9' }, { name, version: pkg.version }),     // lies about its version
+    mk('{ not json', { name, version: pkg.version }),                                // truncated / corrupt
+    mk({ ...honest, source_commit: 'nope' }, { name, version: pkg.version }),        // no usable commit
+  ];
+  try {
+    const [absent, good, lying, corrupt, nocommit] = dirs.map((d) => {
+      const rec = provModule.provenanceRecord({ root: d });
+      return provModule.judgeProvenance(rec);
+    });
+    if (good.state !== 'VERIFIED' || !good.ok) throw new Error('an honest record was not VERIFIED (got ' + good.state + ')');
+    if (good.claim !== 'PROVENANCE VERIFIED') throw new Error('the verified claim lost its name: ' + good.claim);
+    if (absent.state !== 'UNIDENTIFIED') throw new Error('a missing record must be UNIDENTIFIED, got ' + absent.state);
+    for (const [label, v] of [['a version lie', lying], ['a corrupt file', corrupt], ['a malformed commit', nocommit]]) {
+      if (v.state !== 'INVALID' || v.ok) throw new Error(label + ' was reported as ' + v.state + ' — tamper must not collapse into absence');
+    }
+  } finally {
+    for (const d of dirs) rmSync(d, { recursive: true, force: true });
+  }
 });
 
 check('distribution: the mirrored gate version agrees with scripts/gate.mjs', () => {
