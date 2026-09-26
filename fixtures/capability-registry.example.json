@@ -2,6 +2,71 @@
   "registry_version": "v1",
   "capabilities": [
     {
+      "id": "workspace-word-count",
+      "name": "Workspace word count (LEARNED)",
+      "kind": "workflow",
+      "version": "0.1.0",
+      "status": "promoted",
+      "workflow": "workspace-word-count-v0-1-0",
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
+      "verification": {
+        "expectOutput": "learned-workspace-word-count:done",
+        "terminalStatus": "completed"
+      },
+      "objectiveEvaluation": {
+        "kind": "output-lines",
+        "required": [
+          "file",
+          "Lines:",
+          "Words:",
+          "Bytes:",
+          "TOTAL Lines:",
+          "learned-workspace-word-count:done"
+        ]
+      },
+      "description": "Counts lines, words, and bytes across every .txt file in the workspace, with totals",
+      "tags": [
+        "workspace",
+        "words",
+        "count",
+        "every",
+        "file",
+        "text",
+        "totals"
+      ],
+      "provenance": {
+        "builtBy": "rcos-teaching-m2",
+        "sourceTaskId": "goal-bbe8add7",
+        "teachingTaskId": "teach-9b1c4197",
+        "evalSet": [
+          {
+            "caseId": "eval-single-line",
+            "runId": "98ab9882-aba6-410c-b0e4-21c5ff4c696d",
+            "pass": true
+          },
+          {
+            "caseId": "eval-multi-line",
+            "runId": "823cf930-8a81-4882-8a75-fb98e1edc59e",
+            "pass": true
+          },
+          {
+            "caseId": "eval-unicode",
+            "runId": "77ccb7d1-4fcb-4b4b-a7e7-4f63e276c5e6",
+            "pass": true
+          }
+        ],
+        "promotedBy": "operator",
+        "promotedAt": "2026-09-16T16:45:09.273Z"
+      },
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": null
+    },
+    {
       "id": "jsonl-log-writer",
       "name": "JSONL log writer",
       "kind": "script",
@@ -243,59 +308,442 @@
       ]
     },
     {
-      "id": "workspace-word-count",
-      "name": "Workspace word count (LEARNED)",
-      "kind": "workflow",
-      "version": "0.1.0",
-      "status": "promoted",
-      "workflow": "workspace-word-count-v0-1-0",
+      "id": "video-forensics-receipt",
+      "name": "Video forensics receipt",
+      "kind": "script",
+      "version": "1.0.0",
+      "status": "candidate",
+      "workflow": null,
       "requires": [
         "filesystem:read",
         "shell:execute"
       ],
-      "verification": {
-        "expectOutput": "learned-workspace-word-count:done",
-        "terminalStatus": "completed"
-      },
-      "description": "Counts lines, words, and bytes across every .txt file in the workspace, with totals",
-      "tags": [
-        "workspace",
-        "words",
-        "count",
-        "every",
-        "file",
-        "text",
-        "totals"
-      ],
-      "provenance": {
-        "builtBy": "rcos-teaching-m2",
-        "sourceTaskId": "goal-bbe8add7",
-        "teachingTaskId": "teach-9b1c4197",
-        "evalSet": [
-          {
-            "caseId": "eval-single-line",
-            "runId": "98ab9882-aba6-410c-b0e4-21c5ff4c696d",
-            "pass": true
-          },
-          {
-            "caseId": "eval-multi-line",
-            "runId": "823cf930-8a81-4882-8a75-fb98e1edc59e",
-            "pass": true
-          },
-          {
-            "caseId": "eval-unicode",
-            "runId": "77ccb7d1-4fcb-4b4b-a7e7-4f63e276c5e6",
-            "pass": true
-          }
-        ],
-        "promotedBy": "operator",
-        "promotedAt": "2026-09-16T16:45:09.273Z"
-      },
+      "verification": null,
+      "objectiveEvaluation": null,
       "admitted_after": [],
       "evals": [],
       "reuse_count": 0,
-      "last_eval": null
+      "last_eval": "2026-09-25",
+      "description": "Measures a video into a forensics receipt (ebur128 integrated loudness / LRA / true peak, canvas mean luma and saturation, 1s-baseline hold profile) and checks the measurements against the envelope of a declared craft register (explainer / brand / kinetic). Batch probe input: one register claim per file. Invocation is the rcos adapter kernel around adapter/run.cjs (wraps adapter/forensics.py; needs ffmpeg/ffprobe and python3).",
+      "tags": [
+        "video",
+        "audio",
+        "loudness",
+        "color",
+        "motion",
+        "forensics",
+        "receipt",
+        "ffmpeg"
+      ],
+      "provenance": {
+        "builtBy": "cap-port-a",
+        "portedFrom": "zcode-rcos capabilities/video-forensics-receipt (kind script) \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+        "adapterEntry": "adapter/run.cjs",
+        "measurer": "adapter/forensics.py",
+        "measurerSha256": "99ffd15cab3f12f657b65bb46430ee993db5eaf81a284fc6377a7fc3d448bae3",
+        "suite": {
+          "id": "video-forensics-receipt-envelope",
+          "runId": "11f9d6ef-5a5d-481b-9c9e-ca3a2646d53e",
+          "exit": 0,
+          "gateChecks": "75/75"
+        },
+        "evalSet": [
+          {
+            "caseId": "control-all-gates-pass",
+            "runId": "f51b6065-aee4-45cc-a23c-cb2a97f5a0fd",
+            "pass": true
+          },
+          {
+            "caseId": "quiet-mix-fails-loudness-floor",
+            "runId": "f67392ac-0cf8-4bce-99ae-60c08ecc0612",
+            "pass": true
+          },
+          {
+            "caseId": "hot-mix-fails-loudness-ceiling",
+            "runId": "5afbab86-8da4-469a-953d-65ae026ec17a",
+            "pass": true
+          },
+          {
+            "caseId": "narrow-lra-fails-lra-floor",
+            "runId": "5c1b7115-a733-450c-8e39-6d077613e54b",
+            "pass": true
+          },
+          {
+            "caseId": "wide-lra-fails-lra-ceiling",
+            "runId": "981a79e1-d683-498d-ace9-c822cc8be9fb",
+            "pass": true
+          },
+          {
+            "caseId": "desaturated-fails-sat-floor",
+            "runId": "95408b9d-0c86-4966-8a1e-3dc8664629a9",
+            "pass": true
+          },
+          {
+            "caseId": "overbright-fails-luma-ceiling",
+            "runId": "72b81521-8816-4e8b-88f0-46cf0d00b0df",
+            "pass": true
+          },
+          {
+            "caseId": "slideshow-trips-both-motion-gates",
+            "runId": "b4c1743f-8646-49cc-b732-7cd037ffb927",
+            "pass": true
+          },
+          {
+            "caseId": "silent-stream-is-n-a-not-failed",
+            "runId": "642f41f1-d448-476d-b2f3-24dd86f17900",
+            "pass": true
+          },
+          {
+            "caseId": "register-choice-changes-the-verdict",
+            "runId": "8ae35f8a-eed6-4690-b364-93ca7cc49869",
+            "pass": true
+          },
+          {
+            "caseId": "luma-floor-arm-is-dead",
+            "runId": "f93ac393-9042-455b-9853-56fd43f7e509",
+            "pass": true
+          },
+          {
+            "caseId": "sat-ceiling-arm-is-dead",
+            "runId": "ca28fa72-f91c-4a17-83a9-2db99bf86d4d",
+            "pass": true
+          }
+        ],
+        "negativeControl": {
+          "caseId": "control-all-gates-pass",
+          "perturb": "fixture swapped envelope-pass -> slideshow",
+          "suiteRunId": "bb2bf41d-0bcb-4021-a6e2-52a9622adfcf",
+          "runId": "ccdbdf52-5af6-4223-ae43-0722fb18b353",
+          "evalExit": 1,
+          "gatesFailed": 4,
+          "confirmed": true
+        }
+      }
+    },
+    {
+      "id": "filmstrip-verify",
+      "name": "Filmstrip video verification protocol",
+      "kind": "script",
+      "version": "1.0.0",
+      "status": "candidate",
+      "workflow": null,
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
+      "verification": null,
+      "objectiveEvaluation": null,
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": "2026-09-25",
+      "description": "Never trust a video by its size or by prose claims. Extracts N tiles (default 6) at even timestamps and measures three deterministic legs against the strip and the audio: six-frames (the tile count follows the request), audio-bed (volumedetect mean_volume within [-45, -6] dBFS), and a no-slideshow PROXY (hold_share <= 0.40 and longest_hold_s <= 5.0 at a 1s baseline). The sighted distinct-motion leg is deliberately not claimed deterministic. Invocation is the rcos adapter kernel around adapter/run.cjs (needs ffmpeg/ffprobe).",
+      "tags": [
+        "video",
+        "verification",
+        "filmstrip",
+        "frames",
+        "audio",
+        "slideshow",
+        "ffmpeg"
+      ],
+      "provenance": {
+        "builtBy": "cap-port-a",
+        "portedFrom": "zcode-rcos capabilities/filmstrip-verify (kind runbook) \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+        "adapterEntry": "adapter/run.cjs",
+        "measurer": "adapter/run.cjs",
+        "measurerSha256": "d7a65bbe32eeda80bae89e49d7f4f805cd727997f07d626b5d77825b8750851b",
+        "suite": {
+          "id": "filmstrip-verify-protocol",
+          "runId": "01423e6f-317b-468c-b92c-2d58ea32599d",
+          "exit": 0,
+          "gateChecks": "62/62"
+        },
+        "evalSet": [
+          {
+            "caseId": "continuous-passes-all-legs",
+            "runId": "a1ae8594-6258-4443-afdb-ee6ab71c668f",
+            "pass": true
+          },
+          {
+            "caseId": "frame-count-follows-the-request",
+            "runId": "1229b5a8-d5c6-4e49-aa00-1f63e1322e0d",
+            "pass": true
+          },
+          {
+            "caseId": "slideshow-fails-the-share-arm",
+            "runId": "2e6340a6-9612-4a11-b3f9-681c3fad4a6c",
+            "pass": true
+          },
+          {
+            "caseId": "long-hold-fails-the-longest-arm",
+            "runId": "704bc403-8d90-40b9-aa9c-012fcd05be12",
+            "pass": true
+          },
+          {
+            "caseId": "absent-audio-bed-is-reported",
+            "runId": "2b16044d-6b33-47bf-b8a0-7f3bf64cf399",
+            "pass": true
+          },
+          {
+            "caseId": "quiet-bed-fails-the-floor-arm",
+            "runId": "758f552a-0db0-41ed-a6b3-8d3be5811f04",
+            "pass": true
+          },
+          {
+            "caseId": "hot-bed-fails-the-ceiling-arm",
+            "runId": "e5b230bb-bc48-43bc-8d4d-777fff44e470",
+            "pass": true
+          },
+          {
+            "caseId": "unreadable-probe-is-reported-not-fatal",
+            "runId": "ad98a8cf-93e2-44a2-a531-c75884d99149",
+            "pass": true
+          },
+          {
+            "caseId": "adapter-exit-code-is-not-a-verdict",
+            "runId": "3da913c6-f3e9-4f91-893f-ccfe199866a0",
+            "pass": true
+          }
+        ],
+        "negativeControl": {
+          "caseId": "continuous-passes-all-legs",
+          "perturb": "fixture swapped cut-continuous -> slideshow-holds",
+          "suiteRunId": "be847785-eae1-4faf-9577-9cdc3288f107",
+          "runId": "aac9ba45-5815-4f58-930f-b2e41721e0c0",
+          "evalExit": 1,
+          "gatesFailed": 5,
+          "confirmed": true
+        }
+      }
+    },
+    {
+      "id": "audio-offline-verify",
+      "name": "Audio offline verify (ffprobe codec + sound presence)",
+      "kind": "script",
+      "version": "1.0.0",
+      "status": "candidate",
+      "workflow": null,
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
+      "verification": null,
+      "objectiveEvaluation": null,
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": "2026-09-26",
+      "description": "Receipts an offline-rendered media file without a human ear: ffprobe JSON asserts the video codec, the audio codec or its explicit absence, and duration inside an envelope; astats RMS is always reported and --audio-must-sound makes RMS below -60 dBFS (or None/-inf) a hard FAIL, so \"has an audio track\" is never confused with \"the track contains sound\". Runs the rcos adapter kernel around adapter/run.js calling adapter/av_check.py (needs ffprobe/ffmpeg).",
+      "tags": [
+        "audio",
+        "video",
+        "verification",
+        "ffprobe",
+        "offline",
+        "receipt"
+      ],
+      "provenance": {
+        "builtBy": "cap-port-b",
+        "portedFrom": "zcode-rcos capabilities/audio-offline-verify \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+        "adapterEntry": "adapter/run.js",
+        "measurer": "adapter/av_check.py",
+        "measurerSha256": "28d9d2faef8ecba65a37ab1f26859c944390ad490dd77c9f3b44c7a7326777ca",
+        "suite": {
+          "id": "audio-offline-verify-eval-suite",
+          "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+          "exit": 0,
+          "gateChecks": "8/8",
+          "cases": "8/8",
+          "runner": "node capabilities/audio-offline-verify/evals/run-evals.mjs",
+          "startedAt": "2026-09-26T01:21:21.518Z",
+          "finishedAt": "2026-09-26T01:21:22.453Z"
+        },
+        "evalSet": [
+          {
+            "caseId": "checker_revision_pinned",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "fixture_identity_pinned",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "evidence_recorded",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "voiced_passes",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "envelope_gate_bites",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "silence_reported_not_asserted",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "mute_caught",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          },
+          {
+            "caseId": "absence_asserted_not_assumed",
+            "runId": "42c58154-b4c6-4ef7-9e1c-6838dd605d88",
+            "pass": true
+          }
+        ],
+        "negativeControl": {
+          "caseId": "face_silent_report",
+          "perturb": "{\"probe\": \"face_silent_report\", \"set\": {\"audio_must_sound\": true}}",
+          "runId": "2e6afdba-676a-4759-832f-6aabbebea8f2",
+          "observedVerdict": "FAIL",
+          "gatesFailed": [
+            "silence_reported_not_asserted",
+            "mute_caught"
+          ],
+          "outcome": "falsified-as-required",
+          "confirmed": true
+        }
+      }
+    },
+    {
+      "id": "qr-camo-embed",
+      "name": "QR camo embed (scannable payload blended into artwork)",
+      "kind": "script",
+      "version": "1.0.0",
+      "status": "candidate",
+      "workflow": null,
+      "requires": [
+        "filesystem:read",
+        "shell:execute"
+      ],
+      "verification": null,
+      "objectiveEvaluation": null,
+      "admitted_after": [],
+      "evals": [],
+      "reuse_count": 0,
+      "last_eval": "2026-09-26",
+      "description": "Embeds a SHORT payload (~<=35-char URL at ERROR_CORRECT_H in a 1500x500 header window at MODULE=11) into a mid-tone photographic or textured cover so it reads as part of the piece, then verifies it still decodes after a real-world jpeg re-encode. The adapter runs the frozen blend script once per case in its own scratch dir and never re-implements the blend or judges the output itself; refusals are recorded as refusals, not as fabricated case records. Runs the rcos adapter kernel around adapter/run.js (needs a Python with cv2/numpy/PIL).",
+      "tags": [
+        "qr",
+        "image",
+        "steganography",
+        "verification",
+        "blend",
+        "decoder"
+      ],
+      "provenance": {
+        "builtBy": "cap-port-b",
+        "portedFrom": "zcode-rcos capabilities/qr-camo-embed \u2014 source read-only; zcode eval rows are asserted prose and were NOT migrated as evidence",
+        "adapterEntry": "adapter/run.js",
+        "measurer": "adapter/make_header_v2.py",
+        "measurerSha256": "8dc1960468b002dde416d8f27fa5f07fb97febcd015198674fc3f92c4550bdeb",
+        "suite": {
+          "id": "qr-camo-embed-eval-suite",
+          "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+          "exit": 0,
+          "gateChecks": "14/14",
+          "cases": "14/14",
+          "runner": "node capabilities/qr-camo-embed/evals/run-evals.mjs",
+          "startedAt": "2026-09-26T01:38:11.521Z",
+          "finishedAt": "2026-09-26T01:38:17.262Z"
+        },
+        "evalSet": [
+          {
+            "caseId": "ship_frame_reproduced",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "pale_cover_reproduced",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "stress_ladder_holds",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "variant_url_decodes",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "payload_overflow_bites",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "dark_cover_halo_lifts",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "pale_cover_signature",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "muse_receipts_sealed",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "cv2_weaker_than_zxing",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "orientation_fix_bites",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "determinism_repeat",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "interpreter_declared",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "frozen_source_pinned",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          },
+          {
+            "caseId": "artifact_identity_pinned",
+            "runId": "1f9e6c63-e6e4-4383-9c29-83ec9f439878",
+            "pass": true
+          }
+        ],
+        "negativeControl": {
+          "caseId": "ship_bearing_frame",
+          "perturb": "{\"case\": \"ship_bearing_frame\", \"set\": {\"url\": \"https://archon.diy/nc\"}}",
+          "runId": "2eff8505-505c-4a2d-91e0-e82124b3db17",
+          "observedVerdict": "FAIL",
+          "gatesFailed": [
+            "ship_frame_reproduced",
+            "determinism_repeat",
+            "artifact_identity_pinned"
+          ],
+          "outcome": "falsified-as-required",
+          "confirmed": true
+        }
+      }
     }
   ],
-  "_fixture_note": "EXAMPLE ONLY — a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. `example-text-stats` is a real (non-seeded) candidate: useful work with thin evidence, so derived eligibility reads CONDITIONAL by design. Production registries live machine-local, outside this repo."
+  "_fixture_note": "EXAMPLE ONLY \u2014 a tiny deterministic registry so a fresh install can prove discovery/parsing end-to-end. NOT production intelligence; do not mistake seeded entries for accumulated capabilities. `workspace-word-count` is listed FIRST because it is the default a first-run user meets: a real LEARNED capability with genuine provenance (3 real eval run IDs in provenance.evalSet \u2014 kept verbatim; never fabricate eval rows) and its workflow bundled at fixtures/workspace-word-count-v0-1-0.yaml. The `rcos-verify-echo` entry (status `seeded`, seed `true`) exists ONLY for system verification (lib/verify.js routes through it); its `workflow` binding points at fixtures/verify-echo-v1.yaml. `example-text-stats` is a real (non-seeded) candidate: useful work with thin evidence, so derived eligibility reads CONDITIONAL by design. Production registries live machine-local, outside this repo. Four PORTED capabilities were appended 2026-09-25 (cap-port-a / cap-port-b lanes): `video-forensics-receipt`, `filmstrip-verify`, `audio-offline-verify`, `qr-camo-embed`. Each ships its adapter + self-contained evals under capabilities/<id>/ and carries provenance.evalSet with run IDs EXECUTED on 2026-09-25 (plus a recorded negative control). They are status `candidate` \u2014 promotion is an operator ruling, not a packaging step. Asserted zcode-rcos eval rows were deliberately NOT migrated as evidence."
 }
