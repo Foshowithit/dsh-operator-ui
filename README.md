@@ -97,6 +97,40 @@ dsh plugin --profile web add "$PWD"
 
 No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form). Restart (or live-reload) the web profile and open the UI. On a machine with no valid receipt you land on the gate; verify once and you get the RCOS surfaces above, with the legacy tabs one click away.
 
+### Installed from the published package
+
+The npm artifact ships a runtime surface instead of the source-certification gate —
+the two are deliberately separate, because the gate certifies a source tree
+together with a test environment this package does not contain:
+
+```sh
+npx dsh-operator-ui doctor    # read-only: is this host ready?  READY | UNVERIFIED | BLOCKED
+npx dsh-operator-ui install   # durable copy → register in the profile → boot → receipt
+npx dsh-operator-ui verify    # does the INSTALLED runtime match its receipt?
+```
+
+- `doctor` **writes nothing**. It classifies each prerequisite (node, `dsh`,
+  host version, Archon, capability registry, profile) and names the exact
+  requirement when one is missing. An off-pin host DSH is `UNVERIFIED`, not a
+  refusal — a refusal needs proof of breakage.
+- `install` classifies every prerequisite **before** it writes, copies the
+  package to a durable location under `$DSH_HOME` (surviving the installer's own
+  exit, an npx temp dir being reaped, a cache clear and a reboot), registers it
+  in the DSH profile, loads the plugin half to prove it boots, and writes an
+  install receipt. A failure after the first write is rolled back — the profile
+  is restored byte-exactly. A second run converges and changes nothing.
+- `verify` checks the installed package, not the source suite: durable bytes vs
+  the receipt digest, version agreement, registration target, boot, host
+  compatibility, and whether the artifact can name its source commit.
+
+Exit codes are one ladder for all three: `0` ok · `1` unverified · `2` blocked
+(nothing written) · `3` failed and rolled back · `4` usage. Add `--json` for the
+machine-readable receipt (`install` also takes `--dry-run`).
+
+The installer never installs or mutates Archon, Node or DSH: a missing Archon is
+`BLOCKED: Archon prerequisite unavailable` with the exact requirement, which is
+cleaner than turning one npm package into a machine bootstrapper.
+
 ## Uninstall / disable
 
 ```sh

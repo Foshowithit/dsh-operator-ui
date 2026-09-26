@@ -146,6 +146,14 @@
     "DSH_OPERATOR_UI_WORKSPACES_ROOT": {
       "winsOver": "workspaces.root",
       "example": "/path/to/isolated-workspace-root"
+    },
+    "DSH_OPERATOR_UI_DSH_BIN": {
+      "winsOver": "the PATH search for the dsh executable (runtime surface)",
+      "example": "/path/to/dsh"
+    },
+    "DSH_OPERATOR_UI_INSTALL_ROOT": {
+      "winsOver": "$DSH_HOME/operator-ui/plugin (the durable plugin copy root)",
+      "example": "/path/to/durable-plugin-root"
     }
   },
   "statusRoute": {

@@ -75,6 +75,9 @@ Environment=DSH_OPERATOR_UI_REGISTRY=/path/to/your/capability-registry.json
 # Guided workspace creation (P5) — the ONLY root server-generated beginner workspace paths may live under
 #   (empty = guided creation refuses workspace-root-not-configured; the advanced path-supplied flow is unchanged):
 # Environment=DSH_OPERATOR_UI_WORKSPACES_ROOT=/path/to/isolated-workspace-root
+# Runtime surface (D1) — which `dsh` the installer talks to, and where it keeps the durable plugin copy:
+# Environment=DSH_OPERATOR_UI_DSH_BIN=/path/to/dsh
+# Environment=DSH_OPERATOR_UI_INSTALL_ROOT=/path/to/durable-plugin-root
 ```
 
 ```sh

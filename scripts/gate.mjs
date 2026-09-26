@@ -172,6 +172,12 @@ export const ROOT = dirname(HERE);
 export const CANONICAL_TEST_GLOBS = ['*.test.mjs', 'test-*.mjs'];
 export const CANONICAL_TEST_GLOB = CANONICAL_TEST_GLOBS.join(' ');
 
+// The gate's version. Exported so the runtime package can MIRROR it: the npm
+// artifact deliberately does not ship this file, so `lib/provenance.js` carries
+// its own copy of the number and scripts/check.js asserts the two agree. A
+// mirrored constant with no agreement leg is just a second place to be wrong.
+export const GATE_VERSION = 3;
+
 // ---------------------------------------------------------------------------
 // Explicit test-set expansion
 // ---------------------------------------------------------------------------
@@ -916,7 +922,7 @@ async function main() {
 
   const receipt = {
     gate: 'scripts/gate.mjs',
-    gate_version: 3,
+    gate_version: GATE_VERSION,
     mode: 'snapshot',
     verdict: v.verdict,
     reason: v.reason,

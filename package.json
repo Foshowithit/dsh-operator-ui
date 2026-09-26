@@ -8,6 +8,9 @@
     "node": ">=22"
   },
   "main": "./lib/index.js",
+  "bin": {
+    "dsh-operator-ui": "./bin/dsh-operator-ui.mjs"
+  },
   "scripts": {
     "check": "node scripts/check.js",
     "test": "node scripts/gate.mjs --tests-only",
@@ -20,6 +23,7 @@
   },
   "files": [
     "lib",
+    "bin",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"

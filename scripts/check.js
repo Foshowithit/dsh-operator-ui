@@ -12,7 +12,7 @@ import * as compat from '../lib/compat.js';
 // The canonical test set is defined ONCE, in the gate. check.js imports it
 // rather than restating the glob, so the two cannot drift into disagreeing
 // about which files constitute the suite.
-import { CANONICAL_TEST_GLOBS, expandTestSet, discoverableNonEntrypoints } from './gate.mjs';
+import { CANONICAL_TEST_GLOBS, expandTestSet, discoverableNonEntrypoints, GATE_VERSION } from './gate.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 let failures = 0;
@@ -160,7 +160,7 @@ check('manifest: parses + owns env table + matches code', () => {
   for (const comp of ['dsh', 'archon', 'rcos', 'operator-ui']) {
     if (!m.components[comp]) throw new Error('manifest missing component: ' + comp);
   }
-  const code = ['lib/index.js', 'lib/browser.js', 'lib/config.js', 'lib/status.js']
+  const code = ['lib/index.js', 'lib/browser.js', 'lib/config.js', 'lib/status.js', 'lib/cli.js']
     .map((f) => readFileSync(join(root, f), 'utf8')).join('\n');
   // `$`-prefixed keys are manifest comments, not env names.
   const owned = Object.keys(m.envOverrides).filter((k) => !k.startsWith('$'));
@@ -929,6 +929,96 @@ check('compat guard: version is detected, pin agrees with COMPAT.md and package.
     }
   });
 }
+
+// 15. Distribution (D1–D4): the published runtime surface.
+//
+// GPT's Ruling 1 drew the line this section pins: the CERTIFICATION INSTRUMENT
+// and the CERTIFIED PRODUCT stay separate. `scripts/gate.mjs` certifies a source
+// tree together with its test environment; the npm artifact deliberately does not
+// contain that environment, so shipping the gate would offer a consumer a
+// verification command that cannot possibly reproduce source certification. What
+// ships instead is `dsh-operator-ui verify` — a different contract, over the
+// INSTALLED runtime.
+//
+// The surface is imported once, at module scope, so the ladder and command set can
+// be pinned by VALUE rather than by grepping for a literal that a rename would
+// satisfy.
+const cliModule = await import(pathToFileURL(join(root, 'lib', 'cli.js')).href);
+
+check('distribution: the bin surface is declared, ships, and parses', () => {
+  const bin = pkg.bin && pkg.bin[name];
+  if (typeof bin !== 'string') throw new Error('package.json must declare bin["' + name + '"]');
+  const rel = bin.replace(/^\.\//, '');
+  if (!existsSync(join(root, rel))) throw new Error('bin target does not exist: ' + bin);
+  if (!pkg.files.includes('bin')) throw new Error('"files" omits bin — the published tarball would have no entry point');
+  execFileSync(process.execPath, ['--check', join(root, rel)], { stdio: 'pipe' });
+});
+
+check('distribution: the certification instrument does NOT ship', () => {
+  for (const forbidden of ['scripts', 'test', 'eval']) {
+    if (pkg.files.includes(forbidden)) {
+      throw new Error('"files" ships ' + forbidden + '/ — the gate certifies a source tree plus its test environment, '
+        + 'which this package does not contain; shipping it would advertise source certification the artifact cannot perform');
+    }
+  }
+  if (!existsSync(join(root, 'scripts', 'gate.mjs'))) throw new Error('scripts/gate.mjs is missing from the source tree');
+});
+
+check('distribution: the mirrored gate version agrees with scripts/gate.mjs', () => {
+  // The runtime package cannot read scripts/gate.mjs — it is not shipped. So the
+  // number is mirrored into lib/provenance.js, and this leg is what stops the
+  // mirror drifting into a second, stale source of truth.
+  const prov = readFileSync(join(root, 'lib', 'provenance.js'), 'utf8');
+  const m = prov.match(/CERTIFIED_BY_GATE_VERSION\s*=\s*(\d+)/);
+  if (!m) throw new Error('lib/provenance.js lost CERTIFIED_BY_GATE_VERSION');
+  if (Number(m[1]) !== GATE_VERSION) {
+    throw new Error('lib/provenance.js mirrors gate version ' + m[1] + ' but scripts/gate.mjs declares ' + GATE_VERSION);
+  }
+});
+
+check('distribution: the runtime surface owns the commands, verdicts and exit ladder', () => {
+  const cli = readFileSync(join(root, 'lib', 'cli.js'), 'utf8');
+  for (const must of ["'doctor'", "'install'", "'verify'", "READY", "UNVERIFIED", "BLOCKED",
+    'ALREADY_INSTALLED', 'FAILED_ROLLED_BACK', 'prerequisiteChecks', 'installRoot', 'readRegistration',
+    'registerInProfile', 'bootCheck', 'verifyInstalled', 'install-receipt.json']) {
+    if (!cli.includes(must)) throw new Error('lib/cli.js lost ' + must);
+  }
+  // The ladder is a contract a caller branches on, so it is pinned BY VALUE.
+  const expected = { OK: 0, UNVERIFIED: 1, BLOCKED: 2, FAILED: 3, USAGE: 4 };
+  if (JSON.stringify(cliModule.EXIT) !== JSON.stringify(expected)) {
+    throw new Error('the exit ladder moved to ' + JSON.stringify(cliModule.EXIT) + ' — callers branch on it');
+  }
+  if (JSON.stringify(cliModule.COMMANDS) !== JSON.stringify(['doctor', 'install', 'verify'])) {
+    throw new Error('the command set moved: ' + JSON.stringify(cliModule.COMMANDS));
+  }
+  // Rule 1, structurally: every blocking prerequisite is classified before the
+  // first write, so the preflight return must precede the copy/register calls.
+  // Scoped to installPlugin's BODY — the helper DEFINITIONS sit above it, and a
+  // repo-wide indexOf would compare against a definition rather than the call.
+  const installBody = cli.slice(cli.indexOf('export async function installPlugin'));
+  const preflightReturn = installBody.indexOf("if (pre.verdict === 'BLOCKED')");
+  const firstMutation = installBody.indexOf('copyShipped(');
+  const firstRegister = installBody.indexOf('registerInProfile({');
+  if (preflightReturn < 0 || firstMutation < 0 || firstRegister < 0
+    || preflightReturn > firstMutation || preflightReturn > firstRegister) {
+    throw new Error('the preflight refusal must precede the first mutation in lib/cli.js');
+  }
+  // Rule 2: the installer must not install the world. It never invokes a package
+  // manager — that is also what keeps it hermetic (the real `dsh plugin add`
+  // forwards to pnpm, which needs a corepack download before it can write).
+  for (const pm of ['pnpm', 'npm', 'npx', 'yarn', 'corepack']) {
+    if (new RegExp("['\"]" + pm + "['\"]").test(cli)) {
+      throw new Error('lib/cli.js invokes ' + pm + ' — the installer must not depend on a package manager');
+    }
+  }
+  // `doctor` is read-only by construction: its report function must reach none of
+  // the mutating helpers. (The runtime proof is test/cli-doctor.test.mjs, which
+  // hashes the whole host before and after; this leg keeps the structure honest.)
+  const doctorBody = cli.slice(cli.indexOf('export async function doctorReport'), cli.indexOf('// ------------------------------------------------------------------ install'));
+  for (const mutator of ['writeFileSync', 'mkdirSync', 'rmSync', 'symlinkSync', 'registerInProfile', 'writeInstallReceipt']) {
+    if (doctorBody.includes(mutator)) throw new Error('doctorReport reaches a mutating call: ' + mutator);
+  }
+});
 
 console.log(failures === 0 ? '\ncontract check: PASS' : `\ncontract check: ${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
