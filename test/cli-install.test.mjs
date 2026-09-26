@@ -65,6 +65,56 @@ test('install: --dry-run passes preflight and writes nothing', async () => {
   assert.equal(host.snapshot(), before);
 });
 
+test('install: an unverified host DSH is REFUSED the direct-registration write', async () => {
+  // The installer writes DSH's persisted profile schema directly. GPT's ruling:
+  // an UNVERIFIED host must not silently receive that mutation — while still not
+  // being called incompatible. The refusal must therefore be a refusal, name its
+  // own reason, and leave the host untouched.
+  const dir = scratch('opui-inst');
+  const home = join(dir, 'home');
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: '9.9.9' });
+  const before = host.snapshot();
+  const r = runCli(['install', '--json'], { env: host.env });
+  const rep = JSON.parse(r.stdout);
+  assert.equal(r.code, EXIT.BLOCKED, r.stderr);
+  assert.equal(rep.state, 'BLOCKED');
+  assert.equal(rep.mutated, false);
+  assert.equal(host.snapshot(), before, 'the refused install wrote to the host');
+  assert.equal(existsSync(durableOf(home)), false);
+  assert.equal(rep.registration_authority.grants_mutation, false);
+  assert.match(rep.reason, /^registration-contract-unverified/);
+  assert.deepEqual(rep.blocking.map((b) => b.id), ['registration-contract']);
+  // and it must NOT have collapsed into a compatibility claim
+  assert.equal(/incompatible/.test(rep.reason.replace(/not a claim that the host is incompatible/, '')), false);
+});
+
+test('install: --dry-run reports the withheld authority instead of refusing', async () => {
+  const dir = scratch('opui-inst');
+  const home = join(dir, 'home');
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: '9.9.9' });
+  const before = host.snapshot();
+  const r = runCli(['install', '--json', '--dry-run'], { env: host.env });
+  const rep = JSON.parse(r.stdout);
+  assert.equal(r.code, 0);
+  assert.equal(rep.state, 'DRY_RUN');
+  assert.equal(rep.mutated, false);
+  assert.match(rep.would_refuse, /^registration-contract-unverified/);
+  assert.equal(host.snapshot(), before);
+});
+
+test('install: an on-pin host DSH is authorised and the receipt records it', async () => {
+  const dir = scratch('opui-inst');
+  const home = join(dir, 'home');
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: '0.1.0-rc.6' });
+  const rep = JSON.parse(runCli(['install', '--json'], { env: host.env }).stdout);
+  assert.equal(rep.state, 'INSTALLED');
+  assert.equal(rep.registration_authority.grants_mutation, true);
+  assert.equal(rep.registration_authority.detected, '0.1.0-rc.6');
+  const receipt = JSON.parse(readFileSync(join(home, 'operator-ui', 'install-receipt.json'), 'utf8'));
+  assert.equal(receipt.registration_authority.grants_mutation, true,
+    'the receipt must record the authority the mutation was granted under');
+});
+
 test('install: copies durably, registers in the profile, boots, and receipts', async () => {
   const dir = scratch('opui-inst');
   const home = join(dir, 'home');

@@ -188,6 +188,49 @@ test('doctor: the child process renders JSON and exits with the code its verdict
   assert.equal(JSON.parse(r2.stdout).verdict, 'BLOCKED');
 });
 
+test('doctor: an off-pin host DSH WITHHOLDS mutation authority without calling it incompatible', async () => {
+  // GPT's ruling, 2026-09-26: "unknown is not broken — but unknown also does not
+  // grant mutation authority." Two aggregates over one measurement: the verdict
+  // stays UNVERIFIED (this host may well work), and the authority is withheld
+  // because the direct registration path writes DSH's private profile schema.
+  const home = newHome();
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: '9.9.9' });
+  const rep = await doctorJson({ home, profile: 'web', env: host.env });
+  assert.equal(rep.verdict, 'UNVERIFIED', 'an off-pin host must not be reported as blocked');
+  assert.deepEqual(rep.blocking, []);
+  assert.equal(rep.registration_authority.grants_mutation, false);
+  assert.equal(rep.registration_authority.detected, '9.9.9');
+  assert.equal(rep.registration_authority.measured_from, "the `dsh` binary's own --version");
+  assert.match(rep.registration_authority.reason, /^registration-contract-unverified/);
+  assert.match(rep.registration_authority.reason, /not a claim that the host is incompatible/);
+  assert.equal(/incompatible DSH|is incompatible\./.test(rep.registration_authority.reason), false);
+});
+
+test('doctor: an on-pin host DSH grants mutation authority', async () => {
+  const home = newHome();
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: PINNED_DSH });
+  const rep = await doctorJson({ home, profile: 'web', env: host.env });
+  assert.equal(rep.registration_authority.grants_mutation, true);
+  assert.equal(rep.registration_authority.reason, null);
+  assert.equal(rep.registration_authority.verified_pin, PINNED_DSH);
+});
+
+test('doctor: the authority is measured from the dsh binary, not from a filesystem walk', async () => {
+  // The walk answers "which DSH is above me right now", whose answer changes with
+  // where the command runs. The binary that OWNS the profile is the one that
+  // decides, so a walked version is only a fallback.
+  const home = newHome();
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: PINNED_DSH });
+  const rep = await doctorJson({
+    home, profile: 'web', env: host.env,
+    deps: { detectDsh: () => ({ version: '1.2.3', source: 'test-injected', dir: null, via: null }) },
+  });
+  assert.equal(rep.registration_authority.grants_mutation, true,
+    'the binary reports the pin, so authority must be granted regardless of the walk');
+  assert.equal(rep.checks.find((c) => c.id === 'dsh-host').state, 'UNVERIFIED',
+    'the walked version is still reported honestly on its own check');
+});
+
 test('doctor: an unknown command is a usage error, not a crash', async () => {
   const home = newHome();
   const host = makeHost({ home, archonPort: archon.port });
