@@ -18,7 +18,7 @@
 
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync, cpSync, renameSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, cpSync, renameSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startStubArchon, makeHost, makeSourceCopy, runCli, scratch, NODE, REPO } from './cli-harness.mjs';
@@ -299,36 +299,36 @@ test('verify: the host version is measured the SAME WAY install measured it', as
     'verify must read the binary, not walk the filesystem');
 });
 
-test('hostCompatibility: an off-pin binary is UNVERIFIED, and no binary falls back to the walk', async () => {
-  const { hostCompatibility } = await import('../lib/cli.js');
+test('hostCompatibility: the binary decides, the walk is the fallback, hostCompat is the last resort', async () => {
+  const { hostCompatibility, detectHostDsh } = await import('../lib/cli.js');
   const dir = scratch('opui-hc');
   const offPin = makeHost({ home: join(dir, 'a'), archonPort: archon.port, dshVersion: '0.0.0-ancient' });
   const onPin = makeHost({ home: join(dir, 'b'), archonPort: archon.port });
 
+  // 1. a resolvable binary decides, and the finding says which resolver answered.
   const off = hostCompatibility({ env: offPin.env });
   assert.equal(off.source, 'binary:--version');
   assert.equal(off.state, 'UNVERIFIED');
   assert.equal(off.version, '0.0.0-ancient');
-
   assert.equal(hostCompatibility({ env: onPin.env }).state, 'VERIFIED');
 
-  // No resolvable binary -> the walk is the fallback, and it is the ONLY place
-  // the walk is consulted. Injected here so the assertion does not depend on
-  // whatever DSH happens to sit above the test's cwd.
-  // An empty PATH too: a real `dsh` on this box would win the binary branch and
-  // the walk would never be consulted, making the assertion about the box
-  // rather than about the code.
-  const emptyPath = join(dir, 'empty-path');
-  mkdirSync(emptyPath, { recursive: true });
-  const noBin = { ...process.env, PATH: emptyPath };
-  delete noBin.DSH_OPERATOR_UI_DSH_BIN;
+  // 2. an unusable binary falls through to the walk rather than answering.
+  //    Asserted as "the binary did NOT answer", not as "the walk found X" —
+  //    what sits above the test's cwd is the box's business, not the code's.
+  const fellThrough = detectHostDsh({ env: offPin.env, dshBin: join(dir, 'not-a-binary') });
+  assert.notEqual(fellThrough.source, 'binary:--version',
+    'a binary that cannot report a version must not be treated as the answer');
+
+  // 3. nothing anywhere -> the legacy hostCompat is the last resort, and it is
+  //    only reached when BOTH stronger probes came back empty.
   let consulted = false;
-  const viaWalk = hostCompatibility({
-    env: noBin,
+  const viaLastResort = hostCompatibility({
+    env: offPin.env,
+    detectDsh: () => ({ version: null, source: null, dir: null, via: null }),
     hostCompatFn: () => { consulted = true; return { state: 'UNVERIFIED', version: null, pin: PINNED_DSH, headline: 'walked' }; },
   });
-  assert.equal(consulted, true, 'with no binary the walk must be consulted');
-  assert.equal(viaWalk.state, 'UNVERIFIED');
+  assert.equal(consulted, true, 'with nothing detected the last resort must be consulted');
+  assert.equal(viaLastResort.state, 'UNVERIFIED');
 });
 
 test('verify: UNVERIFIED (not BLOCKED) when the installed artifact cannot name its commit', async () => {

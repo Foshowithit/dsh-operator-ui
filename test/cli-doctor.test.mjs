@@ -139,6 +139,30 @@ test('doctor: an off-pin host DSH is UNVERIFIED, not BLOCKED, and names both num
     'the off-pin report must name the pin as well as the detected version');
 });
 
+test('doctor: the host version is read from the RESOLVED BINARY, not from where doctor happens to run', async () => {
+  // The three-way disagreement this closes: `install` read the binary,
+  // `verify` walked, and `doctor` walked — so run from a neutral cwd, doctor
+  // called UNVERIFIED a host that install had just granted mutation authority
+  // on. No injection here on purpose: this asserts the DEFAULT path, and the
+  // resolver no longer consults cwd at all.
+  // doctorReport directly, NOT doctorJson: that helper pins `detectDsh`, and
+  // pinning the seam is precisely what would hide the default path here.
+  const home = newHome();
+  const host = makeHost({ home, archonPort: archon.port, dshVersion: '0.0.0-ancient' });
+  const rep = await doctorReport({ home, profile: 'web', env: host.env });
+  const check = rep.checks.find((c) => c.id === 'dsh-host');
+  assert.equal(check.state, 'UNVERIFIED');
+  assert.equal(check.detail.detected, '0.0.0-ancient');
+  assert.equal(check.detail.source, 'binary:--version',
+    'doctor must read the binary, not walk the filesystem from its cwd');
+
+  // And at the pin it agrees with install and verify about the same host.
+  const onPin = makeHost({ home: newHome(), archonPort: archon.port });
+  const ok = await doctorReport({ home: onPin.home, profile: 'web', env: onPin.env });
+  assert.equal(ok.checks.find((c) => c.id === 'dsh-host').state, 'OK');
+  assert.equal(ok.verdict, 'READY', JSON.stringify(ok.checks.filter((c) => c.state !== 'OK')));
+});
+
 test('doctor: an undetectable host DSH is UNVERIFIED and invents no version', async () => {
   const home = newHome();
   const host = makeHost({ home, archonPort: archon.port });
