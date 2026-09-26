@@ -64,6 +64,27 @@ const laneSettings = [
 ].join('\n');
 await writeFile(join(laneHome, 'settings.yaml'), laneSettings, 'utf8');
 
+// ---------------------------------------------------------------- hardware
+//
+// The HARDWARE record is an EXTERNAL RECORD too, and observeLive reads it from
+// the AMBIENT machine (os.platform/arch/cpus/totalmem/hostname). Leaving it
+// ambient let the positive control degrade a SECOND time into a test of the
+// host's own hostname — the same failure mode documented above for the lane
+// home, and it was live on the gate.
+//
+// Measured 2026-09-26, gate at 73c9e05: tests 486 / pass 485 / fail 1.
+//   baseline was frozen when `hostname` returned "Mac"  -> sha256:8b3795aa2
+//   this host now returns "adams-MacBook-Pro.local"      -> sha256:ba3912e0b
+// Control 1 ("parity accepts matching live state") and control 8 (the
+// no-cognitive-model row census) both went red, and controls 2,3,4,5,6,7 — the
+// ones that EXPECT refusal — passed VACUOUSLY. A parity check that refuses
+// everything satisfies them, so only the two acceptance controls could see it.
+//
+// So the control supplies the hardware the BASELINE recorded, and the drift
+// legs below still prove a mismatch refuses — including an explicit hostname
+// drift, so the hostname check stays pinned in both directions.
+const HARDWARE = baseline.hardware;
+
 const live = await observeLive({ laneHome, budgetMs: baseline.budget.wall_ms_per_objective, corpusPath: join(root, 'eval', 'corpus-manifest.json') });
 
 let failures = 0;
@@ -88,7 +109,7 @@ const LIVE = {
   model_endpoint: live.model_endpoint,
   model_id: live.model_id,
   model_sampling: live.model_sampling,
-  hardware: live.hardware,
+  hardware: HARDWARE,
   corpus_hash: live.corpus_hash,
   budget: live.budget,
   tool_availability: { verdict: 'EQUIVALENT', explained: 'test' },
@@ -104,7 +125,8 @@ console.log('3. mutated HEAD (freshness):');
 expectRefuse('stale HEAD refuses', () => assertBaselineFresh(baseline, 'sha-not-the-frozen-commit'));
 
 console.log('4. mutated hardware:');
-expectRefuse('different machine refuses', () => assertParity(baseline, ctx, { ...LIVE, hardware: { ...live.hardware, cpus: live.hardware.cpus + 97 } }, { requiresModel: true }));
+expectRefuse('different machine refuses', () => assertParity(baseline, ctx, { ...LIVE, hardware: { ...HARDWARE, cpus: HARDWARE.cpus + 97 } }, { requiresModel: true }));
+expectRefuse('drifted hostname refuses', () => assertParity(baseline, ctx, { ...LIVE, hardware: { ...HARDWARE, hostname_hash: 'sha256:deadbeef' } }, { requiresModel: true }));
 
 console.log('5. mutated runtime budget:');
 expectRefuse('different wall budget refuses', () => assertParity(baseline, ctx, { ...LIVE, budget: { wall_ms_per_objective: baseline.budget.wall_ms_per_objective + 1 } }, { requiresModel: true }));
@@ -121,7 +143,7 @@ console.log('7. unresolved model lane (dsh requires model):');
 
 console.log('8. rcos no-cognitive-model records ARCHITECTURAL (not a refusal):');
 {
-  const rows = assertParity(baseline, ctx, { no_cognitive_model: true, hardware: live.hardware, corpus_hash: live.corpus_hash, budget: live.budget, tool_availability: { verdict: 'EQUIVALENT', explained: 'deterministic pipeline' } }, { requiresModel: false });
+  const rows = assertParity(baseline, ctx, { no_cognitive_model: true, hardware: HARDWARE, corpus_hash: live.corpus_hash, budget: live.budget, tool_availability: { verdict: 'EQUIVALENT', explained: 'deterministic pipeline' } }, { requiresModel: false });
   const arch = rows.filter((r) => r.verdict.startsWith('ARCHITECTURAL'));
   console.log(`  ✓ ${arch.length} model rows recorded as ARCHITECTURAL, ${rows.length - arch.length} rows SAME`);
 }
