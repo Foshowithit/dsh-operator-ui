@@ -36,6 +36,7 @@
 //
 //   snapshot_content_before == snapshot_content_after   the execution inputs
 //   snapshot_set_bytes      == snapshot_set_bytes       the files that ran
+//   tracked_inputs_locked   == verified by probe        the window never existed
 //   else  VERDICT = VOID, reason = execution-provenance-changed
 //
 // The third clause is not redundant with the first. The tree identity hashes
@@ -43,6 +44,10 @@
 // nothing to it — a run could be certified PASS while the very file that
 // decided the verdict changed underneath it. Hashing the set directly closes
 // that gap.
+//
+// The fourth is the one that makes the other three meaningful: two samples can
+// only detect a change that is still visible at a sample. A lock means there was
+// never an interval in which the inputs could differ.
 //
 // WHY A SNAPSHOT, AND WHY IT CHANGES WHAT VOIDS (P0.4, agreed 2026-09-25)
 //
@@ -77,6 +82,33 @@
 // commit identity, so there is nothing to bind the receipt to; the gate
 // refuses (exit 3) rather than certifying a tree that no commit describes.
 //
+// THE EXECUTION INPUTS ARE MADE READ-ONLY (P0.4, final clause, 2026-09-25)
+//
+// A detached worktree is ISOLATED but it is not IMMUTABLE, and the difference
+// is not academic. Nothing stopped a process from writing a tracked file to B
+// and back to A entirely inside the window: both identity samples agree, and the
+// run observed a MIXED system. That is the same defect the snapshot was built to
+// remove, surviving in the one form a snapshot cannot see — so sampling harder
+// cannot close it. Removing the window can. Before the legs run, the tracked
+// portion of the snapshot is chmod'ed read-only; with no interval in which a
+// tracked byte differs, there is nothing for a second sample to disagree about.
+//
+// The lock is PROBED, not asserted. A write to a tracked file and a create
+// inside a tracked directory are both attempted; if either succeeds the gate
+// exits 3, because an immutability precondition that was not established must
+// never appear as a hopeful field in an otherwise well-formed receipt.
+//
+// WHAT THE LOCK COVERS, AND WHAT IT DOES NOT, is stated in the receipt's
+// `provenance_boundary` block rather than left for a reader to infer.
+// `node_modules` is a symlink to the live gitignored dependency tree: it is
+// environment, not tracked content, and it is neither hashed nor locked. So the
+// receipt proves "immutable tracked source at commit X", NOT "every byte node
+// executed was immutable". Explicitly bounded is acceptable for P0; D0–D4 pins
+// the dependency closure from the real artifact instead of from the checkout.
+//
+// A process that chmods the lock back off is out of scope: the threat is
+// accidental and concurrent mutation, not privilege escalation.
+//
 // THERE IS ONE INSTRUMENT. The legacy `--in-place` live-tree sampler was
 // retired (2026-09-25) because it produced receipts that were admissible-looking
 // but weaker: it proved endpoint equality, not immutability, which is the exact
@@ -107,7 +139,8 @@
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
-  existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync,
+  chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync,
+  rmSync, symlinkSync, writeFileSync,
 } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -392,6 +425,127 @@ export function removeFrozenSnapshot({ root, dest }) {
 }
 
 // ---------------------------------------------------------------------------
+// Read-only execution inputs (P0.4, final clause)
+// ---------------------------------------------------------------------------
+
+const FILE_READONLY = 0o444;
+const DIR_READONLY = 0o555;
+
+// Every directory that HOLDS tracked content, repo-relative and sorted. Derived
+// from the tracked file list, so the set of directories the lock touches is the
+// same set the identity hashes — a directory with no tracked file under it is
+// not part of the measured system and is deliberately left alone (that is what
+// keeps the `node_modules` symlink out of the lock for free).
+//
+// The snapshot root is not in this list; it is locked separately and counted
+// separately, so "the root was locked" is visible in the receipt rather than
+// folded into a directory count.
+export function trackedDirs(files) {
+  const dirs = new Set();
+  for (const rel of files) {
+    const parts = rel.split('/');
+    for (let i = 1; i < parts.length; i++) dirs.add(parts.slice(0, i).join('/'));
+  }
+  return [...dirs].sort();
+}
+
+// Make the tracked portion of the snapshot read-only.
+//
+// Modes are captured BEFORE each change so the unlock restores the tree exactly.
+// A blanket restore to 0644 would be wrong: git tracks an executable bit, and
+// dropping it would silently change the execution inputs this gate exists to
+// hold still.
+//
+// A symlink is never chmod'ed. `chmodSync` follows links, so locking through one
+// would reach outside the snapshot and modify the developer's real dependency
+// tree — the one outcome worse than not locking at all.
+export function lockTrackedInputs(dir, files) {
+  const modes = new Map();
+  const failed = [];
+  const lockOne = (abs, label, mode) => {
+    try {
+      const st = lstatSync(abs);
+      if (st.isSymbolicLink()) return false;
+      modes.set(abs, st.mode & 0o7777);
+      chmodSync(abs, mode);
+      return true;
+    } catch (e) {
+      failed.push(label + ': ' + ((e && e.message) || e));
+      return false;
+    }
+  };
+  let fileCount = 0;
+  for (const rel of files) if (lockOne(join(dir, rel), rel, FILE_READONLY)) fileCount++;
+  let dirCount = 0;
+  for (const rel of trackedDirs(files)) if (lockOne(join(dir, rel), rel, DIR_READONLY)) dirCount++;
+  const rootLocked = lockOne(dir, '.', DIR_READONLY);
+  return {
+    files_locked: fileCount, dirs_locked: dirCount, root_locked: rootLocked, failed, modes,
+  };
+}
+
+// Restore the modes captured by lockTrackedInputs. Shallowest path first, so
+// every parent is reachable again before its children are touched.
+//
+// This must run before the snapshot is removed: `git worktree remove --force`
+// deletes files, and a 0555 directory refuses the unlink.
+export function unlockTrackedInputs(dir, lock) {
+  const modes = lock && lock.modes;
+  const failed = [];
+  if (!(modes instanceof Map)) return { restored: 0, failed };
+  const paths = [...modes.keys()].sort((a, b) => a.split('/').length - b.split('/').length);
+  let restored = 0;
+  for (const abs of paths) {
+    try {
+      chmodSync(abs, modes.get(abs));
+      restored++;
+    } catch (e) {
+      failed.push(abs + ': ' + ((e && e.message) || e));
+    }
+  }
+  return { restored, failed };
+}
+
+// A lock that has not been ATTEMPTED is not a lock. Both probes are attempts,
+// not permission queries: `access(W_OK)` answers about a mode, a write answers
+// about reality, and the receipt's claim is about reality.
+//
+// Both probes are NON-DESTRUCTIVE. A probe that succeeds restores what it
+// touched, so the probe itself can never be the mutation that voids the run.
+//
+// Two probes, because the two halves of the lock are independently falsifiable:
+// a read-only FILE does not stop a create in its directory, and a read-only
+// DIRECTORY does not stop a write to a file inside it. Only both, together,
+// close the delete-and-recreate route as well as the in-place write.
+export function probeLockedInputs(dir, files) {
+  const probes = [];
+  const rel = files.find((f) => f.includes('/')) || files[0];
+  const abs = join(dir, rel);
+  const dirRel = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+
+  let original = null;
+  try { original = readFileSync(abs); } catch { /* reported as a probe failure below */ }
+  try {
+    writeFileSync(abs, Buffer.concat([Buffer.from('LOCK PROBE\n'), original || Buffer.alloc(0)]));
+    if (original !== null) writeFileSync(abs, original);
+    probes.push({ probe: 'modify-tracked-file', target: rel, refused: false, code: null });
+  } catch (e) {
+    probes.push({ probe: 'modify-tracked-file', target: rel, refused: true, code: (e && e.code) || null });
+  }
+
+  const probeRel = (dirRel ? dirRel + '/' : '') + '.rcos-lock-probe';
+  try {
+    writeFileSync(join(dir, probeRel), 'x');
+    rmSync(join(dir, probeRel), { force: true });
+    probes.push({ probe: 'create-in-tracked-dir', target: probeRel, refused: false, code: null });
+  } catch (e) {
+    probes.push({ probe: 'create-in-tracked-dir', target: probeRel, refused: true, code: (e && e.code) || null });
+  }
+
+  return { verified: probes.length > 0 && probes.every((p) => p.refused), probes };
+}
+
+// ---------------------------------------------------------------------------
 // Verdict derivation (pure — the whole admission rule is testable without a run)
 // ---------------------------------------------------------------------------
 
@@ -598,6 +752,27 @@ async function main() {
     process.exit(3);
   }
 
+  // --- LOCK THE TRACKED EXECUTION INPUTS ------------------------------------
+  //
+  // Isolated is not immutable. From here until the unlock, no tracked byte in
+  // the snapshot can be modified, so the transient A -> B -> A class that a
+  // second identity sample cannot catch is closed by construction instead of
+  // being looked for harder.
+  const lock = lockTrackedInputs(execRoot, files);
+  const lockProbe = probeLockedInputs(execRoot, files);
+  if (lock.failed.length || !lockProbe.verified) {
+    // An immutability precondition that could not be established is a refusal,
+    // never a receipt with a hopeful field in it.
+    unlockTrackedInputs(execRoot, lock);
+    removeFrozenSnapshot({ root, dest: execRoot });
+    console.error('GATE COULD NOT RUN: the tracked execution inputs could not be made read-only.');
+    for (const f of lock.failed) console.error('  lock failure: ' + f);
+    for (const p of lockProbe.probes) {
+      if (!p.refused) console.error('  probe was NOT refused: ' + p.probe + ' on ' + p.target);
+    }
+    process.exit(3);
+  }
+
   const legs = [];
   if (!testsOnly) {
     legs.push(runLeg({
@@ -619,6 +794,14 @@ async function main() {
   const finishedAt = new Date().toISOString();
 
   // --- the identity that must hold still: the EXECUTION root -----------------
+  //
+  // Read while the lock is STILL HELD, which is one step tighter than the
+  // "unlock for cleanup, then verify identity" ordering: with the lock held, no
+  // process could have written between the last leg and this read, so the two
+  // samples bracket a window in which a tracked byte was structurally unable to
+  // differ. Unlocking first would re-open a gap for no benefit — reading needs
+  // no write permission. Recorded as `lock.unlocked_before_identity_read: false`
+  // rather than left to the reader to notice.
   const execAfter = manifestIdentity(execRoot, files);
   const execHeadAfter = snap.commit;
   const porcelainAfter = porcelain(execRoot);
@@ -634,6 +817,13 @@ async function main() {
   const setChanged = setHashesAfter === null
     ? testSet.slice()
     : testSetDrift(setHashesBefore, setHashesAfter);
+
+  // Both samples are in. Unlock before anything removes the snapshot: a 0555
+  // directory refuses the unlink that `git worktree remove --force` performs.
+  const unlock = unlockTrackedInputs(execRoot, lock);
+  if (unlock.failed.length) {
+    console.error('note: some snapshot modes could not be restored — ' + unlock.failed.join('; '));
+  }
 
   // --- source-tree movement is PROVENANCE, not contamination -----------------
   //
@@ -660,15 +850,61 @@ async function main() {
     legs,
   });
 
+  // WHAT THE RECEIPT PROVES, AND WHAT IT DOES NOT.
+  //
+  // The identity and the lock are both over TRACKED CONTENT. `node_modules` is a
+  // symlink to the live, gitignored dependency tree, so it is neither hashed nor
+  // locked. Without this block a reader would reasonably read "immutable inputs"
+  // as "every byte node executed was frozen", which is not what was measured.
+  // Explicitly bounded is acceptable for P0 (GPT, 2026-09-25); the dependency
+  // closure gets pinned from the real artifact in D0–D4 instead of from the
+  // checkout, which is the only place it can honestly be pinned.
+  const nmPath = join(execRoot, 'node_modules');
+  const nmExists = existsSync(nmPath);
+  const provenanceBoundary = {
+    proves: [
+      'the tracked content of commit ' + snap.commit + ' was byte-identical at both identity reads',
+      'the tracked content was READ-ONLY for the whole measurement window (probe-verified), so no transient modification can have occurred',
+      'the ' + testSet.length + ' named test-set files were hashed from the execution snapshot at both ends',
+    ],
+    does_not_prove: [
+      'that every byte EXECUTED by node was immutable: node_modules is a symlink to the live gitignored dependency tree, is neither hashed nor locked',
+      'that the resolved dependency closure equals the one an install of this package would produce — D0–D4 pins that from the artifact',
+      'that a deliberate privilege change (chmod) did not undo the lock; the threat model is accidental and concurrent mutation, not escalation',
+    ],
+    unhashed_execution_inputs: [{
+      path: 'node_modules',
+      kind: nmExists ? 'symlink' : 'absent',
+      target: nmExists ? realpathSync(nmPath) : null,
+      tracked: false,
+      locked: false,
+      why: 'gitignored environment, not tracked content — so it contributes nothing to the identity',
+    }],
+    declared_dependency_closure_tracked: files.includes('package-lock.json'),
+  };
+
+  const lockReceipt = {
+    mechanism: 'tracked files 0444; directories holding tracked content (and the snapshot root) 0555',
+    files_locked: lock.files_locked,
+    dirs_locked: lock.dirs_locked + (lock.root_locked ? 1 : 0),
+    root_locked: lock.root_locked,
+    failures: lock.failed,
+    verification: lockProbe,
+    scope: 'tracked content only — node_modules is a symlink to the gitignored dependency tree and is neither hashed nor locked',
+    unlocked_before_identity_read: false,
+    unlock_note: 'both identity samples were read while the lock was held; the unlock runs after them and before snapshot removal',
+    unlock: { restored: unlock.restored, failures: unlock.failed },
+  };
+
   const receipt = {
     gate: 'scripts/gate.mjs',
-    gate_version: 2,
+    gate_version: 3,
     mode: 'snapshot',
     verdict: v.verdict,
     reason: v.reason,
     moved: v.moved,
     head_only_move: v.headOnlyMove,
-    admission_rule: 'snapshot_content_before == snapshot_content_after AND snapshot_set_bytes == snapshot_set_bytes, else VOID',
+    admission_rule: 'snapshot_content_before == snapshot_content_after AND snapshot_set_bytes == snapshot_set_bytes AND tracked_inputs_locked, else VOID',
     repo: root,
     exec_root: execRoot,
     started_at: startedAt,
@@ -681,6 +917,8 @@ async function main() {
     porcelain_before: porcelainBefore,
     porcelain_after: porcelainAfter,
     snapshot: snap,
+    lock: lockReceipt,
+    provenance_boundary: provenanceBoundary,
     source,
     test_glob: globLabel,
     expanded_test_set: testSet,
@@ -707,6 +945,9 @@ async function main() {
   console.log('verdict       : ' + v.verdict + (v.reason ? '  (' + v.reason + ')' : ''));
   if (v.moved.length) console.log('moved         : ' + v.moved.join(', ') + (v.headOnlyMove ? '  [HEAD-only: a concurrent commit, no tracked file changed]' : ''));
   console.log('snapshot      : ' + snap.identity_at_create.slice(0, 16) + '...' + (execBefore === execAfter ? '  (unchanged)' : '  -> ' + String(execAfter).slice(0, 16) + '...'));
+  console.log('inputs locked : ' + lockReceipt.files_locked + ' files + ' + lockReceipt.dirs_locked
+    + ' dirs read-only for the whole run  (probe-verified: '
+    + lockProbe.probes.filter((p) => p.refused).length + '/' + lockProbe.probes.length + ' writes refused)');
   console.log('source tree   : ' + (source.repo_moved_during_run || source.head_moved_during_run
     ? 'MOVED during the run (provenance only — does not void): '
       + [source.repo_moved_during_run ? 'tracked-content' : null, source.head_moved_during_run ? 'head' : null].filter(Boolean).join(', ')

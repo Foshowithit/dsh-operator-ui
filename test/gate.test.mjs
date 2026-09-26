@@ -17,7 +17,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import {
+  chmodSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, statSync,
+  symlinkSync,
+} from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,10 +35,14 @@ import {
   parseTestTotals,
   CANONICAL_TEST_GLOBS,
   trackedFiles,
+  trackedDirs,
   manifestIdentity,
   headId,
   createFrozenSnapshot,
   removeFrozenSnapshot,
+  lockTrackedInputs,
+  unlockTrackedInputs,
+  probeLockedInputs,
 } from '../scripts/gate.mjs';
 
 // ---------------------------------------------------------------------------
@@ -463,4 +470,170 @@ test('the gate refuses a dirty tree instead of certifying an uncommitted subject
   // it was retired.
   assert.doesNotMatch(src, /has\(\s*'--in-place'\s*\)/, 'the legacy live-tree flag must not be parseable');
   assert.doesNotMatch(src, /'in-place'/, 'no receipt field may report a live-tree mode');
+});
+
+// ---------------------------------------------------------------------------
+// Read-only execution inputs (P0.4, final clause)
+// ---------------------------------------------------------------------------
+//
+// A detached worktree is isolated, not immutable. These tests are about the
+// difference: the lock must actually hold, the probe must be able to FAIL, and
+// the unlock must restore the tree exactly — including git's executable bit.
+
+// A disposable tree shaped like a checkout, with a nested directory and an
+// executable file, because the exec bit is the thing a careless unlock drops.
+function fakeTree(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'gate-lock-'));
+  mkdirSync(join(dir, 'lib', 'deep'), { recursive: true });
+  writeFileSync(join(dir, 'lib', 'deep', 'a.js'), 'export const a = 1;\n');
+  writeFileSync(join(dir, 'lib', 'b.js'), 'export const b = 2;\n');
+  writeFileSync(join(dir, 'run.sh'), '#!/bin/sh\necho hi\n');
+  chmodSync(join(dir, 'run.sh'), 0o755);
+  const files = ['lib/b.js', 'lib/deep/a.js', 'run.sh'];
+  const modes = new Map();
+  for (const rel of [...files, 'lib', 'lib/deep', '.']) {
+    modes.set(rel, statSync(rel === '.' ? dir : join(dir, rel)).mode & 0o7777);
+  }
+  t.after(() => {
+    for (const rel of ['.', 'lib', 'lib/deep']) {
+      try { chmodSync(rel === '.' ? dir : join(dir, rel), 0o755); } catch { /* best effort */ }
+    }
+    rmSync(dir, { recursive: true, force: true });
+  });
+  return { dir, files, modes };
+}
+
+test('trackedDirs: exactly the directories that hold tracked content, never the root', () => {
+  // Derived from the file list, so the directories the lock touches are the same
+  // set the identity hashes. A directory with no tracked file under it is not
+  // part of the measured system — which is what keeps node_modules out of the
+  // lock for free rather than by a special case.
+  assert.deepEqual(trackedDirs(['a.txt', 'lib/b.js', 'lib/deep/c.js']), ['lib', 'lib/deep']);
+  assert.deepEqual(trackedDirs(['a.txt']), [], 'a flat tree has no subdirectory to lock');
+  assert.deepEqual(trackedDirs([]), []);
+  // Sorting is asserted because the receipt records the count and a future diff
+  // should be stable rather than set-order dependent.
+  assert.deepEqual(trackedDirs(['z/c.js', 'a/b.js']), ['a', 'z']);
+});
+
+test('probeLockedInputs: an UNLOCKED tree is reported as NOT verified', (t) => {
+  // THE NEGATIVE CONTROL. A probe that cannot fail is not a probe: if this
+  // returned `verified: true` on a writable tree, every claim the receipt makes
+  // about the lock would be unfalsifiable. Both probes must succeed here.
+  const { dir, files } = fakeTree(t);
+  const p = probeLockedInputs(dir, files);
+  assert.equal(p.verified, false, 'a writable tree must never probe as locked');
+  assert.equal(p.probes.length, 2);
+  for (const probe of p.probes) {
+    assert.equal(probe.refused, false, probe.probe + ' must succeed on a writable tree');
+  }
+  // ...and the probe left nothing behind: it restores what it touched, so a
+  // probe can never itself be the mutation that voids a run.
+  assert.equal(statSync(join(dir, 'lib', 'deep', 'a.js')).size, 'export const a = 1;\n'.length);
+  assert.equal(existsSync(join(dir, 'lib', 'deep', '.rcos-lock-probe')), false);
+});
+
+test('lockTrackedInputs: the tracked content becomes read-only and the probe verifies it', (t) => {
+  const { dir, files } = fakeTree(t);
+  const lock = lockTrackedInputs(dir, files);
+  assert.deepEqual(lock.failed, []);
+  assert.equal(lock.files_locked, 3);
+  assert.equal(lock.dirs_locked, 2);
+  assert.equal(lock.root_locked, true);
+
+  // The lock is real, not a mode recorded in a table: a plain write throws.
+  assert.throws(() => writeFileSync(join(dir, 'lib', 'b.js'), 'tampered\n'), (e) => e.code === 'EACCES');
+  // A read-only FILE does not stop a create in its directory — only a read-only
+  // DIRECTORY does. Asserted separately because the two halves fail separately.
+  assert.throws(() => writeFileSync(join(dir, 'lib', 'sneaky.txt'), 'x'), (e) => e.code === 'EACCES');
+  // ...and the root, so an untracked file cannot be created beside the tree.
+  assert.throws(() => writeFileSync(join(dir, 'sneaky.txt'), 'x'), (e) => e.code === 'EACCES');
+
+  const p = probeLockedInputs(dir, files);
+  assert.equal(p.verified, true, 'a locked tree must probe as locked');
+  for (const probe of p.probes) assert.equal(probe.refused, true, probe.probe + ' must be refused');
+  for (const probe of p.probes) assert.equal(probe.code, 'EACCES');
+});
+
+test('unlockTrackedInputs: restores every mode exactly, exec bit included', (t) => {
+  // A blanket restore to 0644 would silently drop git's executable bit and
+  // change the execution inputs this gate exists to hold still. So the invariant
+  // asserted is mode-for-mode equality against what was there BEFORE the lock,
+  // not a hardcoded 0644/0755 guess.
+  const { dir, files, modes } = fakeTree(t);
+  const before = manifestIdentity(dir, files);
+  const lock = lockTrackedInputs(dir, files);
+  const unlock = unlockTrackedInputs(dir, lock);
+
+  assert.deepEqual(unlock.failed, []);
+  assert.equal(unlock.restored, 3 + 2 + 1, 'every locked path must be restored, root included');
+  for (const [rel, mode] of modes) {
+    const got = statSync(rel === '.' ? dir : join(dir, rel)).mode & 0o7777;
+    assert.equal(got, mode, rel + ' mode must be restored exactly');
+  }
+  // The load-bearing consequence: the bytes did not move and the tree is usable.
+  assert.equal(manifestIdentity(dir, files), before, 'lock/unlock must be identity-neutral');
+  writeFileSync(join(dir, 'lib', 'b.js'), 'writable again\n');
+  assert.equal(statSync(join(dir, 'lib', 'b.js')).size, 'writable again\n'.length);
+});
+
+test('lockTrackedInputs: a symlink is never chmod-ed through', (t) => {
+  // chmodSync follows links. Locking through one would reach OUTSIDE the
+  // snapshot and modify the developer's real dependency tree — worse than not
+  // locking at all. The symlink target must be untouched and the mode unchanged.
+  const { dir, files } = fakeTree(t);
+  const outside = mkdtempSync(join(tmpdir(), 'gate-lock-outside-'));
+  t.after(() => rmSync(outside, { recursive: true, force: true }));
+  writeFileSync(join(outside, 'real.js'), 'export const real = 1;\n');
+  const outsideMode = statSync(join(outside, 'real.js')).mode & 0o7777;
+  symlinkSync(join(outside, 'real.js'), join(dir, 'lib', 'link.js'));
+
+  const lock = lockTrackedInputs(dir, [...files, 'lib/link.js']);
+  assert.equal(statSync(join(outside, 'real.js')).mode & 0o7777, outsideMode,
+    'the symlink target must keep its mode');
+  assert.equal(statSync(join(outside, 'real.js'), { throwIfNoEntry: false }) !== undefined, true);
+  assert.ok(!lock.modes.has(join(dir, 'lib', 'link.js')), 'a symlink must not be recorded as locked');
+  unlockTrackedInputs(dir, lock);
+  writeFileSync(join(outside, 'real.js'), 'still writable\n');
+});
+
+test('the runner locks BEFORE the legs and unlocks BEFORE the snapshot is removed', async () => {
+  // The ordering is the mechanism, so it is pinned as an ordering rather than as
+  // a set of present substrings. A lock taken after the legs, or released before
+  // the second identity read, would leave the window it exists to close.
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(join(import.meta.dirname, '..', 'scripts', 'gate.mjs'), 'utf8');
+  const iLock = src.indexOf('lockTrackedInputs(execRoot, files)');
+  const iProbe = src.indexOf('probeLockedInputs(execRoot, files)');
+  const iLegs = src.indexOf("name: 'contract-check'");
+  const iAfter = src.indexOf('const execAfter = manifestIdentity(execRoot, files)');
+  const iUnlockFirst = src.indexOf('unlockTrackedInputs(execRoot, lock)');
+  // The MAIN-path unlock, not the refusal path's: the refusal path unlocks and
+  // removes too, and it sits before the legs, so a first-occurrence search would
+  // report the ordering backwards.
+  const iUnlock = src.lastIndexOf('unlockTrackedInputs(execRoot, lock)');
+  // lastIndexOf for the same reason as the unlock: the refusal paths remove the
+  // snapshot early, so a first-occurrence search reports the ordering backwards.
+  const iRemove = src.lastIndexOf('removeFrozenSnapshot({ root, dest: snap.dir })');
+
+  for (const [name, i] of [['lock', iLock], ['probe', iProbe], ['legs', iLegs],
+    ['second identity read', iAfter], ['unlock', iUnlock], ['snapshot removal', iRemove]]) {
+    assert.ok(i !== -1, name + ' must be present in the runner');
+  }
+  assert.ok(iLock < iProbe, 'the probe must follow the lock');
+  assert.ok(iProbe < iLegs, 'the lock must be verified before any leg runs');
+  assert.ok(iLegs < iAfter, 'the second identity read must follow the legs');
+  assert.ok(iAfter < iUnlock, 'the identity must be read while the lock is still held');
+  assert.ok(iUnlock < iRemove, 'the unlock must precede removal, or the 0555 dirs block the unlink');
+  // A failed lock must ALSO unlock before it removes the snapshot, or the
+  // refusal leaves a 0555 tree behind that `git worktree remove` cannot delete.
+  assert.ok(iUnlockFirst !== iUnlock, 'the lock-failure path must unlock before removing the snapshot');
+
+  // The refusal path, pinned as present: a lock that could not be established is
+  // exit 3, never a receipt carrying a hopeful field.
+  assert.match(src, /probe was NOT refused/, 'the gate must name a failed probe and refuse');
+  // ...and the honest boundary, so the receipt cannot imply that every executed
+  // byte was frozen when node_modules is a symlink to the live dependency tree.
+  assert.match(src, /provenance_boundary/, 'the receipt must state what it does and does not prove');
+  assert.match(src, /unlocked_before_identity_read: false/);
 });
