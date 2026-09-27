@@ -54,6 +54,7 @@ function loadAndApply() {
   exports.apply(ctx);
   return {
     entries,
+    exports,
     dispose() { for (const dispose of disposers.splice(0)) dispose?.(); },
     render(component, props) { hookIndex = 0; return component(props); },
   };
@@ -98,6 +99,20 @@ function toolBlock({ callId = 'call-1', value: result = value, argsRaw = args, t
   };
 }
 
+const jobSnapshots = [
+  { id: 'bash-12', kind: 'bash', label: 'node scripts/check.js', status: 'completed', detail: 'exit code: 0', startedAt: 1700000000000, finishedAt: 1700000002500 },
+  { id: 'subagent-4', kind: 'subagent', label: 'Review receipt schema', status: 'running', startedAt: 1700000010000 },
+];
+function jobListBlock({ callId = 'jobs-call', jobs = jobSnapshots, raw = 'bash-12 [bash] completed — node scripts/check.js', error = false, wrapper = true } = {}) {
+  const envelope = { operatorJobList: { version: 1, callId, toolName: 'job_list', jobs } };
+  return {
+    kind: 'tool-result', callId, call: { name: 'job_list', argsRaw: '{}' }, isError: error,
+    content: wrapper
+      ? [{ type: 'text', text: raw }, { type: 'text', text: JSON.stringify(envelope) }]
+      : [{ type: 'text', text: raw }],
+  };
+}
+
 test('registers and disposes an additive keyed dispatch_seat tool view', () => {
   const app = loadAndApply();
   const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
@@ -106,6 +121,96 @@ test('registers and disposes an additive keyed dispatch_seat tool view', () => {
   assert.equal(typeof wm.component, 'function');
   app.dispose();
   assert.equal(wm.removed, true, 'plugin effect disposal removes the keyed renderer');
+});
+
+test('registers a call-result inspector for DSH job_list without displacing the WM card', () => {
+  const app = loadAndApply();
+  const jobs = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'job_list');
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  assert.ok(jobs, 'job_list uses an unclaimed keyed renderer');
+  assert.ok(wm, 'the WM renderer stays registered');
+  app.dispose();
+  assert.equal(jobs.removed, true);
+  assert.equal(wm.removed, true);
+});
+
+test('job_list renders exact public job snapshots with stale-state provenance and raw DSH result', () => {
+  const app = loadAndApply();
+  const jobs = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'job_list');
+  assert.equal(typeof app.exports.projectJobListToolBlock, 'function');
+  const projection = app.exports.projectJobListToolBlock(jobListBlock(), 'jobs-call');
+  assert.equal(projection.state, 'snapshot');
+  assert.equal(projection.jobs.length, 2);
+  assert.equal(projection.jobs[0].id, 'bash-12');
+  assert.equal(projection.jobs[1].status, 'running');
+  assert.equal(projection.callId, 'jobs-call');
+
+  let inspected = 0;
+  const props = { callId: 'jobs-call', toolName: 'job_list', block: jobListBlock(), inspect: () => inspected++ };
+  let tree = app.render(jobs.component, props);
+  assert.match(textOf(tree), /Background jobs/);
+  assert.match(textOf(tree), /snapshot/i);
+  assert.match(textOf(tree), /2/);
+  assert.doesNotMatch(textOf(tree), /live progress/i);
+  find(tree, (node) => node.props?.className === 'opui-job-list-toggle').props.onClick();
+  tree = app.render(jobs.component, props);
+  const content = textOf(tree);
+  assert.match(content, /bash-12/);
+  assert.match(content, /subagent-4/);
+  assert.match(content, /exit code: 0/);
+  assert.match(content, /Review receipt schema/);
+  assert.match(content, /Snapshot from this DSH result; this is not live job state\./);
+  assert.match(content, /bash-12 \[bash\] completed — node scripts\/check\.js/);
+  const inspect = find(tree, (node) => node.type === 'button' && textOf(node) === 'Inspect in Trajectory');
+  assert.ok(inspect);
+  inspect.props.onClick();
+  assert.equal(inspected, 1);
+  app.dispose();
+});
+
+test('empty and pending job_list results remain caller-scoped and never imply live absence', () => {
+  const app = loadAndApply();
+  const jobs = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'job_list');
+  const empty = jobListBlock({ jobs: [], raw: '(no background jobs)' });
+  let tree = app.render(jobs.component, { callId: 'jobs-call', toolName: 'job_list', block: empty });
+  find(tree, (node) => node.props?.className === 'opui-job-list-toggle').props.onClick();
+  tree = app.render(jobs.component, { callId: 'jobs-call', toolName: 'job_list', block: empty });
+  assert.match(textOf(tree), /No jobs were visible to this caller in this snapshot/);
+
+  const pending = { kind: 'tool-call', callId: 'pending-jobs', name: 'job_list', argsRaw: '{}' };
+  tree = app.render(jobs.component, { callId: 'pending-jobs', toolName: 'job_list', block: pending });
+  assert.match(textOf(tree), /Awaiting result/);
+  assert.doesNotMatch(textOf(tree), /No jobs were visible|job snapshots reported/);
+  app.dispose();
+});
+
+test('job_list rejects missing, mismatched, and malformed snapshots without upgrading result text', () => {
+  const app = loadAndApply();
+  const jobs = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'job_list');
+  const extraWrapper = jobListBlock();
+  extraWrapper.content[1].text = JSON.stringify({
+    ...JSON.parse(extraWrapper.content[1].text),
+    unrecognized: 'must not be ignored',
+  });
+  const cases = [
+    [jobListBlock({ wrapper: false, raw: 'ordinary job output' }), 'jobs-call'],
+    [jobListBlock({ callId: 'other-call' }), 'jobs-call'],
+    [jobListBlock({ jobs: [{ ...jobSnapshots[0], ownerSession: 'private-session' }] }), 'jobs-call'],
+    [jobListBlock({ jobs: [{ ...jobSnapshots[0], status: 'maybe-running' }] }), 'jobs-call'],
+    [extraWrapper, 'jobs-call'],
+  ];
+  for (const [block, callId] of cases) {
+    const projection = app.exports.projectJobListToolBlock(block, callId);
+    assert.equal(projection.state, 'unavailable');
+    assert.deepEqual(Array.from(projection.jobs), []);
+  }
+  const mismatch = app.render(jobs.component, { callId: 'jobs-call', toolName: 'job_list', block: jobListBlock({ callId: 'other-call' }) });
+  assert.match(textOf(mismatch), /Snapshot unavailable/);
+  assert.doesNotMatch(textOf(mismatch), /bash-12|subagent-4/);
+  const failed = app.exports.projectJobListToolBlock({ ...jobListBlock(), isError: true, error: { message: 'denied' } }, 'jobs-call');
+  assert.equal(failed.state, 'failed');
+  assert.match(failed.summary, /denied/);
+  app.dispose();
 });
 
 test('expansion reveals receipt claims and raw call/result disclosure; actions preserve exact identities', () => {
@@ -260,6 +365,26 @@ test('expanded card labels objective separately from seat result detail', () => 
   const toggle = find(tree, (node) => node.props?.className === 'opui-wm-toggle');
   assert.match(toggle.props['aria-label'], /Collapse details/);
   assert.doesNotMatch(toggle.props['aria-label'], /Expand details/);
+  app.dispose();
+});
+
+test('expanded receipt details stay bounded and keyboard-scrollable', () => {
+  const app = loadAndApply();
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  const props = { callId: 'call-1', toolName: 'dispatch_seat', block: toolBlock() };
+  let tree = app.render(wm.component, props);
+  find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+  tree = app.render(wm.component, props);
+
+  const details = find(tree, (node) => node.props?.className === 'opui-wm-details');
+  assert.ok(details, 'expanded content has a dedicated scroll region');
+  assert.equal(details.props.role, 'region');
+  assert.equal(details.props.tabIndex, 0, 'keyboard users can focus and scroll long receipts');
+  assert.equal(details.props['aria-label'], 'Dispatch receipt details for wm');
+  assert.equal(details.props.style.maxHeight, 'min(55vh, 420px)');
+  assert.equal(details.props.style.overflowY, 'auto');
+  assert.equal(details.props.style.overscrollBehavior, 'contain');
+  assert.match(textOf(details), /Audited it/);
   app.dispose();
 });
 
