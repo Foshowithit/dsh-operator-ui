@@ -236,3 +236,101 @@ test('missing dispatcher identity fields cannot be presented as authoritative re
   }
   app.dispose();
 });
+
+test('expanded card labels objective separately from seat result detail', () => {
+  const app = loadAndApply();
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  const props = { callId: 'call-1', toolName: 'dispatch_seat', block: toolBlock() };
+  let tree = app.render(wm.component, props);
+  const closedToggle = find(tree, (node) => node.props?.className === 'opui-wm-toggle');
+  assert.match(closedToggle.props['aria-label'], /Expand details/);
+  assert.doesNotMatch(closedToggle.props['aria-label'], /Collapse details/);
+  closedToggle.props.onClick();
+  tree = app.render(wm.component, props);
+
+  const objective = find(tree, (node) => node.props?.className === 'opui-wm-objective');
+  const summary = find(tree, (node) => node.props?.className === 'opui-wm-result-summary');
+  assert.equal(textOf(objective), 'Audit the workflow');
+  assert.equal(textOf(summary), 'Audited it');
+  assert.match(textOf(tree), /Objective/);
+  assert.match(textOf(tree), /Reported result or status detail/);
+
+  const compactObjective = find(tree, (node) => node.type === 'span' && node.props?.title === 'Audit the workflow');
+  assert.ok(compactObjective, 'truncated compact objective exposes its full text as a title');
+  const toggle = find(tree, (node) => node.props?.className === 'opui-wm-toggle');
+  assert.match(toggle.props['aria-label'], /Collapse details/);
+  assert.doesNotMatch(toggle.props['aria-label'], /Expand details/);
+  app.dispose();
+});
+
+test('pending and missing results never reuse the objective as a result summary', () => {
+  for (const [block, expected] of [
+    [{ kind: 'tool-call', callId: 'call-1', name: 'dispatch_seat', argsRaw: args }, 'No result has been returned yet.'],
+    [toolBlock({ text: 'ordinary display text only' }), 'DSH returned display text without a matching structured dispatch receipt.'],
+  ]) {
+    const app = loadAndApply();
+    const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+    const props = { callId: 'call-1', toolName: 'dispatch_seat', block };
+    let tree = app.render(wm.component, props);
+    find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+    tree = app.render(wm.component, props);
+    assert.equal(textOf(find(tree, (node) => node.props?.className === 'opui-wm-objective')), 'Audit the workflow');
+    assert.equal(textOf(find(tree, (node) => node.props?.className === 'opui-wm-result-summary')), expected);
+    app.dispose();
+  }
+});
+
+test('receipt status chips use distinct semantic tones for reported states', () => {
+  const fix = structuredClone(value);
+  fix.verdict = 'fix';
+  fix.receipt.verdict = 'fix';
+  const blocked = structuredClone(value);
+  blocked.ok = false;
+  blocked.verdict = 'blocked';
+  blocked.receipt.verdict = 'blocked';
+  blocked.receipt.blockers = ['Dependency unavailable'];
+  const failed = structuredClone(value);
+  failed.ok = false;
+  failed.stage = 'error';
+  failed.verdict = 'blocked';
+  failed.detail = 'Dispatcher error';
+  failed.dispatch.receipt_accepted = false;
+  failed.receipt = {};
+  const timeout = structuredClone(value);
+  timeout.ok = false;
+  timeout.stage = 'timeout';
+  timeout.verdict = 'blocked';
+  timeout.dispatch.receipt_accepted = false;
+  timeout.receipt = {};
+  const toolError = {
+    kind: 'tool-result', callId: 'call-1',
+    call: { name: 'dispatch_seat', argsRaw: args }, content: [],
+    isError: true, error: { message: 'DSH transport failure' },
+  };
+  const cases = [
+    [toolBlock(), 'ok', 'Seat reports SHIP', 'Seat-reported receipt'],
+    [toolBlock({ value: fix }), 'att', 'Seat reports FIX', 'Seat-reported receipt'],
+    [toolBlock({ value: blocked }), 'att', 'Seat reports BLOCKED', 'Seat-reported receipt'],
+    [toolBlock({ value: timeout }), 'att', 'Dispatch blocked', 'Dispatcher-reported outcome'],
+    [toolBlock({ value: failed }), 'err', 'Dispatcher reports failure', 'Dispatcher-reported outcome'],
+    [toolError, 'err', 'Tool call failed', 'DSH-reported tool error'],
+    [{ kind: 'tool-call', callId: 'call-1', name: 'dispatch_seat', argsRaw: args }, 'run', 'Awaiting result', 'No receipt has been returned yet'],
+    [toolBlock({ text: 'ordinary display text only' }), 'mut', 'Result unavailable', 'Structured receipt unavailable'],
+  ];
+  for (const [block, tone, expectedStatus, expectedProvenance] of cases) {
+    const app = loadAndApply();
+    const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+    const props = { callId: 'call-1', toolName: 'dispatch_seat', block };
+    let tree = app.render(wm.component, props);
+    const status = find(tree, (node) => node.props?.className?.includes('opui-wm-status'));
+    assert.ok(status, 'status chip has a WM status class');
+    assert.ok(status.props.className.split(' ').includes(tone), `status uses ${tone} tone`);
+    assert.match(textOf(status), new RegExp(expectedStatus));
+    find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+    tree = app.render(wm.component, props);
+    const provenance = find(tree, (node) => node.props?.className?.includes('opui-wm-provenance'));
+    assert.ok(provenance, 'state-specific provenance note is present');
+    assert.match(textOf(provenance), new RegExp(expectedProvenance));
+    app.dispose();
+  }
+});
