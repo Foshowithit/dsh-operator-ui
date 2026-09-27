@@ -1,8 +1,25 @@
 # DSH Operator WM Execution Inspector
 
-**Status:** design proposal  
+**Status:** execution authorized; first-slice amendment below supersedes conflicting proposal details
 **Date:** 2026-09-26  
 **Scope:** the first Creative Canvas execution-object vertical slice
+
+## Source-review amendment (2026-09-26)
+
+The user approved Luna team execution. Implementation proceeds under
+`../plans/2026-09-26-wm-inspector.md`. The initial deliverable consumes DSH's
+existing live tool-block updates and displays the structured dispatch receipt
+inside the keyed tool card. It adds no host route and no renderer polling.
+The route/graph/worker sections below describe later milestones, not facts
+already supported by the dispatcher.
+
+Source inspection proved that dispatch returns its exact child/run identity
+only after settling and disposing the seat. Parent/preset headers alone do not
+attribute a child to a call. Missing result means awaiting result, never an
+inferred running state. A seat's reported SHIP is a receipt claim, not
+independent verification. The first slice must preserve these distinctions;
+full live inspection needs a supported correlation seam and authorization for
+session reads before it can meet the original end-to-end acceptance criteria.
 
 ## Intent
 
@@ -40,8 +57,8 @@ and panel grammar, but this slice only owns `dispatch_seat`.
   detail routes. The inspector may link or include an Archon run only when the
   receipt supplies a real run id; it must not manufacture a run id or duplicate
   Archon state.
-- All changes stay in the isolated `rcos-dsh-reconcile` branch. No live Mac or
-  Dell install, publish, promotion, push, or render is part of this slice.
+- All changes stay in the isolated `rcos-dsh-reconcile` branch. No live client or
+  execution-host install, publish, promotion, push, or render is part of this slice.
 
 ## Proposed architecture
 
