@@ -97,12 +97,24 @@ The follow-up UI commit is `4ddf74805303225e520c56ce36c548ad8a844b50`.
 
 The next live-correlation step requires an upstream dispatcher change to persist the caller call ID alongside its run and seat-session identities, plus an authorized read path for live updates. Until then, this plugin only presents settled call-bound receipts and must leave live worker state unknown.
 
+### Follow-up: honest result and provenance states
+
+The isolated DSH profile fixture flow creates and prompts a session but does not seed a synthetic completed tool-result block. The receipt bridge only produces that block after `dispatch_seat` runs. A browser review of completed or failed cards would therefore require a live dispatch; no server, browser, install, or dispatch was started. The source-level component harness remains the safe visual-state check until DSH exposes a supported synthetic web-view seam.
+
+Code commit `bfccca363932c7da2e66362ddb98a4e4a690fbac` separates the objective from returned result/status detail, adds compact objective disclosure and expand/collapse labels, and distinguishes seat-reported SHIP/FIX/BLOCKED from dispatcher blocking/failure and generic DSH tool errors. Pending and unavailable calls no longer present the objective as a result. The provenance note varies by source and state.
+
+- Focused bridge, projector and UI tests: 33/33 passed. UI coverage includes pending, missing/mismatched result, seat verdicts, dispatcher timeout/error, and generic DSH tool errors.
+- `node scripts/check.js` and the installed-runtime synthetic probe: PASS. The probe does not dispatch a live task.
+- Frozen-provenance gate: PASS on the exact code commit above; 520/520 tests, contract leg exit 0, 46 named test entrypoints, unchanged read-only snapshot. Receipt: `/tmp/rcos-wm-card-truth-gate.json`.
+- Deterministic package: PASS from that commit; two independent packs matched at SHA-256 `8400e19a01a3e5240db5f723d05e5e297994e4a83dff92a3ec7eadc7d72300e5`.
+- Independent Luna review found no blocker. No browser visual review was performed.
+
 Transport verification: `node --test test/wm-bridge.test.mjs`; explicit optional installed-runtime probe `node scripts/wm-runtime-smoke.mjs /absolute/runtime/node_modules`. No installed file is edited by that probe.
 
 ## Next milestones
 
-1. Visually review the settled receipt card in an isolated DSH profile using synthetic data; cover compact, expanded, pending, missing-result and failure states. Do not run a live WM dispatch or install into an operator profile.
-2. Keep worker/live-progress state unavailable until the upstream dispatcher persists caller `callId` with `run_id` and `seat_session_id` and exposes an explicitly authorized lifecycle read seam. Do not infer children from parent/task IDs or add an arbitrary-session route.
-3. Generalize working inspector primitives to browser, files/diff/tests, terminal and evaluator evidence.
+1. Inspect DSH source for a second built-in tool with a stable, structured result in the native tool block; generalize the honest card only when its result and provenance contract are explicit. Add no new route or persistence.
+2. Keep browser visual review open until DSH provides a supported synthetic tool-result fixture seam. Do not run a live WM dispatch or install into an operator profile to seed a screenshot.
+3. Keep worker/live-progress state unavailable until the upstream dispatcher persists caller `callId` with `run_id` and `seat_session_id` and exposes an explicitly authorized lifecycle read seam. Do not infer children from parent/task IDs or add an arbitrary-session route.
 4. Integrate typed execution objects into Creative Canvas's closed PanelDoc vocabulary; verify focus, approvals, snapshots and fault states.
-5. Repeat visual interaction review across loading, failure, mobile and completed-history states before any release claim.
+5. Complete visual interaction review across loading, failure, mobile and completed-history states before any release claim, once the synthetic fixture seam exists.

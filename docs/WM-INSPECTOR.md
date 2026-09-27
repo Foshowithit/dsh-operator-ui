@@ -32,3 +32,16 @@ correlation contract and authorized source access. Browser visual review,
 code-mode end-to-end transport, and an isolated real WM dispatch remain release
 acceptance work; unit tests and the synthetic runtime probe do not establish
 those outcomes.
+
+The DSH profile fixture flow can create and prompt a session, but this repo has
+no supported way to seed a synthetic completed `dispatch_seat` tool-result
+block into that session. The receipt bridge only adds its block after the tool
+actually executes. Browser review of settled cards therefore remains deferred
+until a supported synthetic web-view seam exists; no web server, browser, live
+install, or live dispatch was started for this review.
+
+The current card keeps the objective separate from reported result/status
+detail, distinguishes seat receipts from dispatcher outcomes and generic DSH
+tool errors, and gives pending and unavailable results explicit wording. These
+states are covered by the component harness, but that source-level check is not
+a visual browser review.
