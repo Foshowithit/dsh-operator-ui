@@ -62,16 +62,28 @@ Owner: Luna `wm_review`, test/wm-ui.test.mjs only.
 
 Owner: parent.
 
-- [ ] Review the combined diff and fix material defects.
-- [ ] Run targeted tests and contract checks, commit one coherent slice, then run the frozen full gate bound to that commit.
-- [ ] Record exact verification and limitations; do not label a synthetic test as a live WM dispatch.
-- [ ] Keep the recurring execution prompt aligned to the next source-backed milestone.
+- [x] Review the combined diff and fix material defects.
+- [x] Run targeted tests and contract checks, commit one coherent slice, then run the frozen full gate bound to that commit.
+- [x] Record exact verification and limitations; do not label a synthetic test as a live WM dispatch.
+- [x] Keep the recurring execution prompt aligned to the next source-backed milestone.
+
+### Verified checkpoint
+
+The implementation is commit `f6ad2a3b2fffc5f251085b0deca0cc5c17b1db00` on `rcos-dsh-reconcile`.
+
+- Focused receipt, bridge and UI tests: 27/27 passed; `node scripts/check.js` passed.
+- Installed-runtime probe passed through the real DSH ToolRuntime, dispatcher schema/renderer, bridge and client projector. Its receipt body is synthetic; this is not a live WM dispatch.
+- Frozen-provenance gate: PASS on the exact implementation commit; 514/514 tests, contract check exit 0, source tree unchanged. Receipt: `/tmp/rcos-wm-inspector-gate.json`.
+- Two independent deterministic packages matched; SHA-256 `87276ccc2916a61839c4f132e3c40eeece31f99c247688fb316a5053f0b72b63`.
+- Independent review found no blocker. No live WM dispatch, install, publish, promotion or visual QA was performed. Worker/graph correlation and interactive visual review remain open.
+
+The follow-up documentation commit records this evidence for the implementation commit above; it does not change the code measured by that gate.
 
 Transport verification: `node --test test/wm-bridge.test.mjs`; explicit optional installed-runtime probe `node scripts/wm-runtime-smoke.mjs /absolute/runtime/node_modules`. No installed file is edited by that probe.
 
 ## Next milestones
 
-1. Add explicit callId/runId/seatSessionId lifecycle correlation through a supported dispatcher event seam; verify with a real isolated WM dispatch.
+1. Inspect actual DSH source and runbooks for a supported lifecycle seam that can correlate callId, runId and seatSessionId. Do not infer child workers from parent/task ids or expose arbitrary sessions. Add lifecycle correlation only when the binding and its authorization are explicit and testable.
 2. Consume live workers and existing Archon graph/detail through authorized, source-backed bindings.
 3. Generalize working inspector primitives to browser, files/diff/tests, terminal and evaluator evidence.
 4. Integrate typed execution objects into Creative Canvas's closed PanelDoc vocabulary; verify focus, approvals, snapshots and fault states.
