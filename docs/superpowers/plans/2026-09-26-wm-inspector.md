@@ -79,12 +79,30 @@ The implementation is commit `f6ad2a3b2fffc5f251085b0deca0cc5c17b1db00` on `rcos
 
 The follow-up documentation commit records this evidence for the implementation commit above; it does not change the code measured by that gate.
 
+### Follow-up source review and audit details
+
+Read-only source review of DSH's `ToolRunContext` declaration and the RCOS vendored `dsh-seat-dispatch/lib/index.js` found a supported **post-result** join, but no live lifecycle join:
+
+- DSH provides the tool execution's exact `callId`. The dispatcher receives that execution context, but does not copy `callId` into its dispatch state, child-session metadata, or append-only audit record. It disposes the child before returning its canonical result.
+- The existing `tools/post-execute` bridge receives that same call ID and the canonical result. The UI can therefore bind the returned `dispatch.run_id` and `dispatch.seat_session_id` to the exact completed DSH card, without guessing from parent sessions or task IDs.
+- Existing dispatcher records cannot support live worker updates or safely associate a global audit-log row with a DSH call. The card renders only the dispatcher's reported audit path and error as inert text; it does not open or independently read the audit file.
+
+The follow-up UI commit is `4ddf74805303225e520c56ce36c548ad8a844b50`.
+
+- Focused bridge, receipt-projection and UI tests: 30/30 passed, including mismatched call IDs and missing or whitespace-only run/session IDs.
+- `node scripts/check.js`: PASS. The installed-runtime probe: PASS with a synthetic receipt only.
+- Frozen-provenance gate: PASS on the exact commit above; 517/517 tests, contract leg exit 0, 46 named test entrypoints, unchanged read-only snapshot. Receipt: `/tmp/rcos-wm-inspector-audit-gate.json`.
+- Deterministic package: PASS from that commit. Two independent packs matched at SHA-256 `d7d8aabd06bef686a8bbf8ce290b9795005ece55891f7467556e34a75e848d9c`.
+- Independent review found no blocker. No live WM dispatch, install, or visual QA was performed.
+
+The next live-correlation step requires an upstream dispatcher change to persist the caller call ID alongside its run and seat-session identities, plus an authorized read path for live updates. Until then, this plugin only presents settled call-bound receipts and must leave live worker state unknown.
+
 Transport verification: `node --test test/wm-bridge.test.mjs`; explicit optional installed-runtime probe `node scripts/wm-runtime-smoke.mjs /absolute/runtime/node_modules`. No installed file is edited by that probe.
 
 ## Next milestones
 
-1. Inspect actual DSH source and runbooks for a supported lifecycle seam that can correlate callId, runId and seatSessionId. Do not infer child workers from parent/task ids or expose arbitrary sessions. Add lifecycle correlation only when the binding and its authorization are explicit and testable.
-2. Consume live workers and existing Archon graph/detail through authorized, source-backed bindings.
+1. Visually review the settled receipt card in an isolated DSH profile using synthetic data; cover compact, expanded, pending, missing-result and failure states. Do not run a live WM dispatch or install into an operator profile.
+2. Keep worker/live-progress state unavailable until the upstream dispatcher persists caller `callId` with `run_id` and `seat_session_id` and exposes an explicitly authorized lifecycle read seam. Do not infer children from parent/task IDs or add an arbitrary-session route.
 3. Generalize working inspector primitives to browser, files/diff/tests, terminal and evaluator evidence.
 4. Integrate typed execution objects into Creative Canvas's closed PanelDoc vocabulary; verify focus, approvals, snapshots and fault states.
-5. Repeat real visual interaction review across loading, failure, mobile and completed-history states before any release claim.
+5. Repeat visual interaction review across loading, failure, mobile and completed-history states before any release claim.
