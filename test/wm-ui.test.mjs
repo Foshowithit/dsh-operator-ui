@@ -164,3 +164,75 @@ test('malformed or mismatched structured results remain visibly unavailable', ()
   }
   app.dispose();
 });
+
+test('expanded receipt binds the exact DSH call id to dispatcher run and seat session ids', () => {
+  const app = loadAndApply();
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  const treeProps = { callId: 'call-1', toolName: 'dispatch_seat', block: toolBlock() };
+  let tree = app.render(wm.component, treeProps);
+  find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+  tree = app.render(wm.component, treeProps);
+  const content = textOf(tree);
+  assert.match(content, /call-1/);
+  assert.match(content, /dispatch-1/);
+  assert.match(content, /seat-1/);
+  assert.match(content, /call-1[\s\S]*(dispatch-1)[\s\S]*(seat-1)/);
+
+  // A valid envelope from another tool invocation cannot lend its dispatch
+  // identity to this row, even if the surrounding arguments are identical.
+  const mismatchedProps = {
+    callId: 'other-call', toolName: 'dispatch_seat',
+    block: toolBlock({ callId: 'call-1' }),
+  };
+  let mismatched = app.render(wm.component, mismatchedProps);
+  find(mismatched, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+  mismatched = app.render(wm.component, mismatchedProps);
+  assert.match(textOf(mismatched), /Result unavailable/);
+  assert.doesNotMatch(textOf(mismatched), /Dispatch · dispatch-1|Seat session · seat-1/);
+  app.dispose();
+});
+
+test('dispatcher audit path and error are visible as inert text only', () => {
+  const app = loadAndApply();
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  const opened = [];
+  const props = {
+    callId: 'call-1', toolName: 'dispatch_seat', block: toolBlock(),
+    openFile: (path) => opened.push(path),
+  };
+  let tree = app.render(wm.component, props);
+  find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+  tree = app.render(wm.component, props);
+  const content = textOf(tree);
+  assert.match(content, /\/tmp\/seat-dispatch\.jsonl/);
+  assert.match(content, /Audit log/);
+  assert.match(content, /Audit error/);
+  const audit = find(tree, (node) => textOf(node).includes('/tmp/seat-dispatch.jsonl'));
+  assert.ok(audit, 'audit receipt details are rendered');
+  assert.notEqual(audit.type, 'button', 'audit path is inert text, not an open-file action');
+  assert.equal(find(tree, (node) => node.type === 'button' && textOf(node).includes('/tmp/seat-dispatch.jsonl')), null);
+  assert.deepEqual(opened, [], 'rendering the global audit path never opens it');
+  app.dispose();
+});
+
+test('missing dispatcher identity fields cannot be presented as authoritative receipt details', () => {
+  const app = loadAndApply();
+  const wm = app.entries.find((entry) => entry.spec.name === 'tool.call.toolview' && entry.spec.key === 'dispatch_seat');
+  for (const [field, invalid] of [
+    ['run_id', undefined], ['seat_session_id', undefined],
+    ['run_id', '   '], ['seat_session_id', '   '],
+  ]) {
+    const result = structuredClone(value);
+    if (invalid === undefined) delete result.dispatch[field];
+    else result.dispatch[field] = invalid;
+    const props = {
+      callId: 'call-1', toolName: 'dispatch_seat', block: toolBlock({ value: result }),
+    };
+    let tree = app.render(wm.component, props);
+    find(tree, (node) => node.props?.className === 'opui-wm-toggle').props.onClick();
+    tree = app.render(wm.component, props);
+    assert.match(textOf(tree), /Result unavailable/);
+    assert.doesNotMatch(textOf(tree), /Seat reports SHIP|Dispatch · dispatch-1|Seat session · seat-1/);
+  }
+  app.dispose();
+});
