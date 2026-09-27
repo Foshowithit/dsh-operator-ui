@@ -113,8 +113,38 @@ Transport verification: `node --test test/wm-bridge.test.mjs`; explicit optional
 
 ## Next milestones
 
-1. Inspect DSH source for a second built-in tool with a stable, structured result in the native tool block; generalize the honest card only when its result and provenance contract are explicit. Add no new route or persistence.
+1. [x] Inspect DSH source for a second built-in tool with a stable, structured result; implemented the call-bound `job_list` snapshot card below without a new route or persistence.
 2. Keep browser visual review open until DSH provides a supported synthetic tool-result fixture seam. Do not run a live WM dispatch or install into an operator profile to seed a screenshot.
 3. Keep worker/live-progress state unavailable until the upstream dispatcher persists caller `callId` with `run_id` and `seat_session_id` and exposes an explicitly authorized lifecycle read seam. Do not infer children from parent/task IDs or add an arbitrary-session route.
 4. Integrate typed execution objects into Creative Canvas's closed PanelDoc vocabulary; verify focus, approvals, snapshots and fault states.
 5. Complete visual interaction review across loading, failure, mobile and completed-history states before any release claim, once the synthetic fixture seam exists.
+
+### Follow-up: caller-visible `job_list` snapshots
+
+Source inspection of the installed DSH `@deepseek-ai/dsh-tool-jobs` package
+confirmed that built-in `job_list` returns `ctx.jobs.list(exec.agent)` as a
+closed `PublicJobSnapshot[]`, with `id`, `kind`, `label`, `status`, optional
+`detail`, and start/finish timestamps. It deliberately removes internal
+`ownerSession` and `reported` fields. The installed DSH client UI does not claim
+a specialized `job_list` keyed tool card, so the Operator adds an inspector to
+that unclaimed key while leaving existing stock keyed renderers alone.
+
+The `tools/post-execute` bridge calls downstream first, then appends a bounded,
+versioned envelope carrying the exact DSH `callId` and allowlisted public
+snapshot fields. It keeps the original tool text and canonical value unchanged;
+the structured content is model-visible. The client accepts one matching
+envelope only, rejects unknown wrapper, envelope, or job fields and malformed
+or duplicate entries, and describes even running rows as a snapshot rather than
+live state. An empty snapshot means only that this caller saw no jobs in this
+result. The expanded card keeps the
+raw DSH result and native Trajectory inspection available; no polling, store,
+route, job controls, or session correlation is introduced. Separate finishing
+of this code commit and documentation/evidence commits will bind verification
+to the exact code revision.
+
+Code commit `6c8af018af92148a8b7d946a9f5cab50710f9118` implements this slice.
+
+- Focused bridge, receipt-projection, and UI tests: 46/46 passed; `node scripts/check.js`: PASS.
+- Full direct suite: 519/519 passed. Frozen-provenance gate: PASS on the exact code commit; 533/533 tests, 47 named entrypoints, 1,644 tracked files locked, unchanged snapshot. Receipt: `/tmp/rcos-job-list-gate.json`.
+- Deterministic package: PASS from that commit; two packs from fresh detached worktrees were bit-identical at SHA-256 `b6abe8946b7d30daffaf5e6aa3c19e03c11dca4c708047e25025672c38cb71af`.
+- Independent Luna review found no functional blocker. No browser visual QA, DSH install, or live job/WM dispatch was performed.

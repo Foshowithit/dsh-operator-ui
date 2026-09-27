@@ -5,12 +5,29 @@ card to inspect the seat's reported verdict, artifact paths, evidence, blockers,
 warnings, and Archon identifiers. File actions use DSH's file-opening callback;
 raw call/result and the native Trajectory inspection remain available.
 
+It also registers an additive `job_list` card on DSH's currently unclaimed
+keyed tool-view entry. DSH's built-in `job_list` returns the caller's public job
+snapshot array (including running and finished jobs); the card is explicit that
+this is a snapshot from one result, not live state. An empty snapshot means no
+jobs were visible to that caller at the time of that call. Pending, mismatched,
+or malformed results never imply that no job exists. The expanded card preserves
+DSH's original text result and Trajectory inspection. It displays only the public
+`id`, `kind`, `label`, `status`, `detail`, `startedAt`, and `finishedAt` fields;
+internal `ownerSession` and notification bookkeeping are omitted.
+
 The host bridge uses DSH's `tools/post-execute` hook to append a versioned JSON
 content block containing the canonical dispatch value and exact call id. It
 preserves the original summary and tool value. Native model-visible results
 therefore include additional structured content, capped at 96 KiB. Downstream
 refusals or content/value replacements are preserved without appending stale
 receipt data. No additional endpoint or store is introduced.
+
+The same hook attaches the canonical `job_list` snapshot to its exact call id,
+after downstream gates accept the result. Its versioned envelope contains only
+the public fields above and is bounded at 96 KiB. The original text and canonical
+value remain intact; the structured copy is also model-visible. No job data is
+retained outside DSH's call result, and downstream refusals or replacements stay
+authoritative.
 
 The card updates through native DSH tool-block updates. A pending call says
 "Awaiting result"; it does not infer worker activity or progress. A receipt's
@@ -20,8 +37,9 @@ as raw text and are labeled unavailable for structured inspection.
 
 ## Validation and remaining work
 
-Run `node --test test/wm-bridge.test.mjs test/wm-inspector.test.mjs test/wm-ui.test.mjs`
-for receipt/identity/authority and UI callback regressions. The optional
+Run `node --test test/job-list-bridge.test.mjs test/wm-bridge.test.mjs test/wm-inspector.test.mjs test/wm-ui.test.mjs`
+for call-bound job snapshots, receipt/identity/authority, and UI callback
+regressions. The optional
 `node scripts/wm-runtime-smoke.mjs /absolute/runtime/node_modules` uses the
 installed ToolRuntime and dispatcher schema/renderer with a synthetic tool body
 to verify the transport into the actual client projector. It does not launch an
