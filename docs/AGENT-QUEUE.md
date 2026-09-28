@@ -3,13 +3,14 @@
 Coordinator-owned ledger. Read the [release plan](superpowers/plans/2026-09-28-public-desktop-release.md)
 and [roadmap](PUBLIC-DESKTOP-ROADMAP.md) before claiming work.
 
-Code baseline: `4a4cb1a` on `rcos-dsh-reconcile`. Planning auditors have
-finished and do not own implementation files. The C1 team below is active.
+Code baseline: `acda9f1` on `rcos-dsh-reconcile`. Planning auditors have
+finished. C1 is complete; B1 is claimed against the frozen contract in
+`docs/CAPABILITY-VIEW-CONTRACT.md`.
 
 | Packet | Status | Dependencies | Owner / worktree / base / files |
 | --- | --- | --- | --- |
 | A1 Desktop compatibility contract | READY | none | unclaimed |
-| B1 Capability readiness read model | READY | none | unclaimed |
+| B1 Capability readiness read model | CLAIMED | none | `/root/b1_capability_luna`; worktree `/Users/adam26/dsh-operator-ui-wt-reconcile`; base `acda9f1`; worker files `lib/capability-view.js`, `test/capability-view.test.mjs`; integrator owns contract/queue |
 | C1 Scoped execution source store | DONE (source) · code `1f73faf`, gate `PASS` | none | Gate snapshot `2097220`; no DSH/Canvas wiring; see `docs/EXECUTION-SOURCE-EVIDENCE.md` |
 | A2 Packed install / setup | WAITING | A1 | unclaimed |
 | B2 Capability selection / task path | WAITING | A1, B1 | unclaimed |
