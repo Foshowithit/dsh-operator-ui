@@ -1,0 +1,78 @@
+{
+  "schema": "operator-disposition-batch/1",
+  "snapshot": "2026-09-28",
+  "batch": "b",
+  "range": "entryIds starting l-z (6 rows)",
+  "reviewer": "luna-primary",
+  "observedAt": "2026-09-28T00:00:00.000Z",
+  "decisions": [
+    {
+      "entryId": "dshfind-api:liustack/modsearch",
+      "disposition": "task-pack",
+      "reason": "Free no-signup web search bridge for models without native web access is a repeatable research outcome (inputs: query + scope; outputs: cited passages; evidence: fetched URLs + dates). Highest daily-use value in the snapshot and the K4 lead candidate.",
+      "userOutcome": "inspect files, research/cite",
+      "upstreamIdentity": "liustack/modsearch, MIT, stars 566, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/liustack/modsearch"],
+      "prerequisites": ["supported execution binding via B2", "network egress allowlist entry", "citation format contract"],
+      "proposedCapabilityIds": ["bounded-research"],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:omdsh-dev/dsh-mnemon",
+      "disposition": "defer",
+      "reason": "Composable cross-session memory needs a reviewed storage/privacy contract (what persists, where, who can read it) before any capability shape. Memory architecture review comes first.",
+      "userOutcome": "inspect data",
+      "upstreamIdentity": "omdsh-dev/dsh-mnemon, MIT, stars 418, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/omdsh-dev/dsh-mnemon"],
+      "prerequisites": [],
+      "proposedCapabilityIds": [],
+      "revisit": "a reviewed memory storage/privacy contract plus retention and scoping rules",
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:shanliuling/dsh-image-gen",
+      "disposition": "task-pack",
+      "reason": "Generate/edit/compare images with prompts and gallery is a repeatable media-creation outcome (inputs: prompt + constraints; outputs: image bytes + provenance; evidence: seed/model record, held-out prompt checks). Provider keys stay operator-supplied prerequisites, never bundled.",
+      "userOutcome": "optional document/media creation",
+      "upstreamIdentity": "shanliuling/dsh-image-gen, Apache-2.0, stars 513, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/shanliuling/dsh-image-gen"],
+      "prerequisites": ["operator-supplied provider credentials", "supported execution binding via B2", "output provenance checks"],
+      "proposedCapabilityIds": ["image-studio"],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:shaobeichen/dsh-pocket",
+      "disposition": "optional-host-plugin",
+      "reason": "Phone-as-remote for a computer-run web UI is a transport/host feature, not a task outcome. GPL-2.0 repo license additionally bars copying code into this MIT tree — link out only.",
+      "userOutcome": "integrations",
+      "upstreamIdentity": "shaobeichen/dsh-pocket, GPL-2.0, stars 1391, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/shaobeichen/dsh-pocket"],
+      "prerequisites": ["user installs the host plugin in DSH's own plugin flow"],
+      "proposedCapabilityIds": [],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:superdesigndev/treg",
+      "disposition": "reject",
+      "reason": "Credential-handling API-key proxy: community tool traffic (including keys) through a third-party endpoint, with NOASSERTION repo license. No credential-boundary contract and no reuse rights — cannot be listed as anything but link-out.",
+      "userOutcome": "integrations",
+      "upstreamIdentity": "superdesigndev/treg, license NOASSERTION, stars 3710, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/superdesigndev/treg"],
+      "prerequisites": [],
+      "proposedCapabilityIds": [],
+      "revisit": "an asserted reuse license plus a reviewed credential-boundary contract",
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:xmanrui/dsh-im",
+      "disposition": "optional-host-plugin",
+      "reason": "IM-bot bridging over QR/robot credentials (Feishu, WeChat, DingTalk, Slack, Telegram, Discord, WhatsApp) is a credential-gated host integration, not a repeatable task outcome. User-installed host plugin only.",
+      "userOutcome": "integrations",
+      "upstreamIdentity": "xmanrui/dsh-im, MIT, stars 1523, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/xmanrui/dsh-im"],
+      "prerequisites": ["user supplies bot credentials in DSH's own plugin flow"],
+      "proposedCapabilityIds": [],
+      "reviewer": "luna-primary"
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "schema": "operator-disposition-batch/1",
+  "snapshot": "2026-09-28",
+  "batch": "a",
+  "range": "entryIds starting 0-d (7 rows)",
+  "reviewer": "luna-primary",
+  "observedAt": "2026-09-28T00:00:00.000Z",
+  "decisions": [
+    {
+      "entryId": "awesome-curated:0xsline/dsh-spotlight",
+      "disposition": "duplicate",
+      "reason": "Keyboard-first command palette duplicates the native palette already in lib/client.js (opens on Cmd+K/Ctrl+K with focused input). No distinct outcome.",
+      "userOutcome": "Desktop usability",
+      "upstreamIdentity": "0xsline/dsh-spotlight, MIT, updated 2026-09-27",
+      "evidenceLinks": ["https://github.com/0xsline/dsh-spotlight"],
+      "prerequisites": [],
+      "proposedCapabilityIds": [],
+      "equivalent": "native Cmd+K palette",
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:Aisland-SJL/dsh-worktable",
+      "disposition": "optional-host-plugin",
+      "reason": "Sidebar app drawer + dockable split workspace + project control room is a host UI surface, not a repeatable task outcome. Usable only as a user-installed host plugin; nothing here becomes a canonical capability.",
+      "userOutcome": "Desktop usability",
+      "upstreamIdentity": "Aisland-SJL/dsh-worktable, MIT, stars 681, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/Aisland-SJL/dsh-worktable"],
+      "prerequisites": ["user installs the host plugin in DSH's own plugin flow"],
+      "proposedCapabilityIds": [],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:Anionex/dsh-vision-toolkit",
+      "disposition": "task-pack",
+      "reason": "Image Q&A, pasted-image recognition, and screenshot-to-UI description is a repeatable inspect-data outcome with clear inputs (images), outputs (descriptions/answers), and refusal cases (no image, unreadable image). Propose a bounded vision-inspection pack.",
+      "userOutcome": "inspect data",
+      "upstreamIdentity": "Anionex/dsh-vision-toolkit, MIT, stars 884, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/Anionex/dsh-vision-toolkit"],
+      "prerequisites": ["image-capable model lane with digit-read confirmation", "supported execution binding via B2"],
+      "proposedCapabilityIds": ["vision-inspect"],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:NanmiCoder/dsh-agent-teams",
+      "disposition": "native-reuse",
+      "reason": "Agent-team orchestration is already a native session capability; wrapping it in a workflow adds no distinct user outcome. Use the native feature.",
+      "userOutcome": "integrations",
+      "upstreamIdentity": "NanmiCoder/dsh-agent-teams, MIT, stars 1838, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/NanmiCoder/dsh-agent-teams"],
+      "prerequisites": [],
+      "proposedCapabilityIds": [],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:SeaOf0/dsh-redteam-model",
+      "disposition": "reject",
+      "reason": "Offensive-security tooling (penetration testing, red-team assessments) with no authorized-testing task binding or scope contract in this program. Cannot become a selectable capability as-is.",
+      "userOutcome": "code/test/review",
+      "upstreamIdentity": "SeaOf0/dsh-redteam-model, MIT, stars 644, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/SeaOf0/dsh-redteam-model"],
+      "prerequisites": [],
+      "proposedCapabilityIds": [],
+      "revisit": "an authorized-testing task binding with a reviewed scope contract and refusal cases",
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:bowenliang123/dsh-context",
+      "disposition": "ui-enhancement",
+      "reason": "Context dashboard/browser/sidebar is a context-visibility surface. The readiness model already separates present/installed/verified facts; a context-visibility strip could ride a future C-surface, but no contract, binding, or negative evals exist yet. Proposal only.",
+      "userOutcome": "Desktop usability",
+      "upstreamIdentity": "bowenliang123/dsh-context, Apache-2.0, stars 1554, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/bowenliang123/dsh-context"],
+      "prerequisites": ["C-surface contract", "observation producer for context facts", "negative evals"],
+      "proposedCapabilityIds": [],
+      "reviewer": "luna-primary"
+    },
+    {
+      "entryId": "dshfind-api:dream-num/dsh-univer-office",
+      "disposition": "task-pack",
+      "reason": "Spreadsheets, docs, slides, and tables through a real office surface is a repeatable document outcome (inputs: structured data + template; outputs: .xlsx/.docx/.pptx artifacts; evidence: file bytes + formula checks). Propose a bounded office-artifact pack reusing native office tooling where it suffices.",
+      "userOutcome": "artifact inspection",
+      "upstreamIdentity": "dream-num/dsh-univer-office, Apache-2.0, stars 429, updated 2026-09-28",
+      "evidenceLinks": ["https://github.com/dream-num/dsh-univer-office"],
+      "prerequisites": ["supported execution binding via B2", "artifact output checks independent of the producer"],
+      "proposedCapabilityIds": ["office-artifact"],
+      "reviewer": "luna-primary"
+    }
+  ]
+}
