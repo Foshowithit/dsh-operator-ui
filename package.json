@@ -30,6 +30,7 @@
     "capabilities/*/contract.json",
     "capabilities/*/registry-entry.json",
     "cordis.patch.yml",
+    "system-manifest.json",
     "README.md",
     "LICENSE"
   ],

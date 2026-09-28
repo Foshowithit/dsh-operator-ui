@@ -1,5 +1,12 @@
 # dsh-operator-ui
 
+**DeepSeek Desktop product development starts in [DESKTOP.md](./DESKTOP.md).**
+This repository is the central home for our Operator integration, planned
+open canvas and capabilities-library experience. The package remains
+`dsh-operator-ui`; development consolidation does not change running installs.
+The roadmap distinguishes implemented slices from the still-pending full
+Desktop experience.
+
 An operator console for the [RCOS](https://github.com/Foshowithit/rcos) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)

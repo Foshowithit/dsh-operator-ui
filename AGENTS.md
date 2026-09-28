@@ -1,5 +1,15 @@
 # AGENTS.md — for humans AND AI agents working on this repo
 
+## Product development home (2026-09-28)
+
+Read `DESKTOP.md` for the DSH Desktop product direction, ownership map and
+ordered delivery queue. The active integration branch is `rcos-dsh-reconcile`.
+Centralize new Operator, Canvas integration and capability-library product
+work here, with one active team per worktree and disjoint worker ownership.
+This does not merge other repositories, transfer canonical registry ownership,
+or authorize changes to installed profiles. Preserve the running product while
+developing and verifying isolated changes.
+
 This is `dsh-operator-ui`: a side-loaded plugin for **DeepSeek Harness (DSH)** that adds a Runs grid, a ⌘K command palette, and a read-only Git tab to the existing DSH web UI. It is NOT a fork. Everything here rides DSH's public extension seams.
 
 If you are an AI agent picking this up: this file contains the contract knowledge that is NOT in the DSH docs — hard-won from source-level verification against DSH `0.1.0-rc.6`. Read it fully before editing.
