@@ -13,7 +13,7 @@ wired to the live Desktop or Canvas. See their evidence docs.
 | B1 Capability readiness read model | DONE (source) · code `ebaaf2e`, gate `PASS` | none | 24/24 focused tests; 575/575 frozen gate on exact code commit; no UI/observation producer; see `docs/CAPABILITY-VIEW-EVIDENCE.md` |
 | B1a Third-party plugin discovery contract | DONE (source audit; adapter/runtime pending) | A1, B1 | Luna source audit + independent survey reconciliation; `docs/PLUGIN-ECOSYSTEM-CONTRACT.md`; documented APIs, dataset rights limits and separate listing/host evidence types; no install or runtime edits |
 | C1 Scoped execution source store | DONE (source) · code `1f73faf`, gate `PASS` | none | Gate snapshot `2097220`; no DSH/Canvas wiring; see `docs/EXECUTION-SOURCE-EVIDENCE.md` |
-| A2 Packed install / setup | READY | A1 | unclaimed; inspect advertised macOS nightly Desktop/DSH `0.2.0-rc.1` archive and establish a disposable install path; feed and artifact URL (HTTP 200) are confirmed, upstream pins shell and DSH to the same version, while package inventory and isolated runtime acceptance remain pending; leave the active app untouched |
+| A2 Packed install / setup | DONE (archive source proof; isolated boot/remove pending) · code `740bf11`, gate `PASS` 596/596 | A1 | feed re-fetched unchanged 2026-09-28; ZIP size + SHA-512 verified; asar inventory (runtime/dsh/dsh-tools `0.2.0-rc.1`, cordis `4.0.4`, node `24.18.1`); seams by string evidence; peer-range MISMATCH kept, no pin widened; active app untouched; see `docs/DESKTOP-COMPATIBILITY.md` §A2 |
 | B2 Capability selection / task path | READY for observation contract and selection tests; UI proof waits P1 | A1, B1, B1a | unclaimed; P2 addendum refines this packet, not a separate owner |
 | C2 Canvas import / host mount | READY for donor provenance and source adapter; mount proof pending | A1, C1 | unclaimed; serialize shared client edits; P1 supplies synthetic QA only |
 | C3 Canvas interaction / visual QA | WAITING | C2 | unclaimed |
@@ -23,11 +23,11 @@ wired to the live Desktop or Canvas. See their evidence docs.
 | R1 Public audit / CI | READY for inventory only | final evidence after E1, D2 | unclaimed |
 | R2 Release candidate | WAITING | A2, C3, D1, D2, E1, R1 | unclaimed |
 | G1 Measured growth | WAITING | real journey evidence | unclaimed |
-| K1 Offline ecosystem inventory | READY (licensed awesome snapshot only; dshfind bulk rights unresolved) | B1a | unclaimed; `scripts/plugin-inventory.mjs`, `test/plugin-inventory.test.mjs`, `docs/ecosystem/{sources.json,inventory.json,README.md}` |
+| K1 Offline ecosystem inventory | DONE (source) · code `adab354`, gate `PASS` 596/596 at `740bf11` | B1a | 13/13 focused tests; `scripts/plugin-inventory.mjs`, `test/plugin-inventory.test.mjs`, `docs/ecosystem/{sources.json,inventory.json,README.md}`; 13 entries, 0 conflicts, all sources honestly partial; reuse reads licensed-feed rows only |
 | K2 Bounded entry review | WAITING | a K1 snapshot | unclaimed; disjoint 25-entry ranges and candidate briefs; no shared ledger edits |
 | K3 Display-only discovery model | WAITING for sanitized K1 fixtures | B1a, K1 | unclaimed; `lib/plugin-discovery.js`, `test/plugin-discovery.test.mjs`; no host-observation join or install action |
 | K4 One community-derived outcome pack | WAITING | reviewed K2 candidate, A1, B2, supported binding | unclaimed; exclusive `capabilities/<id>/` and focused test; D1/D2 remain existing starter packets |
-| P1 Actual-component preview | READY for resolver contract; rendering waits pinned dependency proof | A1 | unclaimed; preview script, tests/fixtures and `docs/DESKTOP-VISUAL-QA.md`; no active app access |
+| P1 Actual-component preview | CONTRACT DONE (resolver ranges pinned; rendering BLOCKED on exact bytes) · code `c0473c7`, gate `PASS` 596/596 at `740bf11` | A1 | 8/8 focused tests; preview script, fixtures and `docs/DESKTOP-VISUAL-QA.md`; loopback-only synthetic host with fail-closed guards; upstream react/react-dom `^18.2.0` recorded, exact resolution unproven — no CDN, no stub, no live-app read; no active app access |
 | P3 Canvas polish (C2/C3 refinement) | WAITING | C2, P1; artifact authorization proof | same owner/claim as C3; not a second integration team |
 | P4 Daily-use candidate (E1 refinement) | WAITING | A2, B2, P3, one proven D1/D2/K4 outcome | same owner/claim as E1; narrower candidate does not satisfy full E1/R2 release gates |
 
