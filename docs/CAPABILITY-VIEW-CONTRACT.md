@@ -127,7 +127,9 @@ Each valid, unique registry record projects to:
   explicitly `yes`, a binding exists and its exact name is present in an
   available workflow catalog, and every declared machine dependency is
   explicitly available. A known blocker yields `no`; missing evidence yields
-  `unknown`. Missing binding is a known `no` for the current Archon route.
+  `unknown`. An explicitly unavailable Archon catalog is a known current
+  blocker (`no`); an unknown or absent catalog is `unknown`. Missing binding
+  is a known `no` for the current Archon route.
   This is a readiness summary, not permission to dispatch.
 - `eligible` is `yes` only for lifecycle `promoted` or `verified` when
   `verified`, `executable`, and the matched current `authority` fact are all
