@@ -126,3 +126,5 @@ slices by tested commits; do not turn this roadmap into a release claim.
 Desktop readiness code `4a4cb1a` includes the verifier manifest in the package
 and distinguishes receipt validity from its achieved verification level.
 See [the verification record](docs/DESKTOP-READINESS-EVIDENCE.md) for exact scope.
+C1 adds a tested pure execution-source store at `1f73faf`; the [evidence](docs/EXECUTION-SOURCE-EVIDENCE.md)
+records its source gate and states that DSH/Canvas wiring remains future work.

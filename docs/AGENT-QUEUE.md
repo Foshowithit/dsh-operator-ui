@@ -10,7 +10,7 @@ finished and do not own implementation files. The C1 team below is active.
 | --- | --- | --- | --- |
 | A1 Desktop compatibility contract | READY | none | unclaimed |
 | B1 Capability readiness read model | READY | none | unclaimed |
-| C1 Scoped execution source store | REVIEW · code `1f73faf`, gate pending | none | 2026-09-28: root integrator + Luna `c1_execution_source`; reconcile worktree; base `7aa9e2f`; only `lib/execution-source.js`, `test/execution-source.test.mjs`, `docs/EXECUTION-SOURCE-CONTRACT.md` |
+| C1 Scoped execution source store | DONE (source) · code `1f73faf`, gate `PASS` | none | Gate snapshot `2097220`; no DSH/Canvas wiring; see `docs/EXECUTION-SOURCE-EVIDENCE.md` |
 | A2 Packed install / setup | WAITING | A1 | unclaimed |
 | B2 Capability selection / task path | WAITING | A1, B1 | unclaimed |
 | C2 Canvas import / host mount | WAITING | A1, C1 | unclaimed |
