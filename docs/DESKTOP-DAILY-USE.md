@@ -35,10 +35,14 @@ user's app during development; the disposable-profile boot below comes first.
 
 ## Unresolved limitations (exact next commands)
 
-1. **A2 disposable boot** (active app untouched so far):
-   `unzip` the verified `0.2.0-rc.1` archive to scratch, launch a copy with
-   a fresh profile dir, prove stock surfaces + fixture sessions survive
-   install/remove, record package hash, profile path, command, limits.
+1. **A2 disposable boot — DONE 2026-09-28** (active app untouched end-to-end):
+   executed per `docs/DESKTOP-COMPATIBILITY.md` §A2 ("EXECUTED" section):
+   verified zip re-fetched (SHA-512 feed match; asar `cf92b07a…8ef53865`),
+   booted from scratch with a fresh `DSH_HOME` profile on isolated port
+   19388, stock shell + auth + first session proven, session survived
+   quit → relaunch, removal left real sessions/credentials/userData
+   byte-identical. Exact command, port-override patch, isolation recipe and
+   limits live in that section. Enabling daily use still needs items 2–4.
 2. **P1 exact React bytes**: pin resolved `react`/`react-dom` + source
    digest from the target host source (ranges `^18.2.0` recorded; lockfile
    resolution and local bundled bytes still unproven), then flip

@@ -96,6 +96,51 @@ range `^0.1.0-rc.8` against embedded `0.2.0-rc.1` keeps the earlier
 install/boot/remove with a disposable profile was NOT executed in this
 pass — that, plus stock-surface survival and the exact resolution path,
 remains the open A2 runtime item with the active app left untouched.
+(Amended same day: the A2 boot claim below executed it.)
+
+### A2 isolated boot/remove — EXECUTED 2026-09-28 (active app untouched end-to-end)
+
+The disposable boot above was completed the same day by the A2 boot claim
+(queue row; scratch tree outside the repo). Evidence in brief, all measured:
+
+- **Archive identity held.** The zip was re-fetched from the live feed:
+  SHA-512 matches the feed value and the recorded value exactly, and the
+  extracted `app.asar` SHA-256 is `cf92b07a…8ef53865` as recorded above.
+- **Isolation method (the working recipe).** Launch the unpacked copy with
+  `env -u ELECTRON_RUN_AS_NODE` and `DSH_HOME=<scratch>` (fresh profile is
+  scaffolded on first boot). Two traps make the naive launch fail: hosts
+  that set `ELECTRON_RUN_AS_NODE=1` (harness node-mode children do) run the
+  bundle as plain Node — "bad option", exit 9/0, silent; and macOS Electron
+  ignores `$HOME` for its userData, so the single-instance lock collides
+  with the installed app (instant silent exit 0). Isolation that worked:
+  a same-length byte patch of the copy's asar `package.json` `name`
+  (offsets preserved; post-patch asar SHA-256 `084abf1b…d95dcd9`), which
+  redirects Electron's userData and lock. The main executable was never
+  modified.
+- **Port.** The webserver hard-binds `127.0.0.1:19387` — the production
+  app's port. Collision fails 2 required plugins (webserver + connection)
+  and cascades to 9 waiting plugins: `DesktopHostFatalError`, though the
+  Electron renderer still runs (misleading). Override proven via the fresh
+  profile's `cordis.patch.yml`:
+  `- id: webserver` + `config: {host: 127.0.0.1, port: 19388}` (the plugin
+  id is `webserver`, not the package name).
+- **Boot result.** Full startup on the isolated port: webserver bound,
+  token → 303 → signed cookie auth flow, app shell served HTTP 200
+  (35,544 bytes), live account `auth_init`/`auth_exchange` 200s, updater
+  honest (`0.2.0-rc.1 is not available (latest)`), first session
+  scaffolded inside the scratch DSH home only.
+- **Restart + removal.** Graceful quit → relaunch: same session present,
+  shell served again, no fatal diagnostics. Removal deleted the app copy,
+  scratch DSH home, scratch Electron userData, and the one real
+  side effect — a fresh boot still defaults the workspace to
+  `~/Documents/deepseek-harness` (empty dir, outside the DSH home; removal
+  must include it). After removal: zero leftover processes; the active
+  install's sessions count, credentials mtime, and Electron userData mtime
+  were identical before/after; zero writes to the active app at any point.
+- **Per-file hash table caveat.** The per-file table below does NOT
+  reproduce against the byte-identical archive (4/4 tested rows differ;
+  container hashes match exactly). Regenerate that table from stored bytes
+  before trusting any row.
 
 Relevant files inside `Contents/Resources/app.asar` and their SHA-256 hashes:
 
