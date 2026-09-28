@@ -119,7 +119,10 @@ Each valid, unique registry record projects to:
   observation. `evals`, `last_eval`, `provenance`, receipt-seal validity alone,
   or a success-looking field cannot make it `yes`.
 - `binding` uses only a nonblank string at `record.workflow`; otherwise it is
-  `null`. The only B1 binding kind is `archon-workflow`.
+  `null`. Preserve the workflow string exactly (including surrounding
+  whitespace) and compare it exactly to the catalog. The existing router sends
+  the explicit registry value; the projector must not silently normalize it.
+  The only B1 binding kind is `archon-workflow`.
 - `executable` is `yes` only when installation and runtime compatibility are
   explicitly `yes`, a binding exists and its exact name is present in an
   available workflow catalog, and every declared machine dependency is
