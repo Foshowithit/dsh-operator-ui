@@ -56,6 +56,47 @@ SHA-512 has not been independently checked. The feed does not show that the
 update was applied; the app was not opened or updated. Because this is a
 mutable nightly feed, treat these values as a dated observation.
 
+## A2 archive inspection (2026-09-28; active app untouched)
+
+The advertised `deepseek-harness-0.2.0-rc.1-mac-arm64.zip` was fetched to
+scratch (`bin/mac-arm64/` path from the live feed — the earlier guessed
+`feeds/mac-arm64/` artifact path 404s and must not be used). Size
+373,093,684 bytes matches the feed, and the computed SHA-512 matches the
+feed value `P+z6DVy...GUwC2...` exactly, closing the unchecked-hash item
+above. The zip was listed and its `app.asar` read with a local read-only
+header parser; nothing was installed, booted, or written to any profile,
+and the installed `/Applications/DeepSeek Harness.app` was only ever read.
+
+Exact inventory inside the 0.2.0-rc.1 `app.asar` (13,011 files;
+`app.asar` SHA-256 `cf92b07a...8ef53865`):
+
+| Package / file | Version |
+|---|---|
+| asar-root package (`dsh/package.json` is `@deepseek-ai/dsh-desktop-runtime`) | `0.2.0-rc.1` |
+| `@deepseek-ai/dsh` | `0.2.0-rc.1` (MIT) |
+| `@deepseek-ai/dsh-tools` | `0.2.0-rc.1` (MIT) |
+| `@deepseek-ai/cordis` | `4.0.4` (MIT, unchanged from 0.1.7-rc.2) |
+| `runtime/versions.json` (outside asar) | Node `24.18.1`, pnpm `11.7.0` (unchanged) |
+| `Contents/Info.plist` | `0.2.0-rc.1` |
+| `app-update.yml` | channel `nightly`, feed `.../dsh-desk/feeds/mac-arm64/` |
+
+Layout differences from the 0.1.7-rc.2 capture: no `dsh-desktop` or
+`dsh-desktop-runtime` package under `dsh/node_modules`, no
+`dsh-client-ui-*` packages, and no `react`/`react-dom`/`electron`
+`package.json` files anywhere in the archive — client React is bundled,
+not shipped as a separate package, so no standalone React version is
+recoverable from this archive. The loader seams are present by string
+evidence in the bundle (`__ModuleLoader__` x88, `tool.call.toolview`,
+`tools/post-execute`), which confirms the mechanism names survived the
+build, not that this plugin loaded, rendered, or received a dispatch.
+
+Compatibility consequence: the plugin's `@deepseek-ai/dsh-tools` peer
+range `^0.1.0-rc.8` against embedded `0.2.0-rc.1` keeps the earlier
+`judgeTools` MISMATCH expectation; no pin was widened. Isolated
+install/boot/remove with a disposable profile was NOT executed in this
+pass — that, plus stock-surface survival and the exact resolution path,
+remains the open A2 runtime item with the active app left untouched.
+
 Relevant files inside `Contents/Resources/app.asar` and their SHA-256 hashes:
 
 | Archive-relative source path | SHA-256 |
@@ -239,7 +280,7 @@ profile install. Do not test against the active Desktop profile.
 |---|---|---|
 | Historical web tuple: DSH `0.1.0-rc.6`, dsh-tools `0.1.0-rc.8`, Cordis `4.0.2`, plugin `0.7.0` | `COMPAT.md` records verification on 2026-09-15; the current source package is plugin `0.11.0` | Previously verified tuple; current package still needs an isolated recheck |
 | Installed Desktop capture: app/runtime `0.1.7-rc.2`, bundled DSH/dsh-tools `0.1.7-rc.2`, Cordis `4.0.4` | Local bundle source confirms the needed slots, ModuleLoader shape, callback, and call identity | Source-confirmed for this archived install only; no runtime plugin proof |
-| Advertised Desktop/DSH update: `0.2.0-rc.1` | Production macOS nightly feed; artifact URL returns HTTP 200; upstream source contract; archive not downloaded | A2 inspection target; package inventory, isolated install path, and plugin compatibility unverified |
+| Advertised Desktop/DSH update: `0.2.0-rc.1` | Production macOS nightly feed (re-fetched 2026-09-28, unchanged); archive downloaded to scratch with size + SHA-512 verified; package inventory above; loader seams present by string evidence | Archive source-confirmed; isolated install/boot/remove and plugin compatibility still unverified |
 | Other Desktop/app or prerelease versions | No matching source capture or runtime result in this record | Unknown / unsupported by this evidence |
 
 ## Evidence boundary
@@ -248,8 +289,9 @@ The RC.6 claims above are source-confirmed for the named public npm packages;
 the `0.1.7-rc.2` claims are source-confirmed for the single local app archive.
 The latter confirms the keyed tool view declaration and render site for that
 captured build. The `0.2.0-rc.1` version identity is supported by the
-production update feed and upstream versioning contract, but its archive and
-package inventory have not been inspected. Neither source set proves this
+production update feed and upstream versioning contract, and its archive
+hash and package inventory are now inspected per the A2 section above
+(seams by string evidence only). Neither source set proves this
 plugin rendered in the installed Desktop or that a live `tools/post-execute`
 dispatch reached it. No plugin rendering, live dispatch, or app UI interaction
 was performed. No profiles were changed, packages installed into profiles,
