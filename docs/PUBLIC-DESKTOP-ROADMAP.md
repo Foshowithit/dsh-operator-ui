@@ -132,7 +132,9 @@ source and status labels; they become selectable task capabilities only through
 the existing canonical record and admission path.
 
 The first public integration is link-only unless a source offers a documented,
-stable, licensed machine-readable interface. Do not scrape page markup, poll
+licensed interface with a reviewed version/schema contract, or an explicitly
+licensed snapshot whose exact bytes and projection are pinned and tested.
+An unversioned export is not a promise of a stable live API. Do not scrape page markup, poll
 community sites, create a second registry, or auto-install or execute community
 code. Separate publisher-declared DSH version ranges from independently tested
 host compatibility. Missing, stale or unsupported data stays unknown. The user
@@ -140,6 +142,14 @@ reviews and installs plugins through DSH's own plugin flow. DSH's host-level
 install and runtime behavior determines what access plugin code receives;
 Operator does not review or limit it. The user's plugin-install decision
 through DSH remains separate from RCOS task admission.
+
+The [ecosystem and Desktop execution addendum](superpowers/plans/2026-09-28-ecosystem-capabilities-desktop-polish.md)
+defines the complete-disposition sweep, a source-backed first candidate wave and
+daily-use polish packets. Its [source contract](PLUGIN-ECOSYSTEM-CONTRACT.md) and
+[13-candidate survey](PLUGIN-DISCOVERY-SURVEY.md) identify where data can be read
+and what still needs proof. Review the whole frozen inventory in bounded batches;
+reuse host features directly and build task packs for concrete outcomes. Run this
+alongside Desktop work so catalog breadth does not delay one useful daily-use loop.
 
 ### Canvas: execution becomes inspectable
 

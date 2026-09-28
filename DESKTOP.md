@@ -11,9 +11,12 @@ repositories and the earlier Canvas source have not been merged here.
 
 Public release work follows the [product roadmap](docs/PUBLIC-DESKTOP-ROADMAP.md),
 [agent execution plan](docs/superpowers/plans/2026-09-28-public-desktop-release.md)
-and [ownership queue](docs/AGENT-QUEUE.md). B1 and C1 now have source-only
-contracts and tested implementations; A1's exact Desktop compatibility contract
-remains open. Shared integration files have one writer.
+and [ownership queue](docs/AGENT-QUEUE.md). The
+[ecosystem and daily-use addendum](docs/superpowers/plans/2026-09-28-ecosystem-capabilities-desktop-polish.md)
+assigns directory review, capability conversion and Desktop polish to bounded
+agent packets. B1 and C1 have source-only contracts and tested implementations;
+A1 has a source-audited Desktop contract with runtime proof pending. Shared
+integration files have one writer.
 
 ## The experience we are building
 

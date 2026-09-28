@@ -22,6 +22,10 @@ no new build stack is assumed by this plan.
 [product home](../../../DESKTOP.md), and
 [Canvas seam reconnaissance](../../CANVAS-DSH-SEAM-RECON.md).
 
+For the user-requested full ecosystem sweep and daily-use polish sequencing,
+use the [execution addendum](2026-09-28-ecosystem-capabilities-desktop-polish.md).
+It refines these packets; the queue and runtime authorities remain shared.
+
 ## Global constraints
 
 - Work from `rcos-dsh-reconcile`; the baseline readiness code is `4a4cb1a`.
@@ -212,8 +216,9 @@ shared-entrypoint changes.
   declared DSH range, independently tested host versions, canonical capability
   identity, and readiness. Missing or stale evidence remains unknown; declared
   compatibility is never relabeled as tested compatibility.
-- [ ] Allow machine ingestion only from a documented stable interface whose
-  license and terms permit the use. Otherwise the integration remains explicit
+- [ ] Allow machine ingestion only from a documented interface or pinned snapshot
+  whose license/terms permit use and whose exact shape has a reviewed adapter.
+  An unversioned export does not establish live API stability. Otherwise use
   link-out discovery. Do not scrape page markup, poll, add a store, auto-install,
   or run community code. Installation stays in DSH's user-controlled flow.
 - [ ] Include sanitized source examples and negative cases for misleading
