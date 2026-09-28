@@ -67,15 +67,19 @@ workflow names, and names are meaningful only when `state` is `available`.
 Each capability observation is matched by exact `id` and `version`; when a
 digest appears on either side, both sides must contain the same digest. A
 missing/mismatched identity never lends facts to another version or artifact.
+Identity strings and catalog names are compared exactly as supplied; the
+projector must not trim or case-fold them. It may reject overlong identity or
+binding values, but must never truncate them into a different identity.
 The registry digest is read only from the record's top-level `sourceDigest`;
 nested provenance digests are not substituted.
 
 The registry record's optional top-level `dependencies` array is the declared
-machine-dependency list. Every declared dependency needs a same-named fact in
-the matched observation. An absent or malformed declaration is unknown, not
-an empty dependency list. The `requires` array remains permission scopes and
-is never used as machine-dependency evidence. A registry record with an
-explicit empty `dependencies: []` declares no additional machine dependencies.
+machine-dependency list; each item is `{ name: string }`. Every declared
+dependency needs a same-named fact in the matched observation. An absent or
+malformed declaration is unknown, not an empty dependency list. The `requires`
+array remains permission scopes and is never used as machine-dependency
+evidence. A registry record with an explicit empty `dependencies: []` declares
+no additional machine dependencies.
 
 Observation facts are host reports for this projection only. They do not grant
 permission, bypass human approval, or become dispatch tokens. A consumer must
@@ -88,8 +92,11 @@ persistence.
 Inputs are JSON-like records with own enumerable string data properties. The
 projector must not invoke accessors; symbols, accessors, hidden own properties,
 unsupported values, or malformed records produce errors and cannot produce
-affirmative readiness. Inputs are not mutated. Output order is deterministic
-by capability ID using code-unit ordering.
+affirmative readiness. An unsafe top-level registry envelope invalidates the
+whole registry; an unsafe individual capability entry is omitted while safe
+sibling entries can still be projected. Invalid observation envelopes lend no
+facts, so readiness remains unknown. Inputs are not mutated. Output order is
+deterministic by capability ID using code-unit ordering.
 
 ## Entry semantics
 
