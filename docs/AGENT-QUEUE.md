@@ -3,14 +3,14 @@
 Coordinator-owned ledger. Read the [release plan](superpowers/plans/2026-09-28-public-desktop-release.md)
 and [roadmap](PUBLIC-DESKTOP-ROADMAP.md) before claiming work.
 
-Code baseline: `acda9f1` on `rcos-dsh-reconcile`. Planning auditors have
-finished. C1 is complete; B1 is claimed against the frozen contract in
-`docs/CAPABILITY-VIEW-CONTRACT.md`.
+Code baseline: `ebaaf2e` on `rcos-dsh-reconcile`. Planning auditors have
+finished. B1 and C1 are complete at the source-contract level; neither is
+wired to the live Desktop or Canvas. See their evidence docs.
 
 | Packet | Status | Dependencies | Owner / worktree / base / files |
 | --- | --- | --- | --- |
 | A1 Desktop compatibility contract | READY | none | unclaimed |
-| B1 Capability readiness read model | REVIEW | none | Luna B1 worker; isolated `rcos-dsh-reconcile` worktree; base `1de1c6f`; worker files `lib/capability-view.js`, `test/capability-view.test.mjs`; 24/24 focused tests; independent review passed; integrator final verification pending |
+| B1 Capability readiness read model | DONE (source) · code `ebaaf2e`, gate `PASS` | none | 24/24 focused tests; 575/575 frozen gate on exact code commit; no UI/observation producer; see `docs/CAPABILITY-VIEW-EVIDENCE.md` |
 | C1 Scoped execution source store | DONE (source) · code `1f73faf`, gate `PASS` | none | Gate snapshot `2097220`; no DSH/Canvas wiring; see `docs/EXECUTION-SOURCE-EVIDENCE.md` |
 | A2 Packed install / setup | WAITING | A1 | unclaimed |
 | B2 Capability selection / task path | WAITING | A1, B1 | unclaimed |

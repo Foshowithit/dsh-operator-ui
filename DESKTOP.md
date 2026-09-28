@@ -11,8 +11,9 @@ repositories and the earlier Canvas source have not been merged here.
 
 Public release work follows the [product roadmap](docs/PUBLIC-DESKTOP-ROADMAP.md),
 [agent execution plan](docs/superpowers/plans/2026-09-28-public-desktop-release.md)
-and [ownership queue](docs/AGENT-QUEUE.md). A1, B1 and C1 are the initial parallel
-packets; shared integration files have one writer.
+and [ownership queue](docs/AGENT-QUEUE.md). B1 and C1 now have source-only
+contracts and tested implementations; A1's exact Desktop compatibility contract
+remains open. Shared integration files have one writer.
 
 ## The experience we are building
 
@@ -119,6 +120,10 @@ does not establish a working live install or visual acceptance.
 Call-bound WM/job snapshots: implementation `6c8af01`, evidence in
 `docs/superpowers/plans/2026-09-26-wm-inspector.md`. Canvas reconnaissance:
 `1e06151`, `docs/CANVAS-DSH-SEAM-RECON.md`.
+
+Capability readiness projection: source implementation `ebaaf2e`, evidence in
+`docs/CAPABILITY-VIEW-EVIDENCE.md`. The projection is not yet connected to a
+host observation producer or capability UI.
 
 The complete Canvas/capability path above is not ready yet. Track completed
 slices by tested commits; do not turn this roadmap into a release claim.
