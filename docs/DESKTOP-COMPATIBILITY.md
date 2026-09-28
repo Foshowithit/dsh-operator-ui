@@ -34,6 +34,28 @@ packages at `0.1.7-rc.2`. This is the exact package
 metadata observed in this app archive; it does not replace or update the
 RCOS-owned version pin in COMPAT.md.
 
+## Update feed observation (2026-09-28)
+
+The installed app's `app-update.yml` points to the production macOS Apple
+silicon feed
+[`nightly-mac.yml`](https://download.deepseek.com/dsh-desk/feeds/mac-arm64/nightly-mac.yml)
+with channel `nightly`. A read-only fetch of that feed advertised Desktop
+version `0.2.0-rc.1`, release date `2026-09-28T12:20:41.472Z`, and archive
+`deepseek-harness-0.2.0-rc.1-mac-arm64.zip` (373,093,684 bytes; SHA-512
+`P+z6DVyJCSc3hKBgpKYE6rzmV82Za7SeUnohPJb6vxDQk2dAd2LSRjXF255EvGUwC2Dd3cH3rURGHffyfI2UdA==`).
+The upstream [Desktop release contract at tag `dsh-v0.2.0-rc.1`](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.1/apps/desktop/README.md)
+says Electron and `@deepseek-ai/dsh` always share the exact version; the
+[matching upstream release](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.1)
+is listed as a prerelease. Thus `0.2.0-rc.1` is the expected DSH runtime
+version for this Desktop build. A read-only `HEAD` request to the feed's ZIP
+URL returned HTTP 200 and a `Content-Length` matching the feed's 373,093,684
+bytes. The archive still needs inspection to verify its exact package
+inventory, including dsh-tools, Cordis, and UI packages, and to establish
+plugin compatibility. The archive was not downloaded, so its published
+SHA-512 has not been independently checked. The feed does not show that the
+update was applied; the app was not opened or updated. Because this is a
+mutable nightly feed, treat these values as a dated observation.
+
 Relevant files inside `Contents/Resources/app.asar` and their SHA-256 hashes:
 
 | Archive-relative source path | SHA-256 |
@@ -78,13 +100,15 @@ archive and listed above.
 
 ## Compatibility target and install boundary
 
-The current local Desktop `0.1.7-rc.2` bundle is the source-backed candidate
-for the next isolated compatibility run because its exact bundle includes the
-required slots and tool-call identity described below. It is **not supported
-or certified yet**. `COMPAT.md` still names the older web-host pin, and the
-current Operator source is newer than the plugin version recorded by that
-historical verification. The local app's update channel is nightly, so this
-capture also does not define a public Desktop release channel.
+The installed Desktop capture is still `0.1.7-rc.2`; its nightly feed now
+advertises `0.2.0-rc.1` as the next A2 inspection target. The feed does not
+identify the package inventory inside that archive. Upstream release source
+sets the expected bundled DSH version to `0.2.0-rc.1`, but the source capture
+below applies only to installed `0.1.7-rc.2` and cannot establish compatibility
+for the new artifact. Neither Desktop target is **supported or certified yet**.
+`COMPAT.md` still names the older web-host pin, and the current Operator source
+is newer than the plugin version recorded by that historical verification.
+The app's nightly channel does not define a public Desktop release channel.
 
 The only install recipe established by the repository runbook is the isolated
 web-profile command for the old RC.6 pin; it was not run during this source
@@ -214,7 +238,8 @@ profile install. Do not test against the active Desktop profile.
 | Target | Evidence | Status |
 |---|---|---|
 | Historical web tuple: DSH `0.1.0-rc.6`, dsh-tools `0.1.0-rc.8`, Cordis `4.0.2`, plugin `0.7.0` | `COMPAT.md` records verification on 2026-09-15; the current source package is plugin `0.11.0` | Previously verified tuple; current package still needs an isolated recheck |
-| Captured Desktop: app/runtime `0.1.7-rc.2`, bundled DSH/dsh-tools `0.1.7-rc.2`, Cordis `4.0.4` | Local bundle source confirms the needed slots, ModuleLoader shape, callback, and call identity | Candidate for A2's isolated acceptance; not supported or runtime-verified |
+| Installed Desktop capture: app/runtime `0.1.7-rc.2`, bundled DSH/dsh-tools `0.1.7-rc.2`, Cordis `4.0.4` | Local bundle source confirms the needed slots, ModuleLoader shape, callback, and call identity | Source-confirmed for this archived install only; no runtime plugin proof |
+| Advertised Desktop/DSH update: `0.2.0-rc.1` | Production macOS nightly feed; artifact URL returns HTTP 200; upstream source contract; archive not downloaded | A2 inspection target; package inventory, isolated install path, and plugin compatibility unverified |
 | Other Desktop/app or prerelease versions | No matching source capture or runtime result in this record | Unknown / unsupported by this evidence |
 
 ## Evidence boundary
@@ -222,8 +247,10 @@ profile install. Do not test against the active Desktop profile.
 The RC.6 claims above are source-confirmed for the named public npm packages;
 the `0.1.7-rc.2` claims are source-confirmed for the single local app archive.
 The latter confirms the keyed tool view declaration and render site for that
-captured build. Neither source set proves this plugin rendered in the installed
-Desktop or that a live `tools/post-execute` dispatch reached it. No plugin
-rendering, live dispatch, or app UI interaction was performed. No profiles
-were changed, packages installed into profiles, services started, or
-provider/runtime state altered for this review.
+captured build. The `0.2.0-rc.1` version identity is supported by the
+production update feed and upstream versioning contract, but its archive and
+package inventory have not been inspected. Neither source set proves this
+plugin rendered in the installed Desktop or that a live `tools/post-execute`
+dispatch reached it. No plugin rendering, live dispatch, or app UI interaction
+was performed. No profiles were changed, packages installed into profiles,
+services started, or provider/runtime state altered for this review.
