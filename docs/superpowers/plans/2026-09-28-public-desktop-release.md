@@ -82,7 +82,7 @@ worker. Do not begin dependent runtime integration before its interfaces pass.
 | Lane | Exclusive ownership | Shared edits submitted to integrator |
 | --- | --- | --- |
 | A: compatibility/release setup | `docs/DESKTOP-COMPATIBILITY.md`, A2 install tests and onboarding docs | `COMPAT.md`, `package.json`, `lib/compat.js`, `lib/cli.js`, config/manifest and root docs |
-| B: catalog/selection | `lib/capability-view.js`, its tests, `docs/CAPABILITY-VIEW-CONTRACT.md` | `lib/goal.js`, `lib/admission.js`, `lib/index.js`, `lib/client.js` |
+| B: catalog/selection | `lib/capability-view.js`, its tests; the integrator freezes `docs/CAPABILITY-VIEW-CONTRACT.md` before implementation | `lib/goal.js`, `lib/admission.js`, `lib/index.js`, `lib/client.js` |
 | C: Canvas | `lib/execution-source.js`, its tests, `docs/EXECUTION-SOURCE-CONTRACT.md`, reviewed Canvas files after C2 | `lib/client.js`, `lib/index.js`, package/build configuration |
 | D: capability packs | One named `capabilities/<id>/` directory per worker and its focused tests | Bindings, registry fixtures and shared runtime integration |
 | R: public release | New release/audit docs, new CI/test files | `.github/workflows/`, package metadata, root documentation |
@@ -139,8 +139,9 @@ pending runtime tests. A source audit alone never marks a host release verified.
 
 ## B1 — Build the capability readiness read model
 
-**Files:** create `lib/capability-view.js`, `test/capability-view.test.mjs`,
-`docs/CAPABILITY-VIEW-CONTRACT.md`. Do not edit registry files or routing yet.
+**Files:** the integrator freezes `docs/CAPABILITY-VIEW-CONTRACT.md` from the
+source audit first. The worker owns `lib/capability-view.js` and
+`test/capability-view.test.mjs`. Do not edit registry files or routing yet.
 
 **Proposed interface to freeze in this packet:**
 `projectCapabilityView({registry, observations}) -> {schema, entries, errors}`.
@@ -169,9 +170,10 @@ infer a workflow or scope from an ID, adapter name, tag or description.
   missing/failing; implement the pure projection with stable ordering and no I/O.
 - [ ] Rerun that command; require all cases pass and no source object mutation.
   Include a test that a present candidate with historical evals is not executable.
-- [ ] Review, freeze the input/output contract and commit. The integrator can
-  later add this as a read model on the existing registry response, retaining
-  current consumers until B2 migrates them.
+- [ ] Review the implementation against the already frozen input/output
+  contract and submit it for integration. The integrator can later add this as
+  a read model on the existing registry response, retaining current consumers
+  until B2 migrates them.
 
 **Done:** honest catalog state without another registry or dispatch authority.
 
