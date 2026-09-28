@@ -1,0 +1,60 @@
+{
+  "schema": "rcos-capability-contract/1",
+  "input": {
+    "type": "object",
+    "required": ["query", "urls", "allowlist"],
+    "additionalProperties": false,
+    "properties": {
+      "query": { "type": "string", "minLength": 1, "maxLength": 280 },
+      "urls": {
+        "type": "array", "minItems": 1, "maxItems": 5,
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "allowlist": {
+        "type": "array", "minItems": 1, "maxItems": 16,
+        "items": { "type": "string", "minLength": 1 }
+      },
+      "timeoutMs": { "type": "integer", "minimum": 500, "maximum": 20000 }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["schema", "query", "passages", "refused"],
+    "additionalProperties": false,
+    "properties": {
+      "schema": { "type": "string", "enum": ["bounded-research-observation/1"] },
+      "query": { "type": "string", "minLength": 1 },
+      "passages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["url", "host", "scheme", "status", "bytes", "sha256", "fetchedAt", "excerpt", "termHit"],
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "host": { "type": "string", "minLength": 1 },
+            "scheme": { "type": "string", "enum": ["https", "http"] },
+            "status": { "type": "integer", "minimum": 200, "maximum": 299 },
+            "bytes": { "type": "integer", "minimum": 1 },
+            "sha256": { "type": "string", "minLength": 64, "maxLength": 64 },
+            "fetchedAt": { "type": "string", "minLength": 1 },
+            "excerpt": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "termHit": { "type": "boolean" }
+          }
+        }
+      },
+      "refused": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["url", "reason"],
+          "additionalProperties": false,
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "reason": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

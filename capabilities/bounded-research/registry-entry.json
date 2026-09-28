@@ -1,0 +1,46 @@
+{
+  "id": "bounded-research",
+  "name": "Bounded cited-research protocol",
+  "kind": "script",
+  "version": "0.1.0",
+  "status": "candidate",
+  "workflow": null,
+  "requires": ["filesystem:read", "shell:execute"],
+  "verification": null,
+  "objectiveEvaluation": null,
+  "admitted_after": [],
+  "evals": [],
+  "reuse_count": 0,
+  "last_eval": "2026-09-28",
+  "description": "Fetches 1-5 operator-named URLs whose hosts are all on the input allowlist (https; loopback http for bounded evals only) and returns cited passages with sha256 digests plus explicit refusals. A 200 with an empty body, a timeout, a non-text payload, or an off-allowlist host is a recorded refusal, never a citation. Proposed from liustack/modsearch (K2 task-pack, MIT); no upstream code copied. No execution binding yet: registry-entry workflow is null until B2 selection binds it, so this entry alone neither installs nor promotes anything.",
+  "tags": ["research", "citations", "evidence", "refusal-cases"],
+  "provenance": {
+    "builtBy": "luna-primary",
+    "portedFrom": "no upstream code — original adapter written for the K2 bounded-research brief; outcome inspired by liustack/modsearch (link-out only, dshfind bulk rights unresolved)",
+    "adapterEntry": "adapter/run.cjs",
+    "measurer": "adapter/run.cjs",
+    "measurerSha256": "246b077ffb784c280e1f35d0dc4c290b00b74adc23661de875464684189e1fd5",
+    "suite": {
+      "id": "bounded-research-evals",
+      "runId": "to-record-on-gated-run",
+      "exit": 0,
+      "gateChecks": "8/8"
+    },
+    "evalSet": [
+      { "caseId": "valid-two-pages-cited", "pass": true },
+      { "caseId": "off-allowlist-refused-before-fetch", "pass": true },
+      { "caseId": "empty-query-rejected", "pass": true },
+      { "caseId": "missing-page-refused", "pass": true },
+      { "caseId": "empty-200-body-refused-not-cited", "pass": true },
+      { "caseId": "slow-page-times-out", "pass": true },
+      { "caseId": "binary-payload-refused", "pass": true },
+      { "caseId": "six-urls-exceed-input-cap", "pass": true }
+    ],
+    "negativeControl": {
+      "caseId": "valid-two-pages-cited",
+      "perturb": "page-a served term-free",
+      "evalExit": 1,
+      "confirmed": true
+    }
+  }
+}
