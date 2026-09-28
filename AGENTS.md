@@ -4,6 +4,9 @@
 
 Read `DESKTOP.md` for the DSH Desktop product direction, ownership map and
 ordered delivery queue. The active integration branch is `rcos-dsh-reconcile`.
+For public product work, read `docs/PUBLIC-DESKTOP-ROADMAP.md`,
+`docs/superpowers/plans/2026-09-28-public-desktop-release.md` and the
+coordinator-owned `docs/AGENT-QUEUE.md`. Claim an unowned packet before edits.
 Centralize new Operator, Canvas integration and capability-library product
 work here, with one active team per worktree and disjoint worker ownership.
 This does not merge other repositories, transfer canonical registry ownership,
