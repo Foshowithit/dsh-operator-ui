@@ -9,7 +9,7 @@ wired to the live Desktop or Canvas. See their evidence docs.
 
 | Packet | Status | Dependencies | Owner / worktree / base / files |
 | --- | --- | --- | --- |
-| A1 Desktop compatibility contract | READY | none | unclaimed |
+| A1 Desktop compatibility contract | VERIFIED (source contract; runtime pending) · evidence `97c606f1402a25ba8db7f1058804ca54f1fef1f3` | none | Luna source audit + independent Luna review; `docs/DESKTOP-COMPATIBILITY.md`; 14/14 compatibility tests and `node scripts/check.js` PASS on evidence commit; local Desktop `0.1.7-rc.2` remains an A2 candidate only, with no install/render/dispatch proof |
 | B1 Capability readiness read model | DONE (source) · code `ebaaf2e`, gate `PASS` | none | 24/24 focused tests; 575/575 frozen gate on exact code commit; no UI/observation producer; see `docs/CAPABILITY-VIEW-EVIDENCE.md` |
 | C1 Scoped execution source store | DONE (source) · code `1f73faf`, gate `PASS` | none | Gate snapshot `2097220`; no DSH/Canvas wiring; see `docs/EXECUTION-SOURCE-EVIDENCE.md` |
 | A2 Packed install / setup | WAITING | A1 | unclaimed |
