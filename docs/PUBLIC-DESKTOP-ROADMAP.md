@@ -113,6 +113,34 @@ binding, declared dependencies and scopes, examples, independent evals, negative
 cases, provenance, license information and resource limits. Model/provider
 requirements are explicit. Do not promote on an agent's self-score.
 
+### DSH plugin ecosystem: discovery is not capability execution
+
+The DSH maintainer's public post reports that roughly 60% of DSH users use at
+least one third-party plugin and describes plugin API stabilization as a goal;
+this is an ecosystem signal, not a compatibility promise ([post](https://x.com/tianyi/status/2104565558712959065)).
+The post points to [dshfind](https://dshfind.com) and the
+[awesome-dsh-plugin list](https://awesome-dsh-plugin.com) for discovery, and to
+[dshmarket](https://dshmarket.com) as a marketplace installable through DSH's
+plugin flow. These are third-party sources; the post explicitly disclaims
+official endorsement and responsibility for their content.
+
+A DSH plugin extends the host. An Operator capability is a task-level contract
+with a typed binding and evidence. Installing a plugin may add tools, but does
+not create a canonical capability record, prove that a task works, or grant
+execution authority. Keep external listings as discovery candidates with clear
+source and status labels; they become selectable task capabilities only through
+the existing canonical record and admission path.
+
+The first public integration is link-only unless a source offers a documented,
+stable, licensed machine-readable interface. Do not scrape page markup, poll
+community sites, create a second registry, or auto-install or execute community
+code. Separate publisher-declared DSH version ranges from independently tested
+host compatibility. Missing, stale or unsupported data stays unknown. The user
+reviews and installs plugins through DSH's own plugin flow. DSH's host-level
+install and runtime behavior determines what access plugin code receives;
+Operator does not review or limit it. The user's plugin-install decision
+through DSH remains separate from RCOS task admission.
+
 ### Canvas: execution becomes inspectable
 
 First ship manual opening/closing and arrangement of a selected execution view,
@@ -137,7 +165,7 @@ progress, percentages, animation implying work, or success.
 | Stage | Deliverable | Exit evidence |
 | --- | --- | --- |
 | 0. Baseline | Central repo direction and truthful packaged readiness | Code checkpoint `4a4cb1a`; source checks are separate from installed/visual proof |
-| 1. Foundations | Exact Desktop support matrix, catalog view contract, Canvas source contract | Three independent packets with fixtures and reviewed interfaces |
+| 1. Foundations | Exact Desktop support matrix, catalog view contract, plugin ecosystem source contract, Canvas source contract | Independent packets with source-backed facts and reviewed interfaces |
 | 2. First useful loop | One real capability bound to a task; inspector + artifact + evidence | End-to-end isolated execution and negative cases; no private host knowledge needed |
 | 3. Product alpha | Canvas interaction, onboarding, code pack, graceful recovery | Supported fresh-profile install, use, restart/recovery and uninstall; visual/accessibility QA |
 | 4. Public release candidate | Clean source/package, contributor path, release evidence | Publication audit, reproducible package, CI, newcomer trials and documented limitations |
@@ -161,6 +189,8 @@ The public alpha decision requires:
 - Canvas keyboard navigation, readable narrow layouts, bounded scrolling, loading,
   missing, error and long-content states reviewed with sanitized fixtures.
 - Stock DSH remains usable; install/remove leaves pre-existing sessions intact.
+- Community listings remain visibly third-party; publisher-declared compatibility
+  is distinct from runtime-tested compatibility and canonical capability readiness.
 - Exact-commit gate, dependency/package provenance and repeatable artifact hash;
   source tests, runtime tests, model-assisted evals and visual QA reported separately.
 - Public source/history/package audit: no credentials, private paths, private

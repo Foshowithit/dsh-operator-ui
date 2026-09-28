@@ -48,6 +48,20 @@ canonical registry owns capability records. The product composes their
 authorized data; centralizing development does not duplicate their stores.
 Use the existing DSH extension seams and preserve stock surfaces.
 
+DSH plugins and Operator capabilities are separate things. A DSH plugin can
+add host tools or UI; an Operator capability is a task-level contract with an
+explicit binding and evidence. Community directories such as
+[dshfind](https://dshfind.com) and the [awesome-dsh-plugin list](https://awesome-dsh-plugin.com)
+are third-party discovery sources; [dshmarket](https://dshmarket.com) is a
+third-party marketplace that can be installed through DSH's plugin flow. None
+is a canonical capability record or permission source. Show any surfaced
+listing with its origin and compatibility evidence; a listing or plugin
+installation alone never makes a capability verified or eligible. Keep
+installation in DSH's user-controlled plugin flow. Plugin code gets whatever
+host access DSH's install and runtime behavior permits; Operator does not review
+or limit it. The user's plugin-install decision through DSH is separate from
+task admission.
+
 ## Ordered delivery queue
 
 ### 1. Desktop readiness
@@ -72,6 +86,10 @@ The current development slice addresses the first two items only.
   artifacts, chosen from actual available adapters and execution evidence.
 - For each addition, record input/output contract, version, requirements,
   permissions, real execution binding, evals and provenance.
+- Treat third-party plugin directories as discovery only. Preserve their source
+  and declared compatibility separately from tested host support and canonical
+  capability readiness; link out until a supported machine-readable contract is
+  verified.
 
 Acceptance: one chosen capability completes the actual product path. A larger
 library follows by repeating that proof, with refusals and unavailable states

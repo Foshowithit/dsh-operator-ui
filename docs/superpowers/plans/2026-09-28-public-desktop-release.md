@@ -29,6 +29,12 @@ no new build stack is assumed by this plan.
 - Use additive DSH slots; preserve native chat, tabs, file callbacks and sessions.
 - Existing stores and registry authority remain unchanged. New read models are
   ephemeral; new routes, polling or stores need a separately reviewed contract.
+- DSH plugins extend the host; Operator capabilities are task-level contracts.
+  Community listings are untrusted discovery candidates, never canonical records,
+  evidence of compatibility, or authorization to execute.
+- A DSH plugin's host access follows DSH's actual install/runtime behavior;
+  Operator does not review or limit that code. The user's plugin-install decision
+  through DSH is separate from RCOS task admission.
 - Closed PanelDoc vocabulary: twelve primitives. Trusted approval UI stays host-owned.
 - No identity inference from parent/task IDs. DSH calls, sessions and Archon runs
   have distinct types; exact settled identities do not imply live worker state.
@@ -53,16 +59,19 @@ no new build stack is assumed by this plan.
    name what changed; recovery cannot silently point at the user's default profile.
 5. Long or adversarial text inside a panel: C3 must remain bounded, keyboard-usable
    and inert; it cannot create a trusted badge, action, file read or source binding.
+6. A third-party plugin listing or publisher-declared DSH range must never be
+   presented as canonical capability readiness, tested compatibility or permission.
 
 ## Task graph and ownership
 
 ```mermaid
 flowchart LR
   A1["A1 Host compatibility"] --> A2["A2 Packed install and setup"]
-  B1["B1 Catalog projection"] --> B2["B2 Selected capability path"]
+  B1["B1 Catalog projection"] --> B1a["B1a Plugin ecosystem contract"]
+  A1 --> B1a
+  B1a --> B2["B2 Selected capability path"]
   C1["C1 Scoped source store"] --> C2["C2 Canvas import and mount proof"]
   A1 --> C2
-  A1 --> B2
   A2 --> D1["D1 First useful capability"]
   B2 --> D1
   C2 --> C3["C3 Canvas interaction"]
@@ -75,14 +84,15 @@ flowchart LR
   R2 --> G1["G1 Measured capability growth"]
 ```
 
-**Start now:** A1, B1 and C1 are independent. These are the only first-wave
-implementation/design packets. R1 inventory-only work can replace a blocked
-worker. Do not begin dependent runtime integration before its interfaces pass.
+**Start now:** A1, B1 and C1 are independent first-wave packets. B1a can begin
+once A1 and B1 source contracts are available; B2 waits for B1a before exposing
+any third-party discovery. R1 inventory-only work can replace a blocked worker.
+Do not begin dependent runtime integration before its interfaces pass.
 
 | Lane | Exclusive ownership | Shared edits submitted to integrator |
 | --- | --- | --- |
 | A: compatibility/release setup | `docs/DESKTOP-COMPATIBILITY.md`, A2 install tests and onboarding docs | `COMPAT.md`, `package.json`, `lib/compat.js`, `lib/cli.js`, config/manifest and root docs |
-| B: catalog/selection | `lib/capability-view.js`, its tests; the integrator freezes `docs/CAPABILITY-VIEW-CONTRACT.md` before implementation | `lib/goal.js`, `lib/admission.js`, `lib/index.js`, `lib/client.js` |
+| B: catalog/selection | B1 owns `lib/capability-view.js` and its tests; B1a owns `docs/PLUGIN-ECOSYSTEM-CONTRACT.md`; the integrator freezes `docs/CAPABILITY-VIEW-CONTRACT.md` before implementation | `lib/goal.js`, `lib/admission.js`, `lib/index.js`, `lib/client.js` |
 | C: Canvas | `lib/execution-source.js`, its tests, `docs/EXECUTION-SOURCE-CONTRACT.md`, reviewed Canvas files after C2 | `lib/client.js`, `lib/index.js`, package/build configuration |
 | D: capability packs | One named `capabilities/<id>/` directory per worker and its focused tests | Bindings, registry fixtures and shared runtime integration |
 | R: public release | New release/audit docs, new CI/test files | `.github/workflows/`, package metadata, root documentation |
@@ -177,6 +187,44 @@ infer a workflow or scope from an ID, adapter name, tag or description.
 
 **Done:** honest catalog state without another registry or dispatch authority.
 
+## B1a — Define the third-party plugin discovery boundary
+
+**Depends on:** A1 and B1. **Files:** create
+`docs/PLUGIN-ECOSYSTEM-CONTRACT.md`; no runtime or product code in this packet.
+The source reviewer owns this document; the integrator owns any later UI or
+shared-entrypoint changes.
+
+- [ ] Inspect the linked directories, their first-party source repositories when
+  available, and DSH's actual plugin manifest/install contract. Record exact
+  links and the source behind every compatibility claim. Treat community sites
+  as independent sources; do not imply DSH endorsement.
+- [ ] Check the cited DSH maintainer post itself before using its adoption
+  statistic, API-stability intent or disclaimer as a verified source claim. Keep
+  the statistic attributed to the post, not as an independently measured fact.
+- [ ] Inspect DSH's actual plugin trust and host-access behavior. State that
+  Operator does not audit or manage third-party plugin code's host privileges,
+  and that the user's plugin-install decision through DSH is separate from RCOS
+  task admission.
+- [ ] Distinguish a host plugin from an Operator capability. A listing or
+  installed plugin is not a canonical task capability, a tested runtime binding,
+  an admission decision or execution authority.
+- [ ] Specify separate fields for source/publisher, listing freshness, publisher-
+  declared DSH range, independently tested host versions, canonical capability
+  identity, and readiness. Missing or stale evidence remains unknown; declared
+  compatibility is never relabeled as tested compatibility.
+- [ ] Allow machine ingestion only from a documented stable interface whose
+  license and terms permit the use. Otherwise the integration remains explicit
+  link-out discovery. Do not scrape page markup, poll, add a store, auto-install,
+  or run community code. Installation stays in DSH's user-controlled flow.
+- [ ] Include sanitized source examples and negative cases for misleading
+  compatibility claims, unverified listings, stale metadata and plugin entries
+  that cannot map to canonical capabilities. Have an independent reviewer check
+  each factual claim against the linked source.
+
+**Done:** B2 can expose discovery without conflating plugin presence, capability
+readiness, compatibility or authority. If no supported machine-readable seam
+exists, the contract explicitly limits the public surface to links.
+
 ## C1 — Define and implement scoped execution sources
 
 **Files:** create `lib/execution-source.js`, `test/execution-source.test.mjs`,
@@ -239,9 +287,9 @@ their current exit ladders. Extend checks only when a diagnosed gap requires it.
 
 **Done:** a reproducible newcomer path with explicit limits, not just module import.
 
-## B2 — Connect catalog selection to the existing task path
+## B2 — Connect canonical catalog selection to the existing task path
 
-**Depends on:** B1 and A1. **Files:** integrate `lib/capability-view.js` through
+**Depends on:** B1, B1a and A1. **Files:** integrate `lib/capability-view.js` through
 existing registry/status response in `lib/index.js` and catalog UI in
 `lib/client.js`; extend `lib/goal.js`; create `test/capability-selection.test.mjs`.
 
@@ -257,6 +305,10 @@ Re-read and validate against the registry immediately before existing admission.
   Preserve existing workspace/conversation association and authority checks.
   Keep execution completion, capability validation and objective satisfaction
   separate. Existing free-text behavior is not silently replaced in this slice.
+- [ ] If third-party discovery appears in the catalog, label it as external and
+  non-selectable until the existing canonical registry/admission path supplies a
+  typed capability record. Never convert a plugin ID or manifest into a task
+  binding implicitly.
 - [ ] Run `node --test test/capability-selection.test.mjs
   test/admission.test.mjs test/objective-eval.test.mjs` plus affected route tests.
 - [ ] Review a synthetic end-to-end selection/refusal path; then commit through
