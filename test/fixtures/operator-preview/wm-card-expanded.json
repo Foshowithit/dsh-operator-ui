@@ -1,0 +1,12 @@
+{
+  "banner": "Synthetic preview — canned fixtures only, no live task, no live session.",
+  "layout": "expanded",
+  "card": {
+    "title": "Nightly docs sweep",
+    "outcome": "failed",
+    "error": "A very long error string that must stay inside a bounded scroll region and remain reachable by keyboard-only operation at 200% text without clipping the recovery action.",
+    "recovery": "rerun from the last sealed checkpoint",
+    "evidence": ["canned receipt excerpt", "canned job snapshot"],
+    "reducedMotion": "no animation — state changes are instant"
+  }
+}

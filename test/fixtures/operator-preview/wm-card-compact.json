@@ -1,0 +1,11 @@
+{
+  "banner": "Synthetic preview — canned fixtures only, no live task, no live session.",
+  "layout": "compact",
+  "card": {
+    "title": "Nightly docs sweep with a very long title that must wrap or truncate without breaking the card grid at narrow widths",
+    "outcome": "pending",
+    "prerequisites": ["disposable profile", "network allowlist entry"],
+    "source": "canned fixture — not a registry record",
+    "reason": "waiting on isolated install proof"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "banner": "Synthetic preview — canned fixtures only, no live task, no live session.",
+  "matrix": [
+    { "state": "missing", "payload": null, "note": "no observation yet — card shows unknown, never a guess" },
+    { "state": "pending", "payload": { "phase": "queued" }, "note": "authorized work not yet run" },
+    { "state": "refused", "payload": { "code": "approval-required" }, "note": "refusal dispatches nothing and never chooses a replacement" },
+    { "state": "failed", "payload": { "code": "tool-error", "recoverable": true }, "note": "rerun or recover path offered" },
+    { "state": "unknown-outcome", "payload": { "code": "outcome-unreadable" }, "note": "stays unknown until evidence proves otherwise" },
+    { "state": "reported-success", "payload": { "claimed": true }, "note": "a claim, not verification" },
+    { "state": "independently-verified", "payload": { "level": "RCOS_VERIFIED" }, "note": "only state that reads as proven" },
+    { "state": "stale", "payload": { "code": "STALE" }, "note": "freshness gate failed — re-verify before use" },
+    { "state": "tampered", "payload": { "code": "TAMPERED" }, "note": "seal mismatch — never render as truth" }
+  ]
+}
