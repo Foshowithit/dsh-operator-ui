@@ -1,0 +1,45 @@
+{
+  "schema": "operator-plugin-inventory-sources/1",
+  "observedAt": "2026-09-28T00:00:00.000Z",
+  "sources": [
+    {
+      "sourceId": "awesome-curated",
+      "sourceUrl": "https://awesome-dsh-plugin.com/plugins.json",
+      "observedAt": "2026-09-28T00:00:00.000Z",
+      "sourceRef": "awesome-dsh-plugin/awesome-dsh-plugin@4c4167f",
+      "sourceDigest": null,
+      "accessBasis": "licensed-snapshot",
+      "accessNote": "repository declares CC0-1.0; feed is a whole-catalog static document with no schema version or stable record ID — shape and freshness are mutable, do not poll",
+      "advertisedTotal": 4382,
+      "collectedRows": 1,
+      "traversalComplete": false,
+      "unresolvedReason": "bounded manual survey: one row reviewed, full 4382-row snapshot not validated"
+    },
+    {
+      "sourceId": "dshfind-api",
+      "sourceUrl": "https://dshfind.com/en/plugins",
+      "observedAt": "2026-09-28T00:00:00.000Z",
+      "sourceRef": "hikariming/dshfind@6be2b8f",
+      "sourceDigest": "sha256:113dd0ff",
+      "accessBasis": "link-only",
+      "accessNote": "documented REST/GraphQL interface exists; no catalog-data reuse license found — link out only, no bulk ingest",
+      "advertisedTotal": 16312,
+      "collectedRows": 12,
+      "traversalComplete": false,
+      "unresolvedReason": "catalog-data rights unresolved; one-row probe plus manual refs only, not a sweep"
+    },
+    {
+      "sourceId": "dshmarket-view",
+      "sourceUrl": "https://dshmarket.com",
+      "observedAt": "2026-09-28T00:00:00.000Z",
+      "sourceRef": "dsh-market/dsh-market@42e55f0",
+      "sourceDigest": null,
+      "accessBasis": "downstream-view",
+      "accessNote": "first-party README: fetches the awesome feed live on each open, no bundled snapshot; counts as one catalog with two provenance refs, not two independent sets",
+      "advertisedTotal": null,
+      "collectedRows": 0,
+      "traversalComplete": false,
+      "unresolvedReason": "downstream view of the awesome feed — no independent inventory taken"
+    }
+  ]
+}

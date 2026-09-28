@@ -1,0 +1,390 @@
+{
+  "generatedBy": "scripts/plugin-inventory.mjs",
+  "generatedAt": "2026-09-28T00:00:00.000Z",
+  "inputs": {
+    "sources": [
+      {
+        "sourceId": "awesome-curated",
+        "sourceUrl": "https://awesome-dsh-plugin.com/plugins.json",
+        "observedAt": "2026-09-28T00:00:00.000Z",
+        "sourceRef": "awesome-dsh-plugin/awesome-dsh-plugin@4c4167f",
+        "sourceDigest": null,
+        "accessBasis": "licensed-snapshot",
+        "accessNote": "repository declares CC0-1.0; feed is a whole-catalog static document with no schema version or stable record ID — shape and freshness are mutable, do not poll",
+        "advertisedTotal": 4382,
+        "collectedRows": 1,
+        "traversalComplete": false,
+        "unresolvedReason": "bounded manual survey: one row reviewed, full 4382-row snapshot not validated"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceUrl": "https://dshfind.com/en/plugins",
+        "observedAt": "2026-09-28T00:00:00.000Z",
+        "sourceRef": "hikariming/dshfind@6be2b8f",
+        "sourceDigest": "sha256:113dd0ff",
+        "accessBasis": "link-only",
+        "accessNote": "documented REST/GraphQL interface exists; no catalog-data reuse license found — link out only, no bulk ingest",
+        "advertisedTotal": 16312,
+        "collectedRows": 12,
+        "traversalComplete": false,
+        "unresolvedReason": "catalog-data rights unresolved; one-row probe plus manual refs only, not a sweep"
+      },
+      {
+        "sourceId": "dshmarket-view",
+        "sourceUrl": "https://dshmarket.com",
+        "observedAt": "2026-09-28T00:00:00.000Z",
+        "sourceRef": "dsh-market/dsh-market@42e55f0",
+        "sourceDigest": null,
+        "accessBasis": "downstream-view",
+        "accessNote": "first-party README: fetches the awesome feed live on each open, no bundled snapshot; counts as one catalog with two provenance refs, not two independent sets",
+        "advertisedTotal": null,
+        "collectedRows": 0,
+        "traversalComplete": false,
+        "unresolvedReason": "downstream view of the awesome feed — no independent inventory taken"
+      }
+    ],
+    "listings": [
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "bowenliang123/dsh-context",
+        "url": "https://github.com/bowenliang123/dsh-context",
+        "repositoryUrl": "https://github.com/bowenliang123/dsh-context",
+        "publisher": "bowenliang123",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "liustack/modsearch",
+        "url": "https://github.com/liustack/modsearch",
+        "repositoryUrl": "https://github.com/liustack/modsearch",
+        "publisher": "liustack",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "Anionex/dsh-vision-toolkit",
+        "url": "https://github.com/Anionex/dsh-vision-toolkit",
+        "repositoryUrl": "https://github.com/Anionex/dsh-vision-toolkit",
+        "publisher": "Anionex",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "dream-num/dsh-univer-office",
+        "url": "https://github.com/dream-num/dsh-univer-office",
+        "repositoryUrl": "https://github.com/dream-num/dsh-univer-office",
+        "publisher": "dream-num",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "Aisland-SJL/dsh-worktable",
+        "url": "https://github.com/Aisland-SJL/dsh-worktable",
+        "repositoryUrl": "https://github.com/Aisland-SJL/dsh-worktable",
+        "publisher": "Aisland-SJL",
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "awesome-curated",
+        "sourceKey": "0xsline/dsh-spotlight",
+        "url": "https://github.com/0xsline/dsh-spotlight",
+        "repositoryUrl": "https://github.com/0xsline/dsh-spotlight",
+        "publisher": "0xsline",
+        "licenseEvidence": "feed under CC0; per-entry repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "shanliuling/dsh-image-gen",
+        "url": "https://github.com/shanliuling/dsh-image-gen",
+        "repositoryUrl": "https://github.com/shanliuling/dsh-image-gen",
+        "publisher": "shanliuling",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "NanmiCoder/dsh-agent-teams",
+        "url": "https://github.com/NanmiCoder/dsh-agent-teams",
+        "repositoryUrl": "https://github.com/NanmiCoder/dsh-agent-teams",
+        "publisher": "NanmiCoder",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "omdsh-dev/dsh-mnemon",
+        "url": "https://github.com/omdsh-dev/dsh-mnemon",
+        "repositoryUrl": "https://github.com/omdsh-dev/dsh-mnemon",
+        "publisher": "omdsh-dev",
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "shaobeichen/dsh-pocket",
+        "url": "https://github.com/shaobeichen/dsh-pocket",
+        "repositoryUrl": "https://github.com/shaobeichen/dsh-pocket",
+        "publisher": "shaobeichen",
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "xmanrui/dsh-im",
+        "url": "https://github.com/xmanrui/dsh-im",
+        "repositoryUrl": "https://github.com/xmanrui/dsh-im",
+        "publisher": "xmanrui",
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "superdesigndev/treg",
+        "url": "https://github.com/superdesigndev/treg",
+        "repositoryUrl": "https://github.com/superdesigndev/treg",
+        "publisher": "superdesigndev",
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "sourceKey": "SeaOf0/dsh-redteam-model",
+        "url": "https://github.com/SeaOf0/dsh-redteam-model",
+        "repositoryUrl": "https://github.com/SeaOf0/dsh-redteam-model",
+        "publisher": "SeaOf0",
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      }
+    ]
+  },
+  "result": {
+    "schema": "operator-plugin-inventory/1",
+    "entries": [
+      {
+        "entryId": "awesome-curated:0xsline/dsh-spotlight",
+        "sourceId": "awesome-curated",
+        "sourceKey": "0xsline/dsh-spotlight",
+        "url": "https://github.com/0xsline/dsh-spotlight",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/0xsline/dsh-spotlight",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "0xsline",
+        "declaredDshRange": null,
+        "licenseEvidence": "feed under CC0; per-entry repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:Aisland-SJL/dsh-worktable",
+        "sourceId": "dshfind-api",
+        "sourceKey": "Aisland-SJL/dsh-worktable",
+        "url": "https://github.com/Aisland-SJL/dsh-worktable",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/Aisland-SJL/dsh-worktable",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "Aisland-SJL",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:Anionex/dsh-vision-toolkit",
+        "sourceId": "dshfind-api",
+        "sourceKey": "Anionex/dsh-vision-toolkit",
+        "url": "https://github.com/Anionex/dsh-vision-toolkit",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/Anionex/dsh-vision-toolkit",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "Anionex",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:NanmiCoder/dsh-agent-teams",
+        "sourceId": "dshfind-api",
+        "sourceKey": "NanmiCoder/dsh-agent-teams",
+        "url": "https://github.com/NanmiCoder/dsh-agent-teams",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/NanmiCoder/dsh-agent-teams",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "NanmiCoder",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:SeaOf0/dsh-redteam-model",
+        "sourceId": "dshfind-api",
+        "sourceKey": "SeaOf0/dsh-redteam-model",
+        "url": "https://github.com/SeaOf0/dsh-redteam-model",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/SeaOf0/dsh-redteam-model",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "SeaOf0",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:bowenliang123/dsh-context",
+        "sourceId": "dshfind-api",
+        "sourceKey": "bowenliang123/dsh-context",
+        "url": "https://github.com/bowenliang123/dsh-context",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/bowenliang123/dsh-context",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "bowenliang123",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:dream-num/dsh-univer-office",
+        "sourceId": "dshfind-api",
+        "sourceKey": "dream-num/dsh-univer-office",
+        "url": "https://github.com/dream-num/dsh-univer-office",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/dream-num/dsh-univer-office",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "dream-num",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:liustack/modsearch",
+        "sourceId": "dshfind-api",
+        "sourceKey": "liustack/modsearch",
+        "url": "https://github.com/liustack/modsearch",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/liustack/modsearch",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "liustack",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:omdsh-dev/dsh-mnemon",
+        "sourceId": "dshfind-api",
+        "sourceKey": "omdsh-dev/dsh-mnemon",
+        "url": "https://github.com/omdsh-dev/dsh-mnemon",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/omdsh-dev/dsh-mnemon",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "omdsh-dev",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:shanliuling/dsh-image-gen",
+        "sourceId": "dshfind-api",
+        "sourceKey": "shanliuling/dsh-image-gen",
+        "url": "https://github.com/shanliuling/dsh-image-gen",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/shanliuling/dsh-image-gen",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "shanliuling",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E2",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:shaobeichen/dsh-pocket",
+        "sourceId": "dshfind-api",
+        "sourceKey": "shaobeichen/dsh-pocket",
+        "url": "https://github.com/shaobeichen/dsh-pocket",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/shaobeichen/dsh-pocket",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "shaobeichen",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:superdesigndev/treg",
+        "sourceId": "dshfind-api",
+        "sourceKey": "superdesigndev/treg",
+        "url": "https://github.com/superdesigndev/treg",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/superdesigndev/treg",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "superdesigndev",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      },
+      {
+        "entryId": "dshfind-api:xmanrui/dsh-im",
+        "sourceId": "dshfind-api",
+        "sourceKey": "xmanrui/dsh-im",
+        "url": "https://github.com/xmanrui/dsh-im",
+        "packageName": null,
+        "packageVersion": null,
+        "repositoryUrl": "https://github.com/xmanrui/dsh-im",
+        "repositorySubpath": null,
+        "repositoryRef": null,
+        "publisher": "xmanrui",
+        "declaredDshRange": null,
+        "licenseEvidence": "repo license not reviewed — see survey E1",
+        "updatedAt": "2026-09-28"
+      }
+    ],
+    "conflicts": [],
+    "coverage": [
+      {
+        "sourceId": "awesome-curated",
+        "advertisedTotal": 4382,
+        "collectedRows": 1,
+        "traversalComplete": false,
+        "unresolvedReason": "bounded manual survey: one row reviewed, full 4382-row snapshot not validated"
+      },
+      {
+        "sourceId": "dshfind-api",
+        "advertisedTotal": 16312,
+        "collectedRows": 12,
+        "traversalComplete": false,
+        "unresolvedReason": "catalog-data rights unresolved; one-row probe plus manual refs only, not a sweep"
+      },
+      {
+        "sourceId": "dshmarket-view",
+        "advertisedTotal": null,
+        "collectedRows": 0,
+        "traversalComplete": false,
+        "unresolvedReason": "downstream view of the awesome feed — no independent inventory taken"
+      }
+    ]
+  }
+}
