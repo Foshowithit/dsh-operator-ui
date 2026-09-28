@@ -3,14 +3,14 @@
 Coordinator-owned ledger. Read the [release plan](superpowers/plans/2026-09-28-public-desktop-release.md)
 and [roadmap](PUBLIC-DESKTOP-ROADMAP.md) before claiming work.
 
-Code baseline: `4a4cb1a` on `rcos-dsh-reconcile`. This queue starts unclaimed;
-planning auditors have finished and do not own implementation files.
+Code baseline: `4a4cb1a` on `rcos-dsh-reconcile`. Planning auditors have
+finished and do not own implementation files. The C1 team below is active.
 
 | Packet | Status | Dependencies | Owner / worktree / base / files |
 | --- | --- | --- | --- |
 | A1 Desktop compatibility contract | READY | none | unclaimed |
 | B1 Capability readiness read model | READY | none | unclaimed |
-| C1 Scoped execution source store | READY | none | unclaimed |
+| C1 Scoped execution source store | REVIEW · code `1f73faf`, gate pending | none | 2026-09-28: root integrator + Luna `c1_execution_source`; reconcile worktree; base `7aa9e2f`; only `lib/execution-source.js`, `test/execution-source.test.mjs`, `docs/EXECUTION-SOURCE-CONTRACT.md` |
 | A2 Packed install / setup | WAITING | A1 | unclaimed |
 | B2 Capability selection / task path | WAITING | A1, B1 | unclaimed |
 | C2 Canvas import / host mount | WAITING | A1, C1 | unclaimed |
