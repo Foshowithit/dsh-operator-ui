@@ -1,0 +1,34 @@
+// A2-c DRY-RUN WM program — proves the ptc run_code lane and the receipt
+// contract WITHOUT the Dell: real bash tool calls write and read back one
+// artifact, then the receipt is submitted from inside the program (the only
+// path that works under ptc presentation). archon_* fields are honestly
+// 'none': no Archon run happens in the dry run.
+// Receipt discipline: the verdict is GATED on the bash results actually
+// succeeding — exitCode !== 0 downgrades to 'fix' with empty artifacts (a
+// sandbox denial must never ship). The artifact path must be inside the
+// seat's workspace: the bash tool runs under a workspace-write sandbox and
+// denies writes outside it (learned 2026-09-29: mkdir into the evidence dir
+// was denied with "Operation not permitted").
+// The live run swaps this file for the Dell ladder (A2C_PROGRAM env).
+const dir = '/Users/adam26/dsh-a0-boot/a2c/caller-cwd/seat-run';
+const write = await tools.bash({
+  command: 'mkdir -p ' + dir + " && printf 'a2c seat dry-run artifact\\n' > " + dir + '/artifact.txt && cat ' + dir + '/artifact.txt',
+  description: 'Write and read back the dry-run artifact inside the seat workspace',
+});
+const read = await tools.bash({ command: 'cat ' + dir + '/artifact.txt', description: 'Read the artifact back' });
+const ok = write.exitCode === 0 && read.exitCode === 0;
+return await tools.submit_dispatch_receipt({
+  verdict: ok ? 'ship' : 'fix',
+  summary: 'Dry-run: exercised the real ptc run_code lane (two bash tool calls) and the receipt tool with local files only; no Dell, no Archon, no spend. Verdict is gated on both bash calls exiting 0.',
+  artifacts: ok ? [dir + '/artifact.txt'] : [],
+  evidence: [
+    'bash mkdir+printf+cat exit=' + write.exitCode + ' -> ' + String(JSON.stringify(write)).slice(0, 300),
+    'bash cat artifact exit=' + read.exitCode + ' -> ' + String(JSON.stringify(read)).slice(0, 300),
+  ],
+  blockers: [],
+  archon_run_id: 'none',
+  archon_status: 'none',
+  archon_artifact_dir: 'none',
+  lane: 'loopback-0spend/deepseek-flash',
+  next: 'live run: swap to the Dell ladder program via A2C_PROGRAM',
+});

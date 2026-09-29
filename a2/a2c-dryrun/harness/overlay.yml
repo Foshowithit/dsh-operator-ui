@@ -1,0 +1,23 @@
+# A2-c composer overlay — scratch testbed ONLY (dsh-a0-boot), never the
+# active ~/.dsh. Applied after the profile layer via:
+#   dsh --profile headless --patch /Users/adam26/dsh-a0-boot/a2c/overlay.yml
+#
+# - disables the one-shot headless rows: their runner requires a task
+#   positional and would exit (or error) on a taskless boot; the composer
+#   plugin is the app instead.
+# - inserts the composer driver row. The composer creates the caller session
+#   itself (meta.agentPreset 'idea-chat' + live presets.mount in setup), so
+#   nothing here mounts presets — this row only carries the run's parameters.
+- id: headless-startup
+  disabled: true
+- id: headless-runner
+  disabled: true
+- insert:
+    - id: a2c-composer
+      name: 'dsh-a2c-composer'
+      config:
+        workDir: /Users/adam26/dsh-a0-boot/a2c/caller-cwd
+        evidenceFile: /Users/adam26/dsh-a0-boot/a2c/evidence/composer-receipt.json
+        auditFile: /Users/adam26/dsh-a0-boot/home/runs/seat-dispatch/seat-dispatch.jsonl
+        brainstormMessage: "[A2C-BRAINSTORM-MARKER] We are brainstorming the bearing-film promo treatment. Stay conversational for now — no tools, no dispatch, just talk the idea through with me."
+        proceduralMessage: "[A2C-PROCEDURAL-MARKER] Enough talk — actually do it now: validate one RCOS routing record end to end through the real capability ladder and run it on Archon. Hand the procedural work to the WM seat."
