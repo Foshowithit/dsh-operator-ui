@@ -1,0 +1,5 @@
+{"type":"session","version":4,"id":"session-fix-conflict","createdAt":1790664000000,"cwd":"/tmp","isSeeded":false,"delegationDepth":0}
+{"type":"turn/start","seq":2,"time":1790664000100,"data":{"turn":1}}
+{"type":"user/message","seq":3,"time":1790664000110,"data":{"text":"run the workflow for this"}}
+{"type":"assistant/attempt","seq":4,"time":1790664000200,"data":{"turn":1,"step":1,"stream":[{"type":"chunk","time":1790664000199,"chunk":{"type":"toolCall","toolCall":{"name":"dispatch_seat","arguments":{"seat":"wm","objective":"do the thing","done_when":"receipt says ship","reason":"needs Archon, this seat has no bash","constraints":[]}}}}]}}
+{"type":"turn/end","seq":5,"time":1790664000300,"data":{"turn":1}}
