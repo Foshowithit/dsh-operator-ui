@@ -158,6 +158,12 @@ export function startPreviewServer({ port, host = '127.0.0.1', fixtureDir, resol
       }));
       return;
     }
+    if (url.pathname === '/plugins/operator-ui/rcos' && url.searchParams.get('op') === 'registry') {
+      const fixture = readFixture({ fixtureDir, name: 'rcos-registry' });
+      res.writeHead(fixture.ok ? 200 : 404, { 'content-type': 'application/json' });
+      res.end(fixture.ok ? fixture.body : JSON.stringify({ ok: false, error: fixture.reason }));
+      return;
+    }
     if (url.pathname === '/render') {
       const page = readFileSync(join(REPO_ROOT, 'test/fixtures/operator-preview/render.html'));
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });

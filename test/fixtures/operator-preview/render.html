@@ -19,6 +19,8 @@
 <div class="banner" id="banner">Synthetic preview — canned fixtures only, no live task, no live session.</div>
 <div id="wm-root"></div>
 <div id="jl-root"></div>
+<h1 style="margin-top:28px">Capability registry (real CapabilitiesTab, canned registry)</h1>
+<div id="caps-root" style="max-width:640px"></div>
 <div id="summary" class="card">rendering…</div>
 
 <script src="/vendor/react.production.min.js"></script>
@@ -43,7 +45,9 @@ window.__ModuleLoader__ = {
     effect: function (fn) { fn(); },
     slots: {
       inject: function (name, registrar) { registrar(); },
-      register: function (def, Component) { captured[def.key || def.name || def.id] = Component; },
+      // key: tool slots carry def.key; conversation.view tabs carry unique
+      // def.id; keep both distinct or tabs overwrite each other.
+      register: function (def, Component) { captured[def.key || def.id || def.name] = Component; },
     },
   });
 
@@ -80,12 +84,16 @@ window.__ModuleLoader__ = {
     var React = window.React, ReactDOM = window.ReactDOM;
     var wm = captured['dispatch_seat'];
     var jl = captured['job_list'];
+    var caps = captured['capabilities'];
     ReactDOM.createRoot(document.getElementById('wm-root'))
       .render(React.createElement('div', { className: 'card' },
         React.createElement(wm, { callId: 'preview-call-1', toolName: 'dispatch_seat', block: wmBlock, openFile: function () {}, inspect: function () {} })));
     ReactDOM.createRoot(document.getElementById('jl-root'))
       .render(React.createElement('div', { className: 'card' },
         React.createElement(jl, { callId: 'preview-call-2', toolName: 'job_list', block: jlBlock, inspect: function () {} })));
+    if (caps) {
+      ReactDOM.createRoot(document.getElementById('caps-root')).render(React.createElement(caps));
+    }
     results.ok = true;
     results.components = Object.keys(captured);
     results.reactVersion = React.version;

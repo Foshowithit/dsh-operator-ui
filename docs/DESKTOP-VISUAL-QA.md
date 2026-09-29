@@ -23,10 +23,17 @@ bytes — with per-host sha256 in `scripts/resolver-proof.json`.
 semantics were not changed). The real factory (`lib/client.js`) now renders
 in a real browser on the pinned bytes: harness `/render` captures the four
 components the factory registers (`dispatch_seat`, `job_list`,
-`conversation.view`, `shell.overlay`) and mounts two of them with canned
-versioned receipts — no dispatch, no CDN, no host session. Evidence:
+`conversation.view`, `shell.overlay`) and mounts two tool cards and the full capability registry tab with canned
+versioned receipts and a canned registry — no dispatch, no CDN, no host
+session. All 14 registered components are captured by the harness
+(`job_list`, `dispatch_seat`, `runs`, `opui-palette`, `git`, `browser`,
+`summary`, `files`, `workflows`, `capabilities`, `system`, `work`,
+`intelligence`, `opui-gate`). Evidence:
 `DESKTOP-VISUAL-QA-render-proof.png` (this directory; sha256
-`24bd2f45a6c56a6bf2717e73f5edd6bef08604949d0bbf4a376df0d0e0280121`).
+`6748c9e76e3f1407d9da0954d6090f5238eadd13b554096b7dbd41518c59010e`).
+This render is also the B2 UI proof: the real `CapabilitiesTab` shows
+promoted / candidate-at-gate / retired states from the canned registry
+(`rcos-registry.json`) served same-origin by the preview server.
 
 ## What the harness does today
 

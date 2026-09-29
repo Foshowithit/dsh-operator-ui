@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "registry": {
+    "capabilities": [
+      {
+        "id": "cap-audio-offline-verify",
+        "name": "Offline audio verification",
+        "kind": "task-pack",
+        "status": "promoted",
+        "version": "1.2.0",
+        "reuse_count": 3,
+        "last_eval": "ship",
+        "evals": [
+          { "verdict": "ship", "task_id": "preview-task-1", "run_id": "preview-run-1" },
+          { "verdict": "ship", "task_id": "preview-task-2", "run_id": "preview-run-2" },
+          { "verdict": "fix", "task_id": "preview-task-3", "run_id": "preview-run-3" }
+        ]
+      },
+      {
+        "id": "cap-bounded-research",
+        "name": "Bounded research brief",
+        "kind": "bounded-research",
+        "status": "candidate",
+        "version": "0.3.1",
+        "reuse_count": 0,
+        "last_eval": "ship",
+        "evals": [
+          { "verdict": "ship", "task_id": "preview-task-4", "run_id": "preview-run-4" }
+        ]
+      },
+      {
+        "id": "cap-retired-example",
+        "name": "Retired example capability",
+        "kind": "ui-enhancement",
+        "status": "retired",
+        "version": "0.1.0",
+        "reuse_count": 0,
+        "retire_reason": "preview fixture: verdict decay",
+        "last_eval": "blocked",
+        "evals": [
+          { "verdict": "blocked", "task_id": "preview-task-5", "run_id": "preview-run-5" }
+        ]
+      }
+    ]
+  }
+}
