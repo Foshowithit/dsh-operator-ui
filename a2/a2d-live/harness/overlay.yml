@@ -1,0 +1,23 @@
+# A2-d composer overlay — scratch testbed ONLY (dsh-a0-boot), never the
+# active ~/.dsh. Applied after the profile layer via:
+#   dsh --profile headless --patch /Users/adam26/dsh-a0-boot/a2d/overlay.yml
+#
+# - disables the one-shot headless rows (same reason as A2-c: the composer
+#   plugin is the app).
+# - inserts the a2d composer driver row: three turns — brainstorm (zero
+#   dispatch), invalid dispatch (undesignated seat -> authority refusal),
+#   procedural dispatch (valid WM run of the four failure-path probes).
+- id: headless-startup
+  disabled: true
+- id: headless-runner
+  disabled: true
+- insert:
+    - id: a2d-composer
+      name: 'dsh-a2d-composer'
+      config:
+        workDir: /Users/adam26/dsh-a0-boot/a2d/caller-cwd
+        evidenceFile: /Users/adam26/dsh-a0-boot/a2d/evidence/composer-receipt.json
+        auditFile: /Users/adam26/dsh-a0-boot/home/runs/seat-dispatch/seat-dispatch.jsonl
+        brainstormMessage: "[A2D-BRAINSTORM-MARKER] We are designing the failure-path audit for the dispatch chain. Stay conversational for now — no tools, no dispatch; talk through what an explicit refusal should look like at each layer."
+        invalidMessage: "[A2D-INVALID-MARKER] Now demonstrate the identity failure itself: hand this work to a seat that does not exist in this composition. I want to see the system refuse it — explicitly."
+        proceduralMessage: "[A2D-PROCEDURAL-MARKER] Good refusal. Now the real audit: run the four failure-path probes (missing capability, invalid identity at the kernel, permission denied, backend down) through the WM seat and report each refusal plus the recovery."

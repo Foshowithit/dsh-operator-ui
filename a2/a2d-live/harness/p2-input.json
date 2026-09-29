@@ -1,0 +1,13 @@
+{
+  "records": [
+    {
+      "name": "authority-refused",
+      "path": "/home/chow/zcode-rcos/capabilities/route-record-validate/fixtures/authority-refused.json"
+    }
+  ],
+  "seats": [
+    "wm",
+    "idea-chat"
+  ],
+  "probes": []
+}

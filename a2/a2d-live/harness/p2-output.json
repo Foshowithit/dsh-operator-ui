@@ -1,0 +1,30 @@
+{
+  "schema": "rcos-route-record-validation/1",
+  "kernel": {
+    "file": "kernel/validate_routing_record.py",
+    "sha256": "e82b419fec53af1ff910075702f185fec1bc23fe476362543505c3ab6d3a868",
+    "source": "dsh-operator-ui-wt-reconcile a2/routing @ a83f564 (A2-b, 36-case suite green 2026-09-29)"
+  },
+  "seats": [
+    "wm",
+    "idea-chat"
+  ],
+  "records": [
+    {
+      "name": "authority-refused",
+      "path": "/home/chow/zcode-rcos/capabilities/route-record-validate/fixtures/authority-refused.json",
+      "readable": true,
+      "exit": 3,
+      "verdict": "authority-refusal",
+      "message": "validate: authority refusal: handoff basis 'delegated-child' is not a root basis"
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "valid": 0,
+    "schema_violations": 0,
+    "authority_refusals": 1,
+    "eligibility_refusals": 0,
+    "unreadable": 0
+  }
+}

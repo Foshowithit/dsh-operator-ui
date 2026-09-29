@@ -1,0 +1,81 @@
+{
+  "schema": "rcos-invocation/1",
+  "invocation_id": "inv_20260929T142355Z-d8b6fb",
+  "capability_id": "route-record-validate",
+  "capability_version": "0.1.0",
+  "registry_status": "promoted",
+  "mode": "normal",
+  "status": "completed",
+  "status_basis": "adapter exited 0 and its output satisfied the declared contract",
+  "started_at": "2026-09-29T14:23:55.575Z",
+  "completed_at": "2026-09-29T14:23:55.628Z",
+  "duration_ms": 53,
+  "input": {
+    "path": "input.json",
+    "sha256": "e3ab8b7bafdc2b3594b599e09d8d8ca6fc815059f55ede1cfde77450cbf36394",
+    "bytes": 235
+  },
+  "output": {
+    "path": "output.json",
+    "sha256": "7673d4fcd3ef1f3bcf1e708cdbbe79263ac50aac59ec9218352b1ab2aedbfdc4",
+    "bytes": 860
+  },
+  "stdout": {
+    "path": "stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "stderr": {
+    "path": "stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "evidence": [
+    {
+      "path": "evidence/kernel-authority-refused.txt",
+      "sha256": "408a461e5379e4ba9b3f041d5a4101d299a8bbd4850d36203e9f158bcb7d4567",
+      "bytes": 106
+    }
+  ],
+  "adapter": {
+    "type": "command",
+    "entrypoint": "capabilities/route-record-validate/adapter/run.js",
+    "timeout_seconds": 300,
+    "exit_code": 0,
+    "signal": null,
+    "error": null
+  },
+  "contract": {
+    "path": "capabilities/route-record-validate/contract.json",
+    "declaration_errors": [],
+    "contract_errors": [],
+    "input": {
+      "status": "pass",
+      "errors": []
+    },
+    "output": {
+      "status": "pass",
+      "errors": []
+    }
+  },
+  "rcos_home": "/home/chow/zcode-rcos",
+  "created_at": "2026-09-29T14:23:55.628Z",
+  "eligibility_decision_id": "elig_20260929T142355Z-2d1d8f",
+  "eligibility_sha256": "d6ab5b59f7b26641d100e90fbb45d7903953f33ccefe251f00d0eed11774ee4f",
+  "eligibility": {
+    "scope": "execute",
+    "purpose": "normal",
+    "eligible": true,
+    "reasons": [],
+    "path": "eligibility/elig_20260929T142355Z-2d1d8f/decision.json"
+  },
+  "selection_id": null,
+  "selection_sha256": null,
+  "selection": null,
+  "emitted_evidence": [],
+  "emission_skipped": [],
+  "integrity": {
+    "algo": "sha256",
+    "value": "a214ea036521bfd9ff0a59407de6eb13f513024108aadefb33badf2c1c84e4e0"
+  }
+}
