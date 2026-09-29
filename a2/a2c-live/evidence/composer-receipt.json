@@ -1,0 +1,70 @@
+{
+  "schema": "a2c-composer-run/1",
+  "ok": true,
+  "caller_session_id": "session-2d9aeaba-c6b1-4ce8-8a25-f61db4144805",
+  "preset": "idea-chat",
+  "composed_preset": "idea-chat",
+  "agent": {
+    "provider": "deepseek-official",
+    "model": "deepseek-flash"
+  },
+  "turns": [
+    {
+      "kind": "brainstorm",
+      "dispatch_delta": 0
+    },
+    {
+      "kind": "procedural",
+      "dispatch_delta": 1,
+      "audit_records": [
+        {
+          "ts": "2026-09-29T14:13:35.300Z",
+          "run_id": "sd-20260929T141331Z-03e031",
+          "stage": "complete",
+          "ok": true,
+          "verdict": "ship",
+          "seat": "wm",
+          "caller_session_id": "session-2d9aeaba-c6b1-4ce8-8a25-f61db4144805",
+          "caller_preset": "idea-chat",
+          "preset_source": "scope",
+          "caller_depth": 0,
+          "authority_basis": "no-parent-root",
+          "caller_parent_session": "none",
+          "caller_origin": "none",
+          "seat_session_id": "4e2324d5-9036-4337-bb5c-e564ae537d87",
+          "from_index": 3,
+          "turns_observed": 1,
+          "turn_started": true,
+          "last_turn_reason": {
+            "kind": "completed"
+          },
+          "duration_ms": 4224,
+          "receipt_accepted": true,
+          "receipt_attempts": 1,
+          "receipt_refusals": 0,
+          "lane": {
+            "declared": "loopback-0spend/deepseek-flash",
+            "observed": "deepseek-official/deepseek-flash",
+            "caller_expectation": "loopback-0spend/deepseek-flash",
+            "mismatch": false
+          },
+          "archon": {
+            "run_id": "89bbca5a-a83e-4a98-a4f2-6cafeac3554b",
+            "status": "ship",
+            "artifact_dir": "/home/chow/.archon/workspaces/_folder/chow/artifacts/runs/89bbca5a-a83e-4a98-a4f2-6cafeac3554b"
+          },
+          "artifacts": [
+            "/home/chow/.archon/workspaces/_folder/chow/artifacts/runs/89bbca5a-a83e-4a98-a4f2-6cafeac3554b/rcos-invocation-route-record-validate.json",
+            "/home/chow/.archon/workspaces/_folder/chow/artifacts/runs/89bbca5a-a83e-4a98-a4f2-6cafeac3554b/validation-report.json",
+            "/home/chow/.archon/workspaces/_folder/chow/artifacts/runs/89bbca5a-a83e-4a98-a4f2-6cafeac3554b/verdict.json"
+          ],
+          "warnings": [],
+          "detail": "the seat answered with verdict \"ship\" on 1 turn(s) (last turn ended: completed). The Archon run status below is the seat report of the run own artifact, not an independent check by this dispatcher."
+        }
+      ]
+    }
+  ],
+  "audit_file": "/Users/adam26/dsh-a0-boot/home/runs/seat-dispatch/seat-dispatch.jsonl",
+  "honesty": "model turns on both sessions were scripted by the a2c loopback (127.0.0.1, dummy key, zero inference, zero spend; the model id is a label); the dispatch_seat execution, WM seat composition, ptc run_code lane, receipt validation, and audit append are the real production code paths",
+  "ts": "2026-09-29T14:13:35.331Z"
+}

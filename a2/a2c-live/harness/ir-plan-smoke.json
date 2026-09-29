@@ -1,0 +1,23 @@
+{
+  "objective": "A2-c runtime smoke: prove Archon loads and executes a bash-only IR-compiled DAG (no provider header), that the run message reaches bash nodes as $ARGUMENTS, and that artifacts land under artifacts/runs/<uuid>.",
+  "inputs": {
+    "note": "no inputs — the run message itself is the probe payload"
+  },
+  "outputs": {
+    "smoke_artifact": "smoke-artifact.txt",
+    "smoke_arguments": "smoke-arguments.json"
+  },
+  "acceptance": [
+    "bash-only DAG loads and completes without any provider/model lane",
+    "$ARGUMENTS carries the run message verbatim into the bash node"
+  ],
+  "nodes": [
+    {
+      "id": "echo-args",
+      "execution_class": "deterministic",
+      "memory_scope": "run",
+      "ref": "printf '{\"received\": \"%s\"}' \"${ARGUMENTS:-none}\" > smoke-arguments.json && printf 'a2c runtime smoke ok\\n' > smoke-artifact.txt",
+      "depends_on": []
+    }
+  ]
+}

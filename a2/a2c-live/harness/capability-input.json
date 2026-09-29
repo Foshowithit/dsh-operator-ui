@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "name": "dispatch-handoff",
+      "path": "/home/chow/zcode-rcos/capabilities/route-record-validate/fixtures/handoff-valid.json"
+    }
+  ],
+  "seats": ["wm", "idea-chat"],
+  "probes": ["missing_record"]
+}

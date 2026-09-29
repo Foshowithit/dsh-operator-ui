@@ -1,0 +1,40 @@
+{
+  "objective": "A2-c live run: validate the WM routing record (dispatch-handoff, mirror of the real A2-b dry-run record rr-20260929T085040Z-2f6312) end to end by executing the promoted route-record-validate capability inside a bash-only Archon DAG, then independently re-deriving the verdict from the invocation record and the capability payload — every count recomputed, none trusted.",
+  "inputs": {
+    "routing_record": "/home/chow/zcode-rcos/capabilities/route-record-validate/fixtures/handoff-valid.json"
+  },
+  "outputs": {
+    "invocation_record": "rcos-invocation-route-record-validate.json",
+    "validation_report": "validation-report.json",
+    "verdict": "verdict.json"
+  },
+  "acceptance": [
+    "the rcos invocation completed in normal mode against the promoted route-record-validate capability with a clean contract",
+    "the dispatch-handoff routing record is judged valid by the validation kernel (exit 0)",
+    "every summary count is independently re-derived from the payload records and matches the adapter's own summary",
+    "the missing_record probe refuses with kernel exit 2 (unreadable input is refused, never judged)",
+    "zero model nodes anywhere in the DAG — zero spend"
+  ],
+  "nodes": [
+    {
+      "id": "verify-invocation",
+      "execution_class": "deterministic",
+      "memory_scope": "run",
+      "ref": "python3 - <<'PYEOF'\nimport json, sys\nrec = json.load(open('rcos-invocation-route-record-validate.json'))\nchecks = []\ndef need(cond, name):\n    checks.append({'check': name, 'ok': bool(cond)})\n    if not cond:\n        json.dump({'schema': 'a2c-invocation-check/1', 'ok': False, 'checks': checks}, open('validation-report.json', 'w'), indent=2)\n        sys.exit(1)\nneed(rec.get('capability_id') == 'route-record-validate', 'capability is route-record-validate')\nneed(rec.get('status') == 'completed', 'invocation completed')\nneed(rec.get('mode') == 'normal', 'normal mode (not eval)')\nneed(rec.get('registry_status') == 'promoted', 'capability promoted at run time')\nc = rec.get('contract') or {}\nneed(len(c.get('declaration_errors') or []) == 0 and len(c.get('contract_errors') or []) == 0, 'contract clean')\nneed((c.get('input') or {}).get('status') == 'pass' and (c.get('output') or {}).get('status') == 'pass', 'contract io pass')\nreport = {'schema': 'a2c-invocation-check/1', 'ok': True,\n          'invocation_id': rec.get('invocation_id'),\n          'capability_id': rec.get('capability_id'),\n          'registry_status': rec.get('registry_status'),\n          'mode': rec.get('mode'), 'status': rec.get('status'),\n          'duration_ms': rec.get('duration_ms'),\n          'eligibility_eligible': (rec.get('eligibility') or {}).get('eligible'),\n          'checks': checks}\njson.dump(report, open('validation-report.json', 'w'), indent=2)\nprint('verify-invocation ok:', rec.get('invocation_id'))\nPYEOF",
+      "depends_on": []
+    },
+    {
+      "id": "rederive-verdict",
+      "execution_class": "deterministic",
+      "memory_scope": "run",
+      "ref": "python3 - <<'PYEOF'\nimport json, os, sys\nrec = json.load(open('rcos-invocation-route-record-validate.json'))\ninv_dir = os.path.expanduser('~/zcode-rcos/invocations') + '/' + rec['invocation_id']\npayload = json.load(open(os.path.join(inv_dir, rec['output']['path'])))\nproblems = []\nif payload.get('schema') != 'rcos-route-record-validation/1':\n    problems.append('payload schema ' + str(payload.get('schema')))\nrs = payload.get('records') or []\nwant = {\n    'total': len(rs),\n    'valid': sum(1 for r in rs if r.get('verdict') == 'valid'),\n    'schema_violations': sum(1 for r in rs if r.get('verdict') == 'schema-violation'),\n    'authority_refusals': sum(1 for r in rs if r.get('verdict') == 'authority-refusal'),\n    'eligibility_refusals': sum(1 for r in rs if r.get('verdict') == 'eligibility-refusal'),\n    'unreadable': sum(1 for r in rs if r.get('verdict') == 'unreadable'),\n}\ngot = payload.get('summary') or {}\nfor k in want:\n    if got.get(k) != want[k]:\n        problems.append('summary.' + k + ' adapter=' + str(got.get(k)) + ' recount=' + str(want[k]))\nfrozen = {'total': 1, 'valid': 1, 'schema_violations': 0, 'authority_refusals': 0, 'eligibility_refusals': 0, 'unreadable': 0}\nif want != frozen:\n    problems.append('frozen arithmetic drifted: ' + json.dumps(want))\nif not rs or rs[0].get('name') != 'dispatch-handoff' or rs[0].get('exit') != 0:\n    problems.append('record not judged valid: ' + json.dumps(rs[:1]))\nprobe = (payload.get('probes') or {}).get('missing_record') or {}\nif probe.get('refused') is not True or probe.get('kernel_exit') != 2:\n    problems.append('missing_record probe: ' + json.dumps(probe))\nverdict = 'ship' if not problems else 'fix'\nout = {'schema': 'a2c-route-record-live-verdict/1', 'verdict': verdict,\n      'invocation_id': rec.get('invocation_id'),\n      'record_judged': 'dispatch-handoff',\n      'rederived_summary': want, 'adapter_summary': got,\n      'frozen_arithmetic': frozen,\n      'probe_missing_record': probe, 'problems': problems}\njson.dump(out, open('verdict.json', 'w'), indent=2)\nprint('rederive-verdict:', verdict)\nif problems:\n    sys.exit(1)\nPYEOF",
+      "depends_on": ["verify-invocation"]
+    }
+  ],
+  "capability_refs": [
+    {
+      "id": "route-record-validate",
+      "role": "executed"
+    }
+  ]
+}
