@@ -33,6 +33,28 @@ supported archon-workflow binding, (2) B2 selection success against a
 promoted record, (3) admission in DSH's own flow. Do not replace the
 user's app during development; the disposable-profile boot below comes first.
 
+## Settings migration / switch hygiene (added 2026-09-28, after the reset incident)
+
+The 0.1.7→0.2.0 switch reset the desktop profile to 3 UI settings, wiping model
+routes + 411 compaction presets (incident + recovery: session 2026-09-28 17:36,
+primary sources `~/.dsh/profiles/desktop/cordis.patch.yml` and its backup trail).
+Until a real migrator ships, treat version switches as destructive to the profile:
+
+1. **Before switching:** run `~/.dsh/bin/dsh-profile-backup <tag>` (snapshots
+   root + desktop-profile `cordis.patch.yml`, `.env`, `.credentials.yaml`).
+2. **After a reset:** copy the desktop-profile patch back from
+   `~/.dsh/profile-backups/<tag>/`; settings hot-publish, no restart needed.
+3. **Launch through** `~/.dsh/bin/dsh-launch-clean` — strips stale inherited
+   `OPENCODE_*`/key vars so `~/.dsh/.env` wins (incident: inherited old keys
+   overrode fresh ones → "API key is invalid"; the Desktop swap script now
+   calls this wrapper itself).
+4. The live config SSOT is `cordis.patch.yml` (root + per-profile);
+   `~/.dsh/settings.yaml` has been absent since 2026-09-27 and nothing reads it
+   (running app verified). Do not "restore" it from old backups expecting effect.
+5. Compaction (VERIFIED 2026-09-28): Muse accepts `reasoning: high` via the
+   Responses API and completes summarization; high effort consumed 397-476
+   reasoning tokens before any text, so summarizer budgets must stay generous.
+
 ## Unresolved limitations (exact next commands)
 
 1. **A2 disposable boot — DONE 2026-09-28** (active app untouched end-to-end):
