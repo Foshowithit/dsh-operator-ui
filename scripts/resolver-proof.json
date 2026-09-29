@@ -1,0 +1,41 @@
+{
+  "reactVersion": "18.3.1",
+  "reactDomVersion": "18.3.1",
+  "sourceDigest": "sha256:d1f25447623f5c8324c7e2169c28729c8b587162d38c7a51594759e027998cd5",
+  "requireMapping": "require('react') only",
+  "source": {
+    "hostBundleTarget": {
+      "app": "DeepSeek Harness 0.2.0-rc.1 (staged, ~/dsh-0.2.0-stage/app)",
+      "file": "dsh/node_modules/@deepseek-ai/dsh-web-frontend/dist/assets/index-Dy0OhsZ5.js",
+      "bytes": 631135,
+      "sha256": "d1f25447623f5c8324c7e2169c28729c8b587162d38c7a51594759e027998cd5",
+      "reactVersionMarker": "18.3.1"
+    },
+    "hostBundleInstalled": {
+      "app": "DeepSeek Harness 0.1.7-rc.2 (installed, /Applications)",
+      "file": "dsh/node_modules/@deepseek-ai/dsh-web-frontend/dist/assets/index-Q6zc2uHV.js",
+      "sha256": "1f47db2d59dd8f6695cc0fe1277ef9b09ab613288c500d5ba63956f36f02e7fd",
+      "reactVersionMarker": "18.3.1"
+    },
+    "upstreamLock": {
+      "recorded": "docs/DESKTOP-POLISH-AUDIT.md — tag dsh-v0.2.0-rc.1 resolves React/ReactDOM 18.3.1",
+      "declaredRange": "^18.2.0"
+    },
+    "localPreviewBytes": {
+      "react": {
+        "file": "node_modules/react/umd/react.production.min.js",
+        "version": "18.3.1",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd"
+      },
+      "reactDom": {
+        "file": "node_modules/react-dom/umd/react-dom.production.min.js",
+        "version": "18.3.1",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d"
+      }
+    }
+  },
+  "measuredAt": "2026-09-28",
+  "measuredBy": "dsh session (P1 tier-2); byte-level probes of app.asar archives, read-only"
+}

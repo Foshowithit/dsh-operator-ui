@@ -17,6 +17,7 @@
 // is executed directly with `node scripts/preview-operator.mjs --port <n>`.
 
 import http from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 
@@ -104,6 +105,41 @@ export function checkResolverProof(proof) {
   return { ready: true, detail: `react ${proof.reactVersion} + react-dom ${proof.reactDomVersion} (${proof.sourceDigest})` };
 }
 
+// Real-component serving (P1): the pinned resolver proof names exact local
+// React UMD bytes; the vendor route serves them ONLY after re-hashing the file
+// and matching the committed digest — a byte mismatch is a refusal, never a
+// fallback to some other bytes. /client.js serves the real plugin factory and
+// /render serves the harness page that mounts it without any dispatch.
+const REPO_ROOT = resolve(new URL('..', import.meta.url).pathname);
+const VENDOR_ROUTES = {
+  '/vendor/react.production.min.js': {
+    file: 'node_modules/react/umd/react.production.min.js',
+    digestKey: 'react',
+  },
+  '/vendor/react-dom.production.min.js': {
+    file: 'node_modules/react-dom/umd/react-dom.production.min.js',
+    digestKey: 'reactDom',
+  },
+};
+
+function sha256File(path) {
+  return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+function vendorResponse(route, proof) {
+  const spec = VENDOR_ROUTES[route];
+  const declared = proof && proof.source && proof.source.localPreviewBytes && proof.source.localPreviewBytes[spec.digestKey];
+  const abs = join(REPO_ROOT, spec.file);
+  if (!existsSync(abs)) {
+    return { status: 500, body: `pinned bytes missing: ${spec.file}` };
+  }
+  const actual = sha256File(abs);
+  if (!declared || actual !== declared.sha256) {
+    return { status: 500, body: `digest mismatch for ${spec.file}: bytes are not the pinned resolver proof` };
+  }
+  return { status: 200, body: readFileSync(abs), type: 'application/javascript; charset=utf-8' };
+}
+
 export function startPreviewServer({ port, host = '127.0.0.1', fixtureDir, resolverProof = null }) {
   if (!isLoopbackHost(host)) {
     return Promise.resolve({ ok: false, reason: 'preview binds loopback only' });
@@ -120,6 +156,28 @@ export function startPreviewServer({ port, host = '127.0.0.1', fixtureDir, resol
         toolExecution: false,
         profileWrites: false,
       }));
+      return;
+    }
+    if (url.pathname === '/render') {
+      const page = readFileSync(join(REPO_ROOT, 'test/fixtures/operator-preview/render.html'));
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(page);
+      return;
+    }
+    if (url.pathname === '/client.js') {
+      res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8' });
+      res.end(readFileSync(join(REPO_ROOT, 'lib/client.js')));
+      return;
+    }
+    if (VENDOR_ROUTES[url.pathname]) {
+      const out = vendorResponse(url.pathname, resolverProof);
+      if (out.type) {
+        res.writeHead(out.status, { 'content-type': out.type });
+        res.end(out.body);
+      } else {
+        res.writeHead(out.status, { 'content-type': 'text/plain; charset=utf-8' });
+        res.end(out.body);
+      }
       return;
     }
     const name = url.pathname.replace(/^\//, '').replace(/\.json$/, '') || 'states';
@@ -151,7 +209,13 @@ if (invokedDirectly) {
     process.exit(2);
   }
   const fixtureDir = new URL('../test/fixtures/operator-preview/', import.meta.url).pathname;
-  startPreviewServer({ port: parsed.port, fixtureDir }).then((started) => {
+  let resolverProof = null;
+  try {
+    resolverProof = JSON.parse(readFileSync(new URL('./resolver-proof.json', import.meta.url), 'utf8'));
+  } catch (e) {
+    console.error(`preview-operator: resolver proof unavailable (${e.message}) — /status stays blocked, /render stays down`);
+  }
+  startPreviewServer({ port: parsed.port, fixtureDir, resolverProof }).then((started) => {
     if (!started.ok) {
       console.error(`preview-operator: ${started.reason}`);
       process.exit(1);

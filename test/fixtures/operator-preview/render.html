@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- P1 render harness: loads the REAL plugin factory (lib/client.js) with the
+     PINNED React 18.3.1 bytes served from this loopback host only, captures the
+     factory's real components through a minimal ctx shim, and renders a canned
+     WM dispatch fixture. NO dispatch, NO outbound fetch, NO host session. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>P1 — real factory render (no dispatch)</title>
+<style>
+  body { font: 13px/1.45 -apple-system, sans-serif; margin: 24px; background: #f6f6f4; color: #222; }
+  h1 { font-size: 15px; } .banner { color: #666; font-size: 11px; margin-bottom: 16px; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; max-width: 560px; margin-bottom: 12px; }
+  .ok { color: #0a7d32; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Actual-component preview — real factory, pinned resolver</h1>
+<div class="banner" id="banner">Synthetic preview — canned fixtures only, no live task, no live session.</div>
+<div id="wm-root"></div>
+<div id="jl-root"></div>
+<div id="summary" class="card">rendering…</div>
+
+<script src="/vendor/react.production.min.js"></script>
+<script src="/vendor/react-dom.production.min.js"></script>
+<script>
+// Shim must exist BEFORE client.js executes: the built bundle calls
+// window.__ModuleLoader__.load(...) at its own script-evaluation time.
+window.__ModuleLoader__ = {
+  load: function (def) { window.__P1_DEF__ = def; },
+};
+</script>
+<script src="/client.js"></script>
+<script>
+(function () {
+  var captured = {};
+  var mod = window.__P1_DEF__.factory(function (name) {
+    if (name === 'react') return window.React;
+    throw new Error('preview require: only react is mapped (' + name + ')');
+  });
+  window.__P1_MODULE__ = mod;
+  mod.apply({
+    effect: function (fn) { fn(); },
+    slots: {
+      inject: function (name, registrar) { registrar(); },
+      register: function (def, Component) { captured[def.key || def.name || def.id] = Component; },
+    },
+  });
+
+  var ENVELOPE = {
+    ok: true, stage: 'complete', verdict: 'ship',
+    detail: 'Preview fixture: bounded local render, no dispatch occurred.',
+    warnings: [],
+    dispatch: {
+      run_id: 'preview-run-1', seat: 'adam-seat', seat_session_id: 'preview-seat-session',
+      receipt_accepted: true, audit_log: 'preview://audit/run-1', audit_error: '',
+    },
+    receipt: {
+      verdict: 'ship',
+      summary: 'Preview fixture rendered by the real factory with pinned React 18.3.1.',
+      artifacts: ['preview://artifact/run-1'], evidence: ['preview://evidence/render-marker'],
+      blockers: [],
+      archon_run_id: 'none', archon_status: 'none', archon_artifact_dir: 'preview://artifacts',
+      lane: 'preview-loopback', next: 'No next step — synthetic preview only.',
+    },
+  };
+  var wmBlock = {
+    kind: 'tool-result', isError: false, callId: 'preview-call-1',
+    call: { argsRaw: JSON.stringify({ seat: 'adam-seat', objective: 'Preview the operator dispatch receipt card' }) },
+    content: [{ type: 'text', text: JSON.stringify({ operatorWm: { version: 1, toolName: 'dispatch_seat', callId: 'preview-call-1', value: ENVELOPE } }) }],
+  };
+  var jlBlock = {
+    kind: 'tool-result', isError: false, callId: 'preview-call-2',
+    call: { name: 'job_list', argsRaw: JSON.stringify({}) },
+    content: [{ type: 'text', text: JSON.stringify({ operatorJobList: { version: 1, callId: 'preview-call-2', toolName: 'job_list', jobs: [{ id: 'preview-job-1', kind: 'preview', label: 'Preview job (no live task)', status: 'completed', detail: 'canned fixture', startedAt: Date.now() - 60000, finishedAt: Date.now() }] } }) }],
+  };
+
+  var results = {};
+  try {
+    var React = window.React, ReactDOM = window.ReactDOM;
+    var wm = captured['dispatch_seat'];
+    var jl = captured['job_list'];
+    ReactDOM.createRoot(document.getElementById('wm-root'))
+      .render(React.createElement('div', { className: 'card' },
+        React.createElement(wm, { callId: 'preview-call-1', toolName: 'dispatch_seat', block: wmBlock, openFile: function () {}, inspect: function () {} })));
+    ReactDOM.createRoot(document.getElementById('jl-root'))
+      .render(React.createElement('div', { className: 'card' },
+        React.createElement(jl, { callId: 'preview-call-2', toolName: 'job_list', block: jlBlock, inspect: function () {} })));
+    results.ok = true;
+    results.components = Object.keys(captured);
+    results.reactVersion = React.version;
+  } catch (e) {
+    results.ok = false;
+    results.error = String(e && e.stack || e);
+  }
+  window.__P1_RENDERED__ = results;
+  var s = document.getElementById('summary');
+  s.innerHTML = results.ok
+    ? '<span class="ok">RENDERED</span> — real factory components on pinned react ' + results.reactVersion + ' (components: ' + results.components.join(', ') + ')'
+    : 'RENDER FAILED: ' + results.error;
+})();
+</script>
+</body>
+</html>
