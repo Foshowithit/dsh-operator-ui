@@ -196,6 +196,14 @@ contain identical rows. Only exact evidenced matches share a reviewed grouping.
 **Done:** coverage is measurable for each frozen source, including what is missing.
 This is discovery coverage, not a claim that every plugin has been audited.
 
+### K1b — Expand K1 with the full licensed awesome feed snapshot
+
+The 13-row K1 inventory is a starter sample. The next bounded source-expansion
+packet is fully specified in the [K1b implementation plan](2026-09-28-k1b-awesome-snapshot.md).
+It captures the permitted awesome export only; dshfind remains link-only and
+dshmarket remains the same catalog lineage. Collection coverage stays separate
+from plugin review, compatibility and capability readiness.
+
 ### K2 — Assign every distinct entry a disposition
 
 **Owner/files:** one reviewer per disjoint inventory-ID range; create

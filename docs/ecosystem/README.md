@@ -1,76 +1,76 @@
 # Offline ecosystem inventory (K1)
 
-Frozen 2026-09-28. Research artifact only: these files are outside the
-runtime and are never imported by `lib/`, shipped in the package, or treated
-as a registry. A directory listing never becomes execution authority.
+Frozen 2026-09-28. These files are research artifacts outside the runtime;
+they are never imported by `lib/`, shipped in the package, or treated as a
+registry. A directory listing never becomes execution authority.
 
-## Files
+## Files and provenance
 
-- `sources.json` — the three frozen source snapshots (`operator-plugin-inventory-sources/1`):
-  `awesome-curated` (licensed feed snapshot basis), `dshfind-api`
-  (link-only; bulk rights unresolved), `dshmarket-view` (downstream view of
-  the awesome feed, no independent count). Each records `accessBasis`,
-  `advertisedTotal`, `collectedRows`, and why traversal is incomplete.
-- `inventory.json` — the normalized output of
-  `scripts/plugin-inventory.mjs` over the 13 manually reviewed survey rows
-  (12 link-only refs + 1 licensed-feed row). Self-contained: `inputs` holds
-  the exact sources+listings fed to the normalizer, `result` holds
-  `entries`, `conflicts`, and `coverage`. Current result: 13 entries,
-  0 conflicts, all three sources `traversalComplete: false`.
-- `README.md` — this file (schema + reproduction).
+- `sources.json` records `awesome-curated` as a digest-bound static snapshot,
+  `dshfind-api` as link-only while catalog-data rights remain unresolved, and
+  `dshmarket-view` as a downstream view of the same awesome catalog.
+- `snapshots/awesome-dsh-plugin-2026-09-28.json.gz` is a deterministic gzip
+  of the exact export bytes. SHA-256 of the decompressed bytes is
+  `80c4bc9efbeb9a894aca4ccfc89391275449ff9b4b3b0cafaf45f4b145f218c5`
+  (5,267,051 bytes; observed `2026-09-28T21:37:28Z`); the export reports
+  4,382 plugin rows. Attribution and license context: `awesome-dsh-plugin/awesome-dsh-plugin`
+  at `4c4167fa0dc992395f8d9c56cfb27e1f812ddb33`, which declares CC0-1.0.
+  The website export has no schema version or stable record IDs. Its license
+  does not establish the licenses of listed repositories.
+- `inventory.json` contains 4,382 awesome catalog rows plus 12 link-only
+  references, with per-source coverage. The 4,382 rows are collected listings,
+  not reviewed capabilities: existing K2 dispositions cover the 13-row starter
+  sample only; the rest await disjoint review batches of at most 25.
 
-## Schema (frozen)
+## Projection and safety boundary
 
 `normalizeInventory({ sources, listings })` returns
 `{ schema: 'operator-plugin-inventory/1', entries, conflicts, coverage }`.
+The ordinary operator input path remains capped at 100 rows. The separate
+`normalizeAwesomeSnapshot` path accepts the exact decompressed bytes only after
+SHA-256, source, envelope count, and output count validation. The pinned static
+artifact is the only snapshot input; normalizer/runtime code performs no
+network fetch.
 
-- Source record: `sourceId`, `sourceUrl`, `observedAt`,
-  `sourceRef`/`sourceDigest` when available, `accessBasis` (one of
-  `licensed-snapshot`, `link-only`, `downstream-view`, `manual-review`),
-  `advertisedTotal` (int or null), `collectedRows`,
-  `traversalComplete`, `unresolvedReason`.
-- Listing record: `sourceId`, `sourceKey` (stable `owner/repo` where the
-  source documents one; otherwise an inventory-local `row-<index>` key),
-  `url`, `packageName`/`packageVersion` when explicit (scoped names kept
-  verbatim), `repositoryUrl`/`repositorySubpath`/`repositoryRef`,
-  `publisher`, `declaredDshRange`, `licenseEvidence`, `updatedAt`.
-- `entryId` is an inventory-row reference only (`sourceId:sourceKey`, or a
-  `row-<index>#<digest>` derivation). It is not a canonical capability ID.
-- `conflicts` surfaces overlaps, duplicate keys, missing identity,
-  coverage mismatches, batch caps, and malformed/accessor-bearing rows —
-  rows are kept distinct and ambiguity is recorded, never merged.
-- `coverage` is per-source and measurable: incomplete coverage can never
-  read as complete. `validateDispositionCoverage(inventory, decisions)`
-  returns `{ ok, missing, duplicateDecisions, unknownEntries }` for the K2
-  disjoint-range review; valid dispositions are `native-reuse`,
-  `optional-host-plugin`, `task-pack`, `ui-enhancement`, `duplicate`,
-  `defer`, `reject`.
+Snapshot rows project only owner/name identity, URL, and publisher. Feed
+descriptions, capabilities, verification timestamps, install commands,
+compatibility claims, download/star values, and package metadata are inert and
+omitted. Duplicate identities and malformed rows stay distinct and surface as
+conflicts. Per-repository code licenses remain unknown. `entryId` is an
+inventory-row reference, not a canonical capability ID.
 
-## Rights boundary (from the B1a contract)
-
-Only the awesome feed has both a documented machine-readable dataset and a
-repository-level reuse license, so only `awesome-curated` rows may feed a
-future read-only adapter (pinned/validated projection, with attribution).
-`dshfind-api` rows stay link-out references until catalog-data rights are
-clarified. `dshmarket-view` contributes provenance context, not rows.
+`dshfind-api` stays link-only until catalog-data rights are resolved.
+`dshmarket-view` remains in the same lineage and contributes no independent
+rows. Listing, compatibility, review, host evidence, and capability readiness
+are separate facts.
 
 ## Reproduction
 
-The normalizer is pure with no I/O on import and caps operator batches at
-100 rows (or one published snapshot); overflow pauses with a `batch-capped`
-conflict and a recorded continuation. To regenerate `inventory.json` from
-its own embedded inputs:
+From the repository root, this offline command rebuilds the inventory from the
+compressed snapshot and the embedded link-only input rows:
 
 ```sh
-node --input-type=module -e "
+node --input-type=module <<'NODE'
 import { readFileSync, writeFileSync } from 'node:fs';
-import { normalizeInventory } from './scripts/plugin-inventory.mjs';
+import { gunzipSync } from 'node:zlib';
+import { normalizeAwesomeSnapshot, normalizeInventory } from './scripts/plugin-inventory.mjs';
 const doc = JSON.parse(readFileSync('docs/ecosystem/inventory.json', 'utf8'));
-const result = normalizeInventory(doc.inputs);
-writeFileSync('docs/ecosystem/inventory.json', JSON.stringify({ generatedBy: 'scripts/plugin-inventory.mjs', generatedAt: doc.generatedAt, inputs: doc.inputs, result }, null, 2) + '\n');
-"
+const raw = gunzipSync(readFileSync(`docs/ecosystem/${doc.snapshot.file}`));
+const awesome = normalizeAwesomeSnapshot(raw, {
+  sourceDigest: doc.snapshot.sourceDigest.slice('sha256:'.length),
+  declaredCount: doc.snapshot.declaredCount,
+  observedAt: doc.snapshot.observedAt,
+});
+const links = normalizeInventory(doc.inputs);
+const entries = [...awesome.entries, ...links.entries].sort((a, b) => a.entryId.localeCompare(b.entryId));
+const conflicts = [...awesome.conflicts, ...links.conflicts].sort((a, b) => String(a.type).localeCompare(String(b.type)) || String(a.entryId ?? a.sourceId ?? '').localeCompare(String(b.entryId ?? b.sourceId ?? '')));
+const coverage = [...awesome.coverage, ...links.coverage].sort((a, b) => a.sourceId.localeCompare(b.sourceId));
+const result = { schema: 'operator-plugin-inventory/1', entries, conflicts, coverage };
+writeFileSync('docs/ecosystem/inventory.json', JSON.stringify({ ...doc, result }, null, 2) + '\n');
+NODE
 node --test test/plugin-inventory.test.mjs
 ```
 
-Counts must reconcile: entries by source equal each source's `collectedRows`
-in `coverage`, and any gap keeps `traversalComplete: false`.
+The feed is treated only as untrusted listing metadata. Never execute or copy
+its install commands, capability assertions, compatibility claims, or
+verification timestamps into authority or readiness records.

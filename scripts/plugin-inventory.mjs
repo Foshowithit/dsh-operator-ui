@@ -15,12 +15,14 @@
 // runtime imports/package contents. They are not a persistent runtime
 // registry.
 
+import { createHash } from 'node:crypto';
+
 export const INVENTORY_SCHEMA = 'operator-plugin-inventory/1';
 
 const MAX_SOURCES = 16;
 const MAX_LISTINGS = 100;
 const MAX_TEXT = 280;
-const MAX_CONFLICTS = 100;
+const MAX_CONFLICTS = 5000;
 const ALLOWED_ACCESS = new Set([
   'licensed-snapshot',
   'link-only',
@@ -239,7 +241,7 @@ function normalizeListing(raw, index, sourceById, conflicts) {
   };
 }
 
-export function normalizeInventory(input) {
+function normalizeInventoryInternal(input, publishedSnapshot) {
   const conflicts = [];
   // Top-level guard is shallow on purpose: a single accessor-bearing row must
   // surface as a per-row malformed-listing conflict, not reject the batch.
@@ -255,7 +257,7 @@ export function normalizeInventory(input) {
   if (rawSources.length > MAX_SOURCES) {
     pushConflict(conflicts, error('batch-capped', `too many sources: ${rawSources.length} > ${MAX_SOURCES}`));
   }
-  const cappedListings = rawListings.length > MAX_LISTINGS;
+  const cappedListings = !publishedSnapshot && rawListings.length > MAX_LISTINGS;
   if (cappedListings) {
     pushConflict(
       conflicts,
@@ -277,7 +279,7 @@ export function normalizeInventory(input) {
     sourceById.set(s.sourceId, s);
     sources.push(s);
   }
-  const batch = rawListings.slice(0, MAX_LISTINGS);
+  const batch = publishedSnapshot ? rawListings.slice() : rawListings.slice(0, MAX_LISTINGS);
   const entries = [];
   const seenIds = new Map();
   batch.forEach((raw, index) => {
@@ -352,6 +354,58 @@ export function normalizeInventory(input) {
     return String(a.entryId ?? a.sourceId ?? '').localeCompare(String(b.entryId ?? b.sourceId ?? ''));
   });
   return { schema: INVENTORY_SCHEMA, entries, conflicts, coverage };
+}
+
+export function normalizeInventory(input) {
+  return normalizeInventoryInternal(input, false);
+}
+
+// Dedicated offline path for the digest-pinned published export. `rawBytes`
+// must be the exact decompressed export bytes; generic operator batches retain
+// their 100-row limit. Feed claims and install instructions never enter the
+// normalized listing projection.
+export function normalizeAwesomeSnapshot(rawBytes, { sourceDigest, declaredCount, observedAt }) {
+  if (!(rawBytes instanceof Uint8Array)) throw new TypeError('snapshot bytes are required');
+  if (!/^[a-f0-9]{64}$/.test(sourceDigest ?? '')) throw new Error('snapshot digest declaration is invalid');
+  const actualDigest = createHash('sha256').update(rawBytes).digest('hex');
+  if (actualDigest !== sourceDigest) throw new Error('snapshot digest mismatch');
+  let envelope;
+  try {
+    envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(rawBytes));
+  } catch {
+    throw new Error('snapshot JSON is invalid');
+  }
+  if (!envelope || envelope.source !== 'https://github.com/awesome-dsh-plugin/awesome-dsh-plugin'
+      || !Array.isArray(envelope.plugins) || !Number.isSafeInteger(declaredCount)
+      || envelope.count !== declaredCount || envelope.plugins.length !== declaredCount) {
+    throw new Error('snapshot count or source mismatch');
+  }
+  const listings = envelope.plugins.map((plugin) => ({
+    sourceId: 'awesome-curated',
+    sourceKey: plugin && nonblank(plugin.owner) && nonblank(plugin.name)
+      ? `${plugin.owner.trim()}/${plugin.name.trim()}`
+      : null,
+    url: plugin?.url,
+    repositoryUrl: plugin?.url,
+    publisher: plugin?.owner ?? null,
+  }));
+  const result = normalizeInventoryInternal({
+    sources: [{
+      sourceId: 'awesome-curated',
+      sourceUrl: 'https://awesome-dsh-plugin.com/plugins.json',
+      observedAt,
+      accessBasis: 'licensed-snapshot',
+      advertisedTotal: declaredCount,
+      collectedRows: declaredCount,
+      traversalComplete: true,
+      sourceDigest,
+    }],
+    listings,
+  }, true);
+  if (result.entries.length !== declaredCount || result.coverage[0]?.collectedRows !== declaredCount) {
+    throw new Error('snapshot normalized output count mismatch');
+  }
+  return result;
 }
 
 export function validateDispositionCoverage(inventory, decisions) {

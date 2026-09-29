@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeInventory, validateDispositionCoverage, normalizeRepositoryUrl } from '../scripts/plugin-inventory.mjs';
+import { normalizeInventory, validateDispositionCoverage, normalizeRepositoryUrl, normalizeAwesomeSnapshot } from '../scripts/plugin-inventory.mjs';
+import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 
 const src = (over = {}) => ({
   sourceId: 'awesome',
@@ -170,4 +175,51 @@ test('unknown disposition vocabulary cannot satisfy coverage', () => {
   const result = validateDispositionCoverage(inv, [{ entryId: 'awesome:a', disposition: 'maybe-later', reason: 'x' }]);
   assert.equal(result.ok, false);
   assert.deepEqual(result.missing, ['awesome:a']);
+});
+
+test('published awesome snapshot validates its digest and count and projects metadata as inert identity', () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const compressed = readFileSync(resolve(here, '../docs/ecosystem/snapshots/awesome-dsh-plugin-2026-09-28.json.gz'));
+  const raw = gunzipSync(compressed);
+  const result = normalizeAwesomeSnapshot(raw, {
+    sourceDigest: '80c4bc9efbeb9a894aca4ccfc89391275449ff9b4b3b0cafaf45f4b145f218c5',
+    declaredCount: 4382,
+    observedAt: '2026-09-28T21:37:28Z',
+  });
+  assert.equal(result.entries.length, 4382);
+  assert.equal(result.coverage[0].collectedRows, 4382);
+  assert.equal(result.coverage[0].traversalComplete, true);
+  assert.ok(result.entries.every((entry) => !('capabilities' in entry) && !('install' in entry) && !('stars' in entry)));
+  const advertised = result.entries.find((entry) => entry.sourceKey === 'AnonyJcy/dsh-j-space');
+  assert.ok(advertised);
+  assert.equal(advertised.licenseEvidence, null);
+  assert.equal(advertised.declaredDshRange, null);
+  assert.throws(() => normalizeAwesomeSnapshot(raw, {
+    sourceDigest: '0'.repeat(64), declaredCount: 4382, observedAt: '2026-09-28T21:37:28Z',
+  }), /digest/);
+  assert.throws(() => normalizeAwesomeSnapshot(raw, {
+    sourceDigest: '80c4bc9efbeb9a894aca4ccfc89391275449ff9b4b3b0cafaf45f4b145f218c5', declaredCount: 4381, observedAt: '2026-09-28T21:37:28Z',
+  }), /count/);
+});
+
+test('snapshot identity collisions and malformed rows remain visible without name merging', () => {
+  const bytes = Buffer.from(JSON.stringify({
+    source: 'https://github.com/awesome-dsh-plugin/awesome-dsh-plugin',
+    count: 3,
+    plugins: [
+      { owner: 'same', name: 'entry', url: 'https://github.com/same/entry' },
+      { owner: 'same', name: 'entry', url: 'https://github.com/same/entry' },
+      { name: '', url: 'not a URL', install: 'must remain inert' },
+    ],
+  }));
+  const result = normalizeAwesomeSnapshot(bytes, {
+    sourceDigest: createHash('sha256').update(bytes).digest('hex'),
+    declaredCount: 3,
+    observedAt: '2026-09-28T21:37:28Z',
+  });
+  assert.equal(result.entries.length, 3);
+  assert.ok(result.conflicts.some((conflict) => conflict.type === 'duplicate-key'));
+  assert.ok(result.conflicts.some((conflict) => conflict.type === 'malformed-listing'));
+  assert.equal(result.entries.filter((entry) => entry.sourceKey === 'same/entry').length, 2);
+  assert.equal(result.entries.some((entry) => entry.entryId === 'awesome-curated:same/entry#dup2'), true);
 });

@@ -1,19 +1,22 @@
 {
   "schema": "operator-plugin-inventory-sources/1",
-  "observedAt": "2026-09-28T00:00:00.000Z",
+  "observedAt": "2026-09-28T21:37:28Z",
   "sources": [
     {
       "sourceId": "awesome-curated",
       "sourceUrl": "https://awesome-dsh-plugin.com/plugins.json",
-      "observedAt": "2026-09-28T00:00:00.000Z",
-      "sourceRef": "awesome-dsh-plugin/awesome-dsh-plugin@4c4167f",
-      "sourceDigest": null,
+      "observedAt": "2026-09-28T21:37:28Z",
+      "sourceRef": "awesome-dsh-plugin/awesome-dsh-plugin@4c4167fa0dc992395f8d9c56cfb27e1f812ddb33",
+      "sourceDigest": "sha256:80c4bc9efbeb9a894aca4ccfc89391275449ff9b4b3b0cafaf45f4b145f218c5",
       "accessBasis": "licensed-snapshot",
-      "accessNote": "repository declares CC0-1.0; feed is a whole-catalog static document with no schema version or stable record ID — shape and freshness are mutable, do not poll",
+      "accessNote": "upstream repository declares CC0-1.0 at the pinned commit; site export has no schema version or stable record IDs. Snapshot is static and digest-bound; per-repository code licenses remain unknown.",
       "advertisedTotal": 4382,
-      "collectedRows": 1,
-      "traversalComplete": false,
-      "unresolvedReason": "bounded manual survey: one row reviewed, full 4382-row snapshot not validated"
+      "collectedRows": 4382,
+      "traversalComplete": true,
+      "unresolvedReason": null,
+      "snapshotFile": "snapshots/awesome-dsh-plugin-2026-09-28.json.gz",
+      "snapshotCompressedBytes": 1189046,
+      "attribution": "awesome-dsh-plugin/awesome-dsh-plugin; CC0-1.0; https://github.com/awesome-dsh-plugin/awesome-dsh-plugin"
     },
     {
       "sourceId": "dshfind-api",
