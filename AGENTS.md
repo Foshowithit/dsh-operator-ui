@@ -1,6 +1,8 @@
 # AGENTS.md — for humans AND AI agents working on this repo
 
-This is `dsh-operator-ui`: a side-loaded plugin for **DeepSeek Harness (DSH)** that adds a Runs grid, a ⌘K command palette, and a read-only Git tab to the existing DSH web UI. It is NOT a fork. Everything here rides DSH's public extension seams.
+This is `dsh-operator-ui`: a side-loaded plugin for **DeepSeek Harness (DSH)** that adds the RCOS control surface to the existing DSH web UI — a first-run **receipt gate**, the **Work** spine (request → route → execution → evidence → verdict), **Intelligence** (what this installation can actually execute) and **System** — alongside the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a ⌘K command palette. It is NOT a fork. Everything here rides DSH's public extension seams.
+
+The README is the product description; this file is the contract knowledge. Keep them consistent — if the surface set changes, both change.
 
 If you are an AI agent picking this up: this file contains the contract knowledge that is NOT in the DSH docs — hard-won from source-level verification against DSH `0.1.0-rc.6`. Read it fully before editing.
 
@@ -14,13 +16,22 @@ If you are an AI agent picking this up: this file contains the contract knowledg
 
 ## Dev environment (isolated — never point this at a user's real `~/.dsh`)
 
+**Use the locked host in `host/`. Do not `npx` DSH.** A bare
+`npx @deepseek-ai/dsh@0.1.0-rc.6` resolves a drifted Cordis stack and dies at
+boot with `dsh: user patch-layer watching requires the Cordis HMR service`.
+The pin lives in `host/` as npm `overrides` + lockfile — see
+[`host/README.md`](host/README.md) and [COMPAT.md](COMPAT.md).
+
 ```sh
 # one-time: create an isolated DSH home
 mkdir -p dev-home
+# install the pinned host, and put its `dsh` on PATH
+npm install --prefix host                         # locked DSH host (Cordis 4.0.2 pin)
+export PATH="$PWD/host/node_modules/.bin:$PATH"   # `dsh` now resolves to the locked host
 # install this plugin into the isolated profile
-DSH_HOME="$PWD/dev-home" npx --yes @deepseek-ai/dsh@0.1.0-rc.6 plugin --profile web add "$PWD"
+DSH_HOME="$PWD/dev-home" dsh plugin --profile web add "$PWD"
 # run the web UI (detached; plain background jobs get reaped by some harnesses)
-nohup env DSH_HOME="$PWD/dev-home" npx --yes @deepseek-ai/dsh@0.1.0-rc.6 web --host 127.0.0.1 --port 8377 --no-open > dev-home/boot.log 2>&1 &
+nohup env DSH_HOME="$PWD/dev-home" dsh web --host 127.0.0.1 --port 8377 --no-open > dev-home/boot.log 2>&1 &
 # → http://127.0.0.1:8377
 ```
 
