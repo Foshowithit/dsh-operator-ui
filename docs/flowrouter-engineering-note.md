@@ -20,7 +20,7 @@ campaign. Here is what we proved, stated as narrowly as the evidence allows.
 
 Three layers, and one rule about the direction of trust:
 
-![FlowRouter trust boundaries](docs/flowrouter-trust-boundaries.svg)
+![FlowRouter trust boundaries](flowrouter-trust-boundaries.svg)
 
 - **Untrusted claims.** A directory says "endpoint E may be worth asking." A
   repository index says "I hold this exact artifact." A mirror holds a copy. A

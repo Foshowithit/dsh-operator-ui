@@ -6,7 +6,7 @@ Short version for humans and agents alike:
 2. **Set up the isolated dev environment** (see `AGENTS.md` — never use a real `~/.dsh`).
 3. **Make the change.** Keep registrations additive; keep the host half read-only; keep the module dependency-free (client half is a hand-written ModuleLoader module — `require` is limited to seeded externals like `react`).
 4. **Run the contract test:** `node scripts/check.js` — must pass.
-5. **Verify by hand in the dev UI** (all four tabs render; your feature works; then `dsh plugin remove` → the UI reverts to stock and existing sessions are untouched).
+5. **Verify by hand in the dev UI** (the surfaces you touched render — the gate/Work/Intelligence/System surfaces and the legacy tab set; your feature works; then `dsh plugin remove` → the UI reverts to stock and existing sessions are untouched).
 6. **PR.** Describe what you changed and what you verified. Screenshots welcome — fixture content only.
 
 ## Adding a feature — walkthrough
