@@ -104,10 +104,19 @@ the host answers HTTP, and pins pnpm 10 so CI tests the floor the README states.
 
 ### Still open
 
-The plugin installs into a disposable profile and the host boots. The complete
-DeepSeek Desktop (`0.2.0-rc.1`) journey — request → Workflow Manager → Archon →
-independently verified artifact — remains unproven. Do not widen Desktop
-compatibility or edit an existing user's profile as a workaround.
+The public plugin install and compatibility pin above remain **web-profile
+only**. A bounded local preview was verified on 2026-09-30 with DSH Desktop
+`0.2.0-rc.2`: one ordinary folder job completed through Workflow Manager and
+Archon with ship evaluations for the parent and child; the child used a unique
+external working directory. The configured General/Workflow Manager model was
+observed as `command-code-2/meta/muse-spark-1.3-contributor` at Xhigh. A separate
+RCOS invocation passed its six integrity checks and eligibility check, and a
+four-file digest agreed with the shell's digest.
+
+This is a single isolated local verification, not a public installation recipe
+or a general Desktop compatibility claim. Other workflow/model-backed child
+routes remain under repair; no claim is made that all workflows work. Do not
+widen Desktop compatibility or edit an existing user's profile as a workaround.
 
 ## What OPTIONAL means here
 
