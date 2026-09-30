@@ -18,6 +18,29 @@ plugin code imports against), but it is NOT the support claim — this file is.
 | Archon | v0.10.1 API shape + `env@1` transport admission | workflow YAML + `/api/workflows*` routes |
 | Node | ≥ 22 (dev box: v24.15.0) | `engines` field; native WebSocket in `lib/browser.js` |
 
+## Latest isolated boot check (2026-09-29)
+
+The table above records a historical tested combination, not a guarantee that
+installing the DSH version alone reproduces the same dependency tree.
+
+A new disposable-profile check used the locally cached DSH `0.1.0-rc.6` with
+Node `24.15.0`. That tree resolved Cordis `4.0.4`, HMR `1.0.19`, timer `1.1.6`
+and app-boot `0.1.0-rc.8`; it therefore differs from the Cordis `4.0.2` pin
+above. Both the Operator profile and a separate stock profile with no Operator
+failed at boot with:
+
+```text
+dsh: user patch-layer watching requires the Cordis HMR service
+```
+
+Plugin installation and removal completed in the disposable profile, but no
+rendered install/use/remove result was established. The matching stock failure
+shows that this error is not introduced by the Operator patch; it does not
+identify which dependency caused it. A fresh locked host installation and
+successful UI smoke remain necessary before claiming a current clean-install
+path. Do not widen Desktop compatibility or edit an existing user's profile
+as a workaround.
+
 ## What OPTIONAL means here
 
 `@deepseek-ai/dsh-tools` is an OPTIONAL peer: it backs only the four

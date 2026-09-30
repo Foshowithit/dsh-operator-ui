@@ -6,8 +6,9 @@ An operator console for the RCOS (Recursive Capability Operating System) capabil
 
 **This published version targets the DSH web profile.** Its documented tested
 pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API; consult
-[COMPAT.md](COMPAT.md) for the complete dependency combination. The commands
-below do not install a DeepSeek Desktop integration.
+[COMPAT.md](COMPAT.md) for the complete dependency combination and the latest
+boot-check limitation. The commands below do not install a DeepSeek Desktop
+integration.
 
 DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
 Canvas and routing-composition checks exist, but the complete Desktop journey
@@ -114,6 +115,12 @@ tested pin: DSH + plugin + peers + Archon, each with its source of truth).
   still works). Real installs resolve peers automatically; the `link:` dev
   setup needs the peer installed beside DSH (see AGENTS.md).
 
+The supported setup below uses a **Git clone**. Installing the plugin adds the
+UI; running RCOS tasks also requires a reachable compatible Archon, a configured
+registry with executable workflows, and an Archon workspace. Follow
+[the seeded verification steps](DEPLOY.md#verify-seeded-zero-credential) to check
+that connection. A local self-check is not an executed RCOS task.
+
 From a clone of this repository:
 
 ```sh
@@ -157,7 +164,8 @@ never packaged. `node scripts/check.js` enforces the boundary: it fails on
 private machine/ecosystem names or user home paths in any tracked file, and on
 tailnet addresses anywhere outside the historical `eval/` evidence receipts
 (two-machine receipts that are not part of the distributable — the `package.json`
-`files` list ships only `lib/`, `cordis.patch.yml`, `README.md`, `LICENSE`).
+`files` list ships runtime code, the manifest and verification fixtures,
+`cordis.patch.yml`, `README.md`, and `LICENSE`).
 
 ### When no executable capabilities are installed
 
