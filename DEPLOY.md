@@ -1,6 +1,10 @@
 # Deploying dsh-operator-ui
 
-The runbook for putting the plugin on a real DSH host. Everything here is
+This runbook installs the **DSH web plugin**. It does not install or configure
+DeepSeek Desktop, Archon, an RCOS registry, a provider, or a working RCOS
+execution environment. A successful plugin install proves only that the web
+extension is installed; use the status and verification steps below to see
+which execution prerequisites are actually available. Everything here is
 reversible — the last section is the uninstall.
 
 ## Requirements
@@ -31,18 +35,25 @@ dsh plugin --profile web add "$PWD"
 
 The plugin self-inserts its bundle row; no manual `cordis.patch.yml` edit.
 
-## Configure (optional — defaults work)
+## Configure the host integration (optional for the UI; required for RCOS execution)
 
-Everything is configurable in ONE portable file: `operator-ui.config.json` in
+The plugin UI can boot with defaults, but the defaults do not configure a
+working RCOS environment: the capability registry path is empty and the
+agent-triggered `workflow_run` tool is disabled (`allowRun: false`). Configure
+the host integration in one portable file: `operator-ui.config.json` in
 `$DSH_HOME` (see `fixtures/operator-ui.config.example.json` — it is valid
-as-is). Precedence per key: explicit env var > config file > default; every
+as JSON, but still requires host configuration). Precedence per key: explicit
+env var > config file > default; every
 value's origin is reported on the status surface. `~` in paths means the
 operator's home; relative paths are rejected. The file holds endpoint URLs,
 paths, and caps — never secrets: `archon.tokenVar` names the ENV VAR holding a
 bearer token (name only; the value stays in your environment). The full
 contract (components, ports, status vocabulary) lives in
 `system-manifest.json`; the env vars below are the same knobs in back-compat
-form.
+form. Set the registry path to a registry you operate, configure a reachable
+Archon and its required workflow/workspace, and explicitly enable workflow
+dispatch only when that host is ready. The status route reports missing and
+unavailable prerequisites; it does not provision them.
 
 Query one authoritative surface to see what is configured, available, missing,
 invalid, or not yet verified:
@@ -93,10 +104,13 @@ Two probes run in order:
 
 Levels: `NOT_VERIFIED` → `SYSTEM_VERIFIED` (Probe A only — never stretched) →
 `RCOS_VERIFIED` (A + B). The receipt is written to
-`$DSH_HOME/operator-ui/receipt.json` (the only file this plugin writes, and
-only when you POST) and sealed: a modified body reads **TAMPERED**, a changed
-manifest/registry/config/seed reads **STALE** with reasons — an old receipt
-never blesses a different installation.
+`$DSH_HOME/operator-ui/receipt.json` on explicit `POST /verify` and sealed: a
+modified body reads **TAMPERED**, a changed manifest/registry/config/seed
+reads **STALE** with reasons — an old receipt never blesses a different
+installation. Other RCOS operations persist task envelopes in
+`$DSH_HOME/operator-ui/tasks.json`. Teach/acquisition can also write the
+operator-configured workflow and evaluation-fixture paths shown above; the
+plugin does not guess these paths.
 
 Seed install (once, before Probe B can pass):
 
@@ -157,17 +171,28 @@ dsh plugin --profile web remove dsh-operator-ui
 systemctl --user restart dsh-web   # if applicable
 ```
 
-Sessions, settings, and history are untouched (the plugin persists nothing
-except the sealed verification receipt, which you can delete freely).
-The supervised browser, if running, is torn down with the plugin.
+DSH sessions, settings, and conversation history are untouched. Uninstalling
+the plugin does not remove RCOS task records, verification receipts, teaching
+files, registry changes, or exported/staged FlowRouter artifacts; review and
+remove those separately if desired. The supervised browser process is torn
+down with the plugin, while its host-owned browser profile remains under
+`$DSH_HOME/operator-ui-browser`.
 
 ## Safety notes for shared hosts
 
-- The plugin's host half only ever: runs read-only `git` (fixed argv), reads
-  workspace files under the session's root, drives its OWN single supervised
-  browser (dedicated profile, idle-reaped), GETs the Archon API, and POSTs the
-  seeded verification dispatch to it.
-- It never writes to git, never touches other processes' browsers, and never
-  persists data outside `$DSH_HOME/operator-ui-browser` (its throwaway browser
-  profile) and `$DSH_HOME/operator-ui/receipt.json` (the sealed verification
-  receipt, written only on an explicit POST /verify).
+- The plugin's host half runs read-only `git` (fixed argv), reads workspace
+  files under the session's root, drives its own single supervised browser
+  (dedicated profile, idle-reaped), and makes bounded Archon API reads. Some
+  explicit operations also write or dispatch: `POST /verify` dispatches the
+  seeded verification workflow; task/goal routes can dispatch workflows under
+  their authority gates; acquisition and teaching can create candidate or
+  evaluation files at the configured teaching paths; explicit promotion can
+  update the configured registry. Explicit FlowRouter operations can also
+  export or stage package files. These operations are not GET-only; check the
+  selected operation and its paths before running it.
+- It never writes to git or touches other processes' browsers. Durable task
+  records live at `$DSH_HOME/operator-ui/tasks.json`; the sealed verification
+  receipt lives at `$DSH_HOME/operator-ui/receipt.json`; the supervised
+  browser uses `$DSH_HOME/operator-ui-browser`; teaching writes only to the
+  operator-configured workflow and workspace paths. Review these host paths
+  and the status surface before enabling operations on a shared host.
