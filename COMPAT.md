@@ -80,10 +80,27 @@ drift cannot return unnoticed. A version list that matches this table while the
 host fails to boot is precisely the failure mode being guarded against, which
 is why the gate observes a boot rather than comparing versions.
 
-### Also required: pnpm
+### Also required: pnpm ≥ 10
 
 `dsh plugin` forwards to pnpm. Without pnpm on PATH, plugin installation cannot
 run at all — `dsh: pnpm not found on PATH`. `corepack enable pnpm` suffices.
+
+**The version matters, and pnpm 9 is below the floor.** `dsh` marks the profile
+directory as a pnpm workspace root and then runs the plugin install there; pnpm
+9 refuses that without an explicit `-w` and aborts with
+`ERR_PNPM_ADDING_TO_ROOT`, so the plugin never lands in the profile. The host
+still boots, which makes this failure easy to miss — it presents as a working
+boot with a silently absent plugin. Measured 2026-09-30:
+
+| pnpm | plugin install |
+|---|---|
+| 9.15.9 | **FAIL** — `ERR_PNPM_ADDING_TO_ROOT` |
+| 10.34.6 | PASS |
+| 11.28.2 | PASS |
+| 12.8.1 | PASS |
+
+The boot smoke therefore treats a failed plugin install as a failure even when
+the host answers HTTP, and pins pnpm 10 so CI tests the floor the README states.
 
 ### Still open
 

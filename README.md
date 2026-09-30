@@ -104,9 +104,13 @@ tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 - **Platform:** macOS or Linux. Windows is explicitly unsupported (the plugin
   uses POSIX path rules and `pkill`/`pgrep` for the supervised browser).
 - **Node:** ≥ 22 (`engines` enforced; the Browser tab uses Node's native WebSocket).
-- **pnpm** on PATH. `dsh plugin` forwards to pnpm, so without it plugin
-  installation cannot run at all (`dsh: pnpm not found on PATH`). `corepack
-  enable pnpm` is enough.
+- **pnpm ≥ 10** on PATH. `dsh plugin` forwards to pnpm, so without it plugin
+  installation cannot run at all (`dsh: pnpm not found on PATH`). **pnpm 9 will
+  not work**: `dsh` marks the profile directory as a pnpm workspace root, and
+  pnpm 9 refuses to install there without an explicit `-w`, failing with
+  `ERR_PNPM_ADDING_TO_ROOT`. Measured 2026-09-30 — 9.15.9 fails; 10.34.6,
+  11.28.2 and 12.8.1 pass. `corepack enable pnpm` is enough, but check the
+  version it resolves.
 - **git** on PATH (read-only usage, Git/Files tabs).
 - **DSH** `0.1.0-rc.6` with the `web` profile in use — installed through
   **[this repository's locked host](#locked-host-required)**, not a bare

@@ -32,8 +32,14 @@ jobs:
           node-version: '22'
 
       # `dsh plugin` forwards to pnpm; without it plugin install cannot run.
+      # pnpm 9 is BELOW the supported floor: it rejects the profile install with
+      # ERR_PNPM_ADDING_TO_ROOT, because `dsh` marks the profile directory as a
+      # pnpm workspace root and pnpm 9 requires an explicit -w there. Measured
+      # 2026-09-30: 9.15.9 FAILS, 10.34.6 / 11.28.2 / 12.8.1 PASS. Pin the
+      # floor, not a stale major, so this job tests what the README tells users
+      # to install.
       - name: Install pnpm
-        run: npm install --global pnpm@9
+        run: npm install --global pnpm@10
 
       # `npm ci` when the lockfile is committed, `npm install` (which applies the
       # `overrides` pin) on the first run that has not produced one yet.
