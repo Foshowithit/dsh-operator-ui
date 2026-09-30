@@ -111,20 +111,45 @@ compatibility or edit an existing user's profile as a workaround.
 
 ## What OPTIONAL means here
 
-`@deepseek-ai/dsh-tools` is an OPTIONAL peer: it backs only the four
-`browser_*` agent tools (`browser_navigate`, `browser_snapshot`, `browser_click`,
-`browser_type`). Verified by repo-wide grep — `defineTool` appears only in
-`lib/index.js` (the four registrations) and the `package.json` peer block; zero
-use in `lib/browser.js`, `lib/client.js`, `scripts/`, or `cordis.patch.yml`.
+`@deepseek-ai/dsh-tools` is an OPTIONAL peer. It backs the four `browser_*`
+agent tools (`browser_navigate`, `browser_snapshot`, `browser_click`,
+`browser_type`) **and** the three W2 `workflow_*` verbs (`workflow_run`,
+`workflow_status`, `workflow_artifacts`) — all seven register through
+`defineTool` from that package, and nothing else in the tree uses it.
 
 - **INSTALLED** — the package resolves from the plugin tree.
 - **AVAILABLE** — the integration can initialize (import + register succeed).
 - **VERIFIED** — the tools were actually exercised against a live browser.
 
 AVAILABLE must never substitute for VERIFIED. When the peer is absent, the plugin
-boots and serves every tab; the four agent tools stay unregistered and the
-Browser tab says so honestly (`toolsAvailable:false` + `toolsError` on
+boots and serves every tab; the agent tools stay unregistered and the Browser tab
+says so honestly (`toolsAvailable:false` + `toolsError` on
 `GET /plugins/operator-ui/browser/status`).
+
+### Two ways the peer can be unusable — both must degrade, not crash
+
+The peer is resolved lazily at module load, and both failure modes are real:
+
+1. **It does not resolve** (`ERR_MODULE_NOT_FOUND`) — the `catch` sets
+   `TOOLS_UNAVAILABLE`. This path always worked.
+2. **It resolves but does not export `defineTool`** — destructuring yields
+   `undefined` *without throwing*, so the `catch` never fires. This path did NOT
+   work: the guard stayed null, the registrations ran, and the whole plugin tree
+   died with `dsh: plugin tree failed to load: … defineTool is not a function`.
+   Fixed by treating a non-function as unavailable.
+
+### A third hazard, and it is not a code bug
+
+**A `node_modules` in any ancestor directory makes the peer resolve when it
+otherwise would not.** The plugin is installed with `link:`, and `link:` installs
+do not install peers, so resolution walks up from the plugin's real path. A stray
+`~/node_modules` holding the whole `@deepseek-ai/dsh-*` tree therefore makes a
+local run PASS while a clean machine — and CI — FAIL. This is exactly how the
+`--with-plugin` leg read as green locally while CI was red.
+
+If a local PASS will not reproduce on CI, check for an ancestor `node_modules`
+before believing either result. Measured 2026-09-30: the same pnpm 10.34.6 gave
+PASS from the checkout and FAIL from an identical copy under `/tmp`.
 
 ## Verified contract facts (re-check on every pin bump)
 
