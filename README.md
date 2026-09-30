@@ -1,6 +1,33 @@
 # dsh-operator-ui
 
-An operator console for the [RCOS](https://github.com/Foshowithit/rcos) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+An operator console for the RCOS (Recursive Capability Operating System) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+
+## Start here: web plugin and Desktop status
+
+**This published version targets the DSH web profile.** Its documented tested
+pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API, installed through
+the **locked host** in [`host/`](host/README.md) — a bare `npx` of that DSH
+version resolves a drifted Cordis stack and will not boot. Consult
+[COMPAT.md](COMPAT.md) for the complete dependency combination, the measured
+A/B that established the pin, and the upgrade policy. The commands below do not
+install a DeepSeek Desktop integration.
+
+DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
+Canvas and routing-composition checks exist, but the complete Desktop journey
+from a request through execution to a verified artifact is not yet established.
+Do not apply the web profile instructions to your everyday Desktop profile or
+assume a newer host satisfies this package's peer requirements.
+
+- **Try the documented web plugin:** read [Requirements](#requirements),
+  [Install](#install), then [DEPLOY.md](DEPLOY.md) for configuration.
+- **Understand the limits:** screenshots below use fixtures; an installed UI
+  alone does not establish a working execution environment. Archon and an
+  executable capability registry must be configured to run tasks.
+- **Looking for the RCOS source repository?** It is currently private pending
+  publication review. Its link is not a public installation prerequisite;
+  this repository includes configuration examples in `fixtures/`.
+- **Looking for Desktop?** Treat it as development work, not a released
+  one-command setup. ZCode is a separate application, not DeepSeek Desktop.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
@@ -63,12 +90,13 @@ The older panel set is still registered and unchanged; **System → Legacy tabs*
 | **Capabilities** | registry view — promoted/candidate/retired, gate progress, reuse counts, eval history |
 | **Work**, **Intelligence**, **System** | the same three RCOS control-plane surfaces the gate opens, rendered in-session |
 
-The **⌘K / Ctrl+K command palette** works from anywhere, including inside the composer (jump to any session, new session, toggle sidebar, switch views). Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (schema: [capability-registry.schema.json](https://github.com/Foshowithit/rcos/blob/main/prototype/capability-registry.schema.json)) — see DEPLOY.md.
+The **⌘K / Ctrl+K command palette** works from anywhere, including inside the composer (jump to any session, new session, toggle sidebar, switch views). Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (start with the [fixture registry](fixtures/capability-registry.example.json); the separate RCOS schema repository is currently private) — see DEPLOY.md.
 
 ## Install
 
-Requires DSH `0.1.0-rc.6` and an Archon `0.10.1`-shaped workflow API (the
-versions this was built and verified against — see COMPAT.md for the full
+Requires DSH `0.1.0-rc.6` installed through this repository's
+[locked host](#locked-host-required), and an Archon `0.10.1`-shaped workflow API
+(the versions this was built and verified against — see COMPAT.md for the full
 tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 
 ### Requirements
@@ -76,8 +104,18 @@ tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 - **Platform:** macOS or Linux. Windows is explicitly unsupported (the plugin
   uses POSIX path rules and `pkill`/`pgrep` for the supervised browser).
 - **Node:** ≥ 22 (`engines` enforced; the Browser tab uses Node's native WebSocket).
+- **pnpm ≥ 10** on PATH. `dsh plugin` forwards to pnpm, so without it plugin
+  installation cannot run at all (`dsh: pnpm not found on PATH`). **pnpm 9 will
+  not work**: `dsh` marks the profile directory as a pnpm workspace root, and
+  pnpm 9 refuses to install there without an explicit `-w`, failing with
+  `ERR_PNPM_ADDING_TO_ROOT`. Measured 2026-09-30 — 9.15.9 fails; 10.34.6,
+  11.28.2 and 12.8.1 pass. `corepack enable pnpm` is enough, but check the
+  version it resolves.
 - **git** on PATH (read-only usage, Git/Files tabs).
-- **DSH** `0.1.0-rc.6` with the `web` profile in use.
+- **DSH** `0.1.0-rc.6` with the `web` profile in use — installed through
+  **[this repository's locked host](#locked-host-required)**, not a bare
+  `npx`. A fresh install resolves a drifted Cordis stack and will not boot; see
+  below and COMPAT.md.
 - **Archon** `0.10.1` at the configured endpoint (default
   `http://127.0.0.1:3090`, the local `archon serve` port). Migrated workflows
   need the `env@1` transport — see Compatibility notes.
@@ -90,14 +128,42 @@ tested pin: DSH + plugin + peers + Archon, each with its source of truth).
   still works). Real installs resolve peers automatically; the `link:` dev
   setup needs the peer installed beside DSH (see AGENTS.md).
 
-From a clone of this repository:
+The supported setup below uses a **Git clone**. Installing the plugin adds the
+UI; running RCOS tasks also requires a reachable compatible Archon, a configured
+registry with executable workflows, and an Archon workspace. Follow
+[the seeded verification steps](DEPLOY.md#verify-seeded-zero-credential) to check
+that connection. A local self-check is not an executed RCOS task.
+
+### Locked host (required)
+
+`@deepseek-ai/dsh@0.1.0-rc.6` declares **floating caret ranges** on its Cordis
+stack. Install it today without a lock and you get Cordis `4.0.4` /
+`cordis-plugin-hmr` `1.0.19`, and the host dies at boot with:
+
+```text
+dsh: user patch-layer watching requires the Cordis HMR service
+```
+
+That is dependency drift, not a misconfiguration, and it is why a bare
+`npx @deepseek-ai/dsh@0.1.0-rc.6 web` is not a supported starting point.
+`host/` carries the pin as npm `overrides` plus a lockfile:
 
 ```sh
 git clone https://github.com/Foshowithit/dsh-operator-ui.git
 cd dsh-operator-ui
-node scripts/check.js                 # must PASS before proceeding
+npm install --prefix host                         # locked DSH host (Cordis 4.0.2 pin)
+node scripts/boot-smoke.mjs                       # must PASS: real boot, real HTTP 200
+export PATH="$PWD/host/node_modules/.bin:$PATH"   # `dsh` now resolves to the locked host
+node scripts/check.js                             # must PASS before proceeding
 dsh plugin --profile web add "$PWD"
 ```
+
+`npm install --prefix host` is not optional and is not interchangeable with an
+`npm install` at the repository root — the root package *is the plugin*, the
+`host/` package is *the host it runs inside*. The first run writes
+`host/package-lock.json`; commit it, and later installs can use
+`npm ci --prefix host`. COMPAT.md records the exact pinned set, the measured A/B
+that established it, and the upgrade policy.
 
 No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form).
 
@@ -133,7 +199,8 @@ never packaged. `node scripts/check.js` enforces the boundary: it fails on
 private machine/ecosystem names or user home paths in any tracked file, and on
 tailnet addresses anywhere outside the historical `eval/` evidence receipts
 (two-machine receipts that are not part of the distributable — the `package.json`
-`files` list ships only `lib/`, `cordis.patch.yml`, `README.md`, `LICENSE`).
+`files` list ships runtime code, the manifest and verification fixtures,
+`cordis.patch.yml`, `README.md`, and `LICENSE`).
 
 ### When no executable capabilities are installed
 
