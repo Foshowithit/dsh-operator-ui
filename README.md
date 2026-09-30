@@ -5,10 +5,12 @@ An operator console for the RCOS (Recursive Capability Operating System) capabil
 ## Start here: web plugin and Desktop status
 
 **This published version targets the DSH web profile.** Its documented tested
-pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API; consult
-[COMPAT.md](COMPAT.md) for the complete dependency combination and the latest
-boot-check limitation. The commands below do not install a DeepSeek Desktop
-integration.
+pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API, installed through
+the **locked host** in [`host/`](host/README.md) — a bare `npx` of that DSH
+version resolves a drifted Cordis stack and will not boot. Consult
+[COMPAT.md](COMPAT.md) for the complete dependency combination, the measured
+A/B that established the pin, and the upgrade policy. The commands below do not
+install a DeepSeek Desktop integration.
 
 DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
 Canvas and routing-composition checks exist, but the complete Desktop journey
@@ -92,8 +94,9 @@ The **⌘K / Ctrl+K command palette** works from anywhere, including inside the 
 
 ## Install
 
-Requires DSH `0.1.0-rc.6` and an Archon `0.10.1`-shaped workflow API (the
-versions this was built and verified against — see COMPAT.md for the full
+Requires DSH `0.1.0-rc.6` installed through this repository's
+[locked host](#locked-host-required), and an Archon `0.10.1`-shaped workflow API
+(the versions this was built and verified against — see COMPAT.md for the full
 tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 
 ### Requirements
@@ -101,8 +104,14 @@ tested pin: DSH + plugin + peers + Archon, each with its source of truth).
 - **Platform:** macOS or Linux. Windows is explicitly unsupported (the plugin
   uses POSIX path rules and `pkill`/`pgrep` for the supervised browser).
 - **Node:** ≥ 22 (`engines` enforced; the Browser tab uses Node's native WebSocket).
+- **pnpm** on PATH. `dsh plugin` forwards to pnpm, so without it plugin
+  installation cannot run at all (`dsh: pnpm not found on PATH`). `corepack
+  enable pnpm` is enough.
 - **git** on PATH (read-only usage, Git/Files tabs).
-- **DSH** `0.1.0-rc.6` with the `web` profile in use.
+- **DSH** `0.1.0-rc.6` with the `web` profile in use — installed through
+  **[this repository's locked host](#locked-host-required)**, not a bare
+  `npx`. A fresh install resolves a drifted Cordis stack and will not boot; see
+  below and COMPAT.md.
 - **Archon** `0.10.1` at the configured endpoint (default
   `http://127.0.0.1:3090`, the local `archon serve` port). Migrated workflows
   need the `env@1` transport — see Compatibility notes.
@@ -121,14 +130,36 @@ registry with executable workflows, and an Archon workspace. Follow
 [the seeded verification steps](DEPLOY.md#verify-seeded-zero-credential) to check
 that connection. A local self-check is not an executed RCOS task.
 
-From a clone of this repository:
+### Locked host (required)
+
+`@deepseek-ai/dsh@0.1.0-rc.6` declares **floating caret ranges** on its Cordis
+stack. Install it today without a lock and you get Cordis `4.0.4` /
+`cordis-plugin-hmr` `1.0.19`, and the host dies at boot with:
+
+```text
+dsh: user patch-layer watching requires the Cordis HMR service
+```
+
+That is dependency drift, not a misconfiguration, and it is why a bare
+`npx @deepseek-ai/dsh@0.1.0-rc.6 web` is not a supported starting point.
+`host/` carries the pin as npm `overrides` plus a lockfile:
 
 ```sh
 git clone https://github.com/Foshowithit/dsh-operator-ui.git
 cd dsh-operator-ui
-node scripts/check.js                 # must PASS before proceeding
+npm install --prefix host                         # locked DSH host (Cordis 4.0.2 pin)
+node scripts/boot-smoke.mjs                       # must PASS: real boot, real HTTP 200
+export PATH="$PWD/host/node_modules/.bin:$PATH"   # `dsh` now resolves to the locked host
+node scripts/check.js                             # must PASS before proceeding
 dsh plugin --profile web add "$PWD"
 ```
+
+`npm install --prefix host` is not optional and is not interchangeable with an
+`npm install` at the repository root — the root package *is the plugin*, the
+`host/` package is *the host it runs inside*. The first run writes
+`host/package-lock.json`; commit it, and later installs can use
+`npm ci --prefix host`. COMPAT.md records the exact pinned set, the measured A/B
+that established it, and the upgrade policy.
 
 No manual `cordis.patch.yml` edit is needed — the plugin's bundle patch self-inserts its row (`- insert:` form).
 

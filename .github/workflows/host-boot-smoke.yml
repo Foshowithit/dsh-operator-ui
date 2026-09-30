@@ -1,0 +1,52 @@
+name: Locked host boot smoke
+
+# Why this gate exists
+# --------------------
+# `@deepseek-ai/dsh@0.1.0-rc.6` declares FLOATING caret ranges on its Cordis
+# stack. A fresh `npx @deepseek-ai/dsh@0.1.0-rc.6 web` therefore resolves
+# whatever is newest at install time — and newer Cordis/HMR releases dropped the
+# `registerConfig()` hook the rc.6 launcher calls. The result is a host that
+# installs cleanly and then dies at boot with:
+#
+#   dsh: user patch-layer watching requires the Cordis HMR service
+#
+# `host/package.json` pins that stack with npm `overrides`. This job is the
+# proof that the pin still yields a booting host, so drift cannot silently
+# return. It observes a real HTTP 200 from a real spawned host.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  boot-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # `dsh plugin` forwards to pnpm; without it plugin install cannot run.
+      - name: Install pnpm
+        run: npm install --global pnpm@9
+
+      # `npm ci` when the lockfile is committed, `npm install` (which applies the
+      # `overrides` pin) on the first run that has not produced one yet.
+      - name: Install the locked host
+        run: |
+          if [ -f host/package-lock.json ]; then
+            npm ci --prefix host --ignore-scripts --no-audit --no-fund
+          else
+            npm install --prefix host --ignore-scripts --no-audit --no-fund
+          fi
+
+      - name: Boot smoke — locked host
+        run: node scripts/boot-smoke.mjs
+
+      - name: Boot smoke — locked host with the plugin installed
+        run: node scripts/boot-smoke.mjs --with-plugin
