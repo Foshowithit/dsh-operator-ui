@@ -42,7 +42,7 @@ Four components, each with a public install path and its OWN configuration autho
 | DSH (`@deepseek-ai/dsh`) | Harness: sessions, plugins, web profile, providers | `npx @deepseek-ai/dsh@<pin> web` (npm, MIT, github.com/deepseek-ai/deepseek-harness) | `$DSH_HOME/settings.yaml` + `.env` + `.credentials.yaml` | 3080 (127.0.0.1-only by design) | `dsh --version` + web UI 200 |
 | dsh-operator-ui (this repo) | Operator surface (plugin) | `git clone` + `dsh plugin --profile web add` | `$DSH_HOME/operator-ui.config.json` (NEW, §3.3) | — (rides DSH) | `node scripts/check.js` + `/status` route |
 | Archon | Workflow orchestrator, runs, receipts | `curl -fsSL https://archon.diy/install \| bash` (v0.10.x binary; brew/docker also) | `~/.archon/config.yaml` + `~/.archon/.env` | 3090 | `archon version`, `archon doctor --full`, health JSON |
-| RCOS registry | Capability ledger + promotion gate | `git clone https://github.com/Foshowithit/rcos` | repo `.env` + one registry JSON file (path is machine-local) | none (no daemon) | `python3 benchmarks/schema_check.py` |
+| RCOS registry | Capability ledger + promotion gate | **private / invite-only** — `github.com/Foshowithit/rcos` is not public. Strangers start from the tracked [`fixtures/capability-registry.example.json`](../fixtures/capability-registry.example.json) instead | one registry JSON file (path is machine-local) | none (no daemon) | `python3 scripts/check.js` (packaged verification) |
 
 **The UI is the connective read/write surface over these four authorities — never a fifth store.**
 When Setup "configures providers," it writes DSH's `settings.yaml` (with backup, exactly as
@@ -77,6 +77,8 @@ this repo at v0.7.0 unless noted.
 5. **Registry fixture is untracked.** The only `capability-registry.json` example lives in
    gitignored `dev-home/`; DEPLOY.md points `DSH_OPERATOR_UI_REGISTRY` at a placeholder private
    checkout layout. A stranger gets a dead Capabilities tab and no example file.
+   *(Resolved 2026-09-29 by PR #3: `fixtures/capability-registry.example.json` is now tracked and
+   DEPLOY.md points `DSH_OPERATOR_UI_REGISTRY` at it. The finding is kept for history.)*
 6. **Mock Archon defaults to port 3090** — collides with the real Archon default (both documented).
 
 ### 2.2 P0 — No portable configuration contract
@@ -211,10 +213,14 @@ apart (docs generate from it or are checked against it):
                 "configPaths": ["~/.archon/config.yaml"], "port": 3090,
                 "health": "http GET :3090/health (status==ok)",
                 "verify": ["archon version"] },
-    "rcos":   { "install": "git clone https://github.com/Foshowithit/rcos",
-                "configPaths": ["<rcos>/.env"], "port": null,
+    // OPTIONAL and PRIVATE: github.com/Foshowithit/rcos is not public. A public install
+    // never clones it; it copies fixtures/capability-registry.example.json to a machine-local
+    // path and points the registry env var at that.
+    "rcos":   { "install": null, "visibility": "private", "optional": true,
+                "fallback": "cp fixtures/capability-registry.example.json <machine-local>",
+                "configPaths": ["<machine-local>/capability-registry.json"], "port": null,
                 "health": null,
-                "verify": ["python3 benchmarks/schema_check.py"] },
+                "verify": [] },
     "operator-ui": { "install": "dsh plugin --profile web add <this-repo>",
                 "configPaths": ["$DSH_HOME/operator-ui.config.json"],
                 "verify": ["node scripts/check.js"] }
