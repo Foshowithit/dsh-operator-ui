@@ -1,6 +1,30 @@
 # dsh-operator-ui
 
-An operator console for the [RCOS](https://github.com/Foshowithit/rcos) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+An operator console for the RCOS (Recursive Capability Operating System) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+
+## Start here: web plugin and Desktop status
+
+**This published version targets the DSH web profile.** Its documented tested
+pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API; consult
+[COMPAT.md](COMPAT.md) for the complete dependency combination. The commands
+below do not install a DeepSeek Desktop integration.
+
+DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
+Canvas and routing-composition checks exist, but the complete Desktop journey
+from a request through execution to a verified artifact is not yet established.
+Do not apply the web profile instructions to your everyday Desktop profile or
+assume a newer host satisfies this package's peer requirements.
+
+- **Try the documented web plugin:** read [Requirements](#requirements),
+  [Install](#install), then [DEPLOY.md](DEPLOY.md) for configuration.
+- **Understand the limits:** screenshots below use fixtures; an installed UI
+  alone does not establish a working execution environment. Archon and an
+  executable capability registry must be configured to run tasks.
+- **Looking for the RCOS source repository?** It is currently private pending
+  publication review. Its link is not a public installation prerequisite;
+  this repository includes configuration examples in `fixtures/`.
+- **Looking for Desktop?** Treat it as development work, not a released
+  one-command setup. ZCode is a separate application, not DeepSeek Desktop.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
@@ -63,7 +87,7 @@ The older panel set is still registered and unchanged; **System → Legacy tabs*
 | **Capabilities** | registry view — promoted/candidate/retired, gate progress, reuse counts, eval history |
 | **Work**, **Intelligence**, **System** | the same three RCOS control-plane surfaces the gate opens, rendered in-session |
 
-The **⌘K / Ctrl+K command palette** works from anywhere, including inside the composer (jump to any session, new session, toggle sidebar, switch views). Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (schema: [capability-registry.schema.json](https://github.com/Foshowithit/rcos/blob/main/prototype/capability-registry.schema.json)) — see DEPLOY.md.
+The **⌘K / Ctrl+K command palette** works from anywhere, including inside the composer (jump to any session, new session, toggle sidebar, switch views). Point `DSH_OPERATOR_UI_ARCHON` at the Archon API and `DSH_OPERATOR_UI_REGISTRY` at your `capability-registry.json` (start with the [fixture registry](fixtures/capability-registry.example.json); the separate RCOS schema repository is currently private) — see DEPLOY.md.
 
 ## Install
 
