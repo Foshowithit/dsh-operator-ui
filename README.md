@@ -14,11 +14,28 @@ version resolves a drifted Cordis stack and will not boot. Consult
 A/B that established the pin, and the upgrade policy. The commands below do not
 install a DeepSeek Desktop integration.
 
-DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
-Canvas and routing-composition checks exist, but the complete Desktop journey
-from a request through execution to a verified artifact is not yet established.
-Do not apply the web profile instructions to your everyday Desktop profile or
-assume a newer host satisfies this package's peer requirements.
+DeepSeek Desktop `0.2.0-rc.2` is a bounded local development preview, not a
+supported public installation target. The operator UI is mounted in one native
+Desktop profile in read-only mode: its status route returned 200, a
+browser-operation POST was refused with 403 before execution, and all ten tabs
+render. The corrected client reopened with existing chats preserved and the
+active profile unchanged. A bounded ordinary-folder job and scoped Python build
+passed their run gates, but the Desktop research path is still blocked because
+its executable research capability is not promoted. These results do not
+establish support for every workflow.
+
+The published install instructions and compatibility pin below remain for the
+DSH `0.1.0-rc.6` web profile only. They do not install the native Desktop
+integration. On 2026-10-01, the web plugin completed an isolated manual
+install → feature render → removal → stock-app restoration check against a
+locked DSH `0.1.0-rc.6` / Cordis `4.0.2` host. The System surface rendered and
+reported Archon `UNAVAILABLE` and RCOS `NOT_CONFIGURED`. The test profile had
+no provider credentials; its fixture prompt ended with `MISSING_CREDENTIAL`
+and zero usage. After plugin removal and host restart, only the stock Chat and
+Trajectory tabs remained and the operator status route returned 404. The
+fixture workspace, session, prompt, and failure record remained present. This
+proves the bounded web-plugin lifecycle, not live RCOS execution or model
+routing. No claim is made that all workflows are ready.
 
 - **Try the documented web plugin:** read [Requirements](#requirements),
   [Install](#install), then [DEPLOY.md](DEPLOY.md) for configuration.
@@ -28,8 +45,9 @@ assume a newer host satisfies this package's peer requirements.
 - **Looking for the RCOS source repository?** It is currently private pending
   publication review. Its link is not a public installation prerequisite;
   this repository includes configuration examples in `fixtures/`.
-- **Looking for Desktop?** Treat it as development work, not a released
-  one-command setup. ZCode is a separate application, not DeepSeek Desktop.
+- **Looking for Desktop?** Treat it as an unsupported local development preview,
+  not a released one-command setup. ZCode is a separate application, not
+  DeepSeek Desktop.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
