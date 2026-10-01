@@ -14,12 +14,28 @@ version resolves a drifted Cordis stack and will not boot. Consult
 A/B that established the pin, and the upgrade policy. The commands below do not
 install a DeepSeek Desktop integration.
 
-DeepSeek Desktop has one bounded local preview verification against
-`0.2.0-rc.2` (2026-09-30): an isolated ordinary folder job completed through
-Workflow Manager and Archon, with a verified child result. This does not establish
-a reproducible public Desktop installation or support for every workflow/model
-route. The published install instructions below remain for the DSH `0.1.0-rc.6`
-web profile only. Do not apply them to a Desktop profile.
+DeepSeek Desktop `0.2.0-rc.2` is a bounded local development preview, not a
+supported public installation target. The operator UI is mounted in one native
+Desktop profile in read-only mode: its status route returned 200, a
+browser-operation POST was refused with 403 before execution, and all ten tabs
+render. The corrected client reopened with existing chats preserved and the
+active profile unchanged. A bounded ordinary-folder job and scoped Python build
+passed their run gates, but the Desktop research path is still blocked because
+its executable research capability is not promoted. These results do not
+establish support for every workflow.
+
+The published install instructions and compatibility pin below remain for the
+DSH `0.1.0-rc.6` web profile only. They do not install the native Desktop
+integration. On 2026-10-01, the web plugin completed an isolated manual
+install → feature render → removal → stock-app restoration check against a
+locked DSH `0.1.0-rc.6` / Cordis `4.0.2` host. The System surface rendered and
+reported Archon `UNAVAILABLE` and RCOS `NOT_CONFIGURED`. The test profile had
+no provider credentials; its fixture prompt ended with `MISSING_CREDENTIAL`
+and zero usage. After plugin removal and host restart, only the stock Chat and
+Trajectory tabs remained and the operator status route returned 404. The
+fixture workspace, session, prompt, and failure record remained present. This
+proves the bounded web-plugin lifecycle, not live RCOS execution or model
+routing. No claim is made that all workflows are ready.
 
 - **Try the documented web plugin:** read [Requirements](#requirements),
   [Install](#install), then [DEPLOY.md](DEPLOY.md) for configuration.

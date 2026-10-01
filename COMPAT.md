@@ -104,19 +104,28 @@ the host answers HTTP, and pins pnpm 10 so CI tests the floor the README states.
 
 ### Still open
 
-The public plugin install and compatibility pin above remain **web-profile
-only**. A bounded local preview was verified on 2026-09-30 with DSH Desktop
-`0.2.0-rc.2`: one ordinary folder job completed through Workflow Manager and
-Archon with ship evaluations for the parent and child; the child used a unique
-external working directory. The configured General/Workflow Manager model was
-observed as `command-code-2/meta/muse-spark-1.3-contributor` at Xhigh. A separate
-RCOS invocation passed its six integrity checks and eligibility check, and a
-four-file digest agreed with the shell's digest.
+The public install instructions and compatibility pin above remain for the
+**web profile only**. DSH Desktop `0.2.0-rc.2` has bounded local-preview
+evidence, not a supported public installation path. The operator UI is mounted
+in one native Desktop profile in read-only mode: status returned 200, a
+browser-operation POST returned 403 before execution, and all ten tabs render.
+The corrected client reopened with existing chats preserved and the active
+profile unchanged. An ordinary-folder job and a scoped Python build passed
+their run gates, but the Desktop research path remains blocked because its
+executable research capability is not promoted. These results do not establish
+broad workflow support or a Desktop installation recipe.
 
-This is a single isolated local verification, not a public installation recipe
-or a general Desktop compatibility claim. Other workflow/model-backed child
-routes remain under repair; no claim is made that all workflows work. Do not
-widen Desktop compatibility or edit an existing user's profile as a workaround.
+The isolated manual install → feature render → removal → stock-app restoration
+cycle was verified on 2026-10-01 against a locked DSH `0.1.0-rc.6` / Cordis
+`4.0.2` host. The System surface rendered and reported Archon `UNAVAILABLE`
+and RCOS `NOT_CONFIGURED`. The test had no provider credentials; its fixture
+prompt ended with `MISSING_CREDENTIAL` and zero usage. After removal and host
+restart, only stock Chat and Trajectory tabs remained, the operator status
+route returned 404, and the fixture workspace, session, prompt, and failure
+record remained present. This verifies the bounded web-plugin lifecycle only;
+it does not prove RCOS execution, model routing, or Desktop compatibility. Do
+not widen Desktop compatibility or describe all workflows as ready. The public
+support statement remains web-profile-only.
 
 ## What OPTIONAL means here
 
