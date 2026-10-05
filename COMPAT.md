@@ -114,12 +114,17 @@ boot with a silently absent plugin. Measured 2026-09-30:
 The boot smoke therefore treats a failed plugin install as a failure even when
 the host answers HTTP, and pins pnpm 10 so CI tests the floor the README states.
 
-### Still open
+### Publication boundary
 
-The plugin installs into a disposable profile and the host boots. The complete
-DeepSeek Desktop (`0.2.0-rc.1`) journey — request → Workflow Manager → Archon →
-independently verified artifact — remains unproven. Do not widen Desktop
-compatibility or edit an existing user's profile as a workaround.
+The older public web-profile pin above remains reproducible and supported as a
+reference path. It is no longer the statement of product direction.
+
+DeepSeek Desktop is the primary RCOS seat and the current development
+integration is working. What remains open is **publication/reproducibility**:
+the complete newer Desktop source/configuration and clean-machine install path
+must be pushed to the public repository and re-verified from that public state.
+Until that happens, do not describe the public checkout as a one-command
+Desktop release and do not infer Desktop compatibility from the rc.6 web pin.
 
 ## What OPTIONAL means here
 
