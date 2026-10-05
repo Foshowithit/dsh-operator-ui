@@ -7,6 +7,18 @@ Upgrades move through verification before the known-good pin changes.
 The plugin's `peerDependencies` range in `package.json` stays truthful (what the
 plugin code imports against), but it is NOT the support claim — this file is.
 
+## Desktop status
+
+DeepSeek Desktop is now the primary RCOS operator-seat direction and the current
+development integration is working. That statement is intentionally separate
+from the compatibility table below: the table remains the reproducible pin for
+the older public web-profile package.
+
+The complete newer Desktop source/configuration and clean-machine installation
+recipe are not yet present on public `main`. Until they are published and
+re-verified from a fresh checkout, this file does not claim a public
+one-command Desktop release. See [docs/DESKTOP.md](docs/DESKTOP.md).
+
 ## Known-good pin (DSH + peers verified 2026-09-15; plugin 0.11.0 against Archon 0.10.1 re-verified 2026-09-22)
 
 | Component | Version | Source of truth |
