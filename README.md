@@ -4,32 +4,42 @@
 
 An operator console for the RCOS (Recursive Capability Operating System) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
 
-## Start here: web plugin and Desktop status
+## Start here: Desktop is the primary RCOS seat
 
-**This published version targets the DSH web profile.** Its documented tested
-pin is DSH `0.1.0-rc.6` with an Archon `0.10.1`-shaped API, installed through
-the **locked host** in [`host/`](host/README.md) — a bare `npx` of that DSH
-version resolves a drifted Cordis stack and will not boot. Consult
-[COMPAT.md](COMPAT.md) for the complete dependency combination, the measured
-A/B that established the pin, and the upgrade policy. The commands below do not
-install a DeepSeek Desktop integration.
+**DeepSeek Desktop integration is working in current RCOS development and is
+the primary daily operator-seat direction.** RCOS remains a separate control
+plane: Desktop provides the shell/session experience; RCOS provides routing,
+capability selection, governed execution, evidence, evaluation and receipts.
 
-DeepSeek Desktop support is under development against `0.2.0-rc.1`. Isolated
-Canvas and routing-composition checks exist, but the complete Desktop journey
-from a request through execution to a verified artifact is not yet established.
-Do not apply the web profile instructions to your everyday Desktop profile or
-assume a newer host satisfies this package's peer requirements.
+The public `main` branch still contains the older, fully documented DSH web
+profile package. Its tested public pin is DSH `0.1.0-rc.6` with an Archon
+`0.10.1`-shaped API, installed through the locked host in
+[`host/`](host/README.md). **Do not read that older web pin as the current
+product direction.**
 
-- **Try the documented web plugin:** read [Requirements](#requirements),
-  [Install](#install), then [DEPLOY.md](DEPLOY.md) for configuration.
-- **Understand the limits:** screenshots below use fixtures; an installed UI
-  alone does not establish a working execution environment. Archon and an
-  executable capability registry must be configured to run tasks.
-- **Looking for the RCOS source repository?** It is currently private pending
-  publication review. Its link is not a public installation prerequisite;
-  this repository includes configuration examples in `fixtures/`.
-- **Looking for Desktop?** Treat it as development work, not a released
-  one-command setup. ZCode is a separate application, not DeepSeek Desktop.
+The newer Desktop path has working native integration in development, including
+the RCOS operator surfaces, General/Idea → Workflow Manager dispatch, bounded
+tool authority, session-bound execution activity, Canvas/artifact surfaces and
+receipt-gated handoff. The public repository does **not yet contain the complete
+newer Desktop source/configuration needed to reproduce that installation from a
+fresh clone**, so we are not labeling it a one-command public release until
+those exact files and install steps are published and re-verified.
+
+See [docs/DESKTOP.md](docs/DESKTOP.md) for the current Desktop status and the
+publication boundary.
+
+- **Using the current public package:** read [Requirements](#requirements),
+  [Install](#install), then [DEPLOY.md](DEPLOY.md) for the verified web-profile
+  setup.
+- **Following Desktop:** treat Desktop as the primary RCOS seat and
+  [docs/DESKTOP.md](docs/DESKTOP.md) as the status page. Do not apply the old
+  web-profile commands to an existing Desktop profile.
+- **Understand the evidence boundary:** an installed UI alone does not prove a
+  working execution environment. RCOS claims are gated by executed evidence and
+  receipts.
+- **Looking for the RCOS source repository?** It is currently private while the
+  canonical source is reconciled for publication. This repository remains the
+  public operator/integration surface.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
