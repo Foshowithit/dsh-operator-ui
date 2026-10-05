@@ -2,7 +2,7 @@
 
 [![Locked host boot smoke](https://github.com/Foshowithit/dsh-operator-ui/actions/workflows/host-boot-smoke.yml/badge.svg)](https://github.com/Foshowithit/dsh-operator-ui/actions/workflows/host-boot-smoke.yml)
 
-An operator console for the RCOS (Recursive Capability Operating System) capability loop, side-loaded into [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness) (DSH)'s existing web UI. It adds a first-run **receipt gate**, a **Work** surface that follows a task from request to verdict, an **Intelligence** inventory of what the installation can actually execute, and a **System** panel — and it keeps the older panel tabs (Runs, Summary, Git, Browser, Files, Workflows, Capabilities) and a **⌘K command palette**. Nothing is a fork; every surface reads authoritative state and none replaces shipped UI.
+The public operator/integration surface for RCOS (Recursive Capability Operating System) on DeepSeek Harness. The repository contains the established side-loaded DSH web package and tracks the newer native Desktop integration, which is now the primary RCOS operator-seat direction. It adds governed Work, Intelligence and System surfaces plus execution/evidence/receipt visibility without turning DSH into the RCOS kernel. Nothing is a fork; RCOS remains portable across seats.
 
 ## Start here: Desktop is the primary RCOS seat
 
