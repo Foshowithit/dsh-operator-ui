@@ -1202,8 +1202,11 @@ elif op == "archon_run_status":
                         if sib_decisions:
                             sibling["domain_decisions"] = [d for d in sib_decisions]
                     exposed.append(sibling)
-                if exposed:
-                    data["sibling_runs"] = exposed
+                # ALWAYS present the key when the trusted conversation id was
+                # supplied -- an empty list means "the lookup ran and found no
+                # sibling", which is a different fact from "no enumeration here".
+                # A reader must never have to guess whether the channel ran.
+                data["sibling_runs"] = exposed
             result(True, op, process.returncode, "Archon status, run identity, and available run artifacts were read by exact run id", data)
 
 elif op == "rcos_compile_ir":

@@ -957,6 +957,10 @@ test('dispatch read exposes sibling runs from the same conversation with their d
     // sibling enumeration must NOT fire.
     const bare=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home).result.data;
     assert.equal(bare.sibling_runs,undefined);
+    // On the trusted path a zero-match read still PRESENTS the key (empty list),
+    // so a reader can tell "lookup ran, no sibling" from "no lookup here".
+    const empty=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:conv,workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home,{sqliteRows:[]}).result.data;
+    assert.deepEqual(empty.sibling_runs,[]);
     // A host-trusted conversation id that does not match the run is refused
     // outright (fail-closed), never silently re-scoped.
     const other=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:'d'.repeat(32),workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home).result;
