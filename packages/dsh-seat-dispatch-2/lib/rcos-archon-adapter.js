@@ -398,7 +398,22 @@ Only the exact node shape above is supported: execution_class="workflow", ref.wo
         if (typeof args.name !== 'string' || !SLUG_RE.test(args.name)) return rejectValidation('name must be a new lowercase slug (lowercase letters, digits, hyphens; at most 56 characters).');
         const errors = validateSafeIr(ir, { workflows: currentWorkflowAllowlist() });
         if (errors.length) return rejectValidation(`IR validation failed: ${errors.join('; ')}. Expected nodes:[{"id":"run-approved-workflow","execution_class":"workflow","ref":{"workflow":"${workflowAllowlist[0]}","inputs":{}},"depends_on":[],"memory_scope":"run"}] and capability_refs:[{"id":"<exact-promoted-capability-id>","version":"<exact-version>","role":"executed"}]. Read that capability's rcos_capability_contract before supplying archon_workflow_run input_json.`);
-        return { name: args.name, ir };
+        /* A self-report-only acceptance is a tautology: when a QA child is present and
+         * EVERY declared output is the harness's own rcos-invocation-<cap>.json, the
+         * child verifies "the report the harness just wrote exists" — true by
+         * construction, not evidence the capability acted (measured 2026-10-09: a
+         * stage run shipped over a nonexistent artifact). This is a WARNING, not a
+         * refusal: the shape is the sanctioned template, and the cross-seat reader
+         * fails the run closed at read time. The seat should still know up-front and
+         * add an acceptance criterion that names the capability's real effect. */
+        const declaredOutputs = ir.outputs && typeof ir.outputs === 'object' && !Array.isArray(ir.outputs) ? Object.values(ir.outputs) : [];
+        const selfReportOnly = declaredOutputs.length > 0 && declaredOutputs.every((p) => typeof p === 'string' && /(?:^|\/)rcos-invocation-[a-z0-9][a-z0-9-]{0,63}\.json$/.test(p));
+        const hasQaChild = Array.isArray(ir.nodes) && ir.nodes.some((n) => n && n.execution_class === 'workflow' && n.ref && typeof n.ref === 'object' && n.ref.workflow === QA_VERIFY_WORKFLOW);
+        const warnings = [];
+        if (selfReportOnly && hasQaChild) {
+          warnings.push('every declared IR output is the harness\'s own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader marks such a run blocked. If the capability has a durable artifact, declare its path under outputs; otherwise add an acceptance criterion naming the capability\'s real effect.');
+        }
+        return { name: args.name, ir, warnings };
       },
       timeoutMs: compileTimeoutMs,
       onSuccess: (request) => {

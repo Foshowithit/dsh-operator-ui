@@ -1476,7 +1476,13 @@ elif op == "rcos_compile_ir":
                         raise SystemExit(0)
                 refs = [{key: ref[key] for key in ("id", "version", "role") if key in ref} for ref in ir.get("capability_refs", []) if isinstance(ref, dict)]
                 workflows = [node["ref"]["workflow"] for node in ir.get("nodes", []) if isinstance(node, dict) and isinstance(node.get("ref"), dict) and isinstance(node["ref"].get("workflow"), str)]
-                result(process.returncode == 0, op, process.returncode, "safe RCOS IR compile result", {"workflow_name": "rcos-ir-" + name, "workflow_file": os.path.join(HOME, ".archon", "workflows", "rcos-ir-" + name + ".yaml"), "capability_refs": refs, "archon_workflows": workflows, "stdout": clipped(process.stdout, 6000), "stderr": clipped(process.stderr, 6000)})
+                compile_warnings = []
+                outputs = ir.get("outputs")
+                declared = list(outputs.values()) if isinstance(outputs, dict) else []
+                has_qa_child = any(isinstance(node, dict) and node.get("execution_class") == "workflow" and isinstance(node.get("ref"), dict) and node["ref"].get("workflow") == QA_VERIFY_WORKFLOW for node in ir.get("nodes", []) if isinstance(node, dict))
+                if declared and has_qa_child and all(isinstance(p, str) and SELF_REPORT_RE.search(p) for p in declared):
+                    compile_warnings.append("every declared IR output is the harness's own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader marks such a run blocked. If the capability has a durable artifact, declare its path under outputs; otherwise add an acceptance criterion naming the capability's real effect.")
+                result(process.returncode == 0, op, process.returncode, "safe RCOS IR compile result", {"workflow_name": "rcos-ir-" + name, "workflow_file": os.path.join(HOME, ".archon", "workflows", "rcos-ir-" + name + ".yaml"), "capability_refs": refs, "archon_workflows": workflows, "warnings": compile_warnings, "stdout": clipped(process.stdout, 6000), "stderr": clipped(process.stderr, 6000)})
         finally:
             try:
                 os.unlink(path)
