@@ -17,6 +17,7 @@ DESKTOP_ROOT = os.path.join(HOME, ".archon", "rcos-desktop")
 DESKTOP_SOURCE = os.path.join(DESKTOP_ROOT, "source")
 DESKTOP_CONFIG = os.path.join(DESKTOP_ROOT, "config.yaml")
 DESKTOP_MODE = REQ.get("desktop_run_profile") is True
+STAGING_ROOT = os.path.join(HOME, ".archon", "staging")
 NESTED_ROOT = "/var/tmp/chow-nested-runs"
 ALLOW = set(REQ.get("workflow_allowlist") or [])
 CAP_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -431,10 +432,16 @@ def child_evaluations(parent_artifact_dir, child_nodes):
         # mac-dell-staging stage run reported ship over a nonexistent staged artifact
         # because its only claim was the harness's own report. When every claim is
         # such a self-report, the acceptance must not read as an independent ship.
-        self_claim = claims_are_self_reports(child_value.get("user_message"))
-        if self_claim:
+        # A self-report-only claim set is NOT itself a failure: the capability's
+        # real effect is verified INDEPENDENTLY via the domain report (see
+        # mac_dell_staging_outcome, which resolves the staged bytes). Record the
+        # fact so a seat can see the acceptance basis is a self-report; the
+        # domain loop below decides whether the run nonetheless has independent
+        # evidence of effect. (Earlier revision blocked here unconditionally and
+        # therefore condemned genuine passes — corrected 2026-10-09 after the
+        # staged artifact for 3262c33d was found present and hash-consistent.)
+        if claims_are_self_reports(child_value.get("user_message")):
             item["tautological_claim"] = True
-            blockers.append("node " + node_id + ": acceptance rests only on the harness's own report artifact (tautological claim); it does not evidence the capability's effect")
     return evaluations, blockers
 
 
@@ -816,6 +823,31 @@ def wishing_film_outcome(invocation_dir, fingerprint, version):
     return summary
 
 
+def staged_artifact_matches(staging_id, declared_sha256):
+    """True when the staged content for `staging_id` is present AND hashes to the
+    declared sha256. This is the INDEPENDENT evidence a mac-dell-staging `stage`
+    ship rests on: the harness report alone is a self-report, but the staged
+    bytes live outside the run's artifact dir and can be checked directly."""
+    if not isinstance(staging_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", staging_id):
+        return False
+    if not isinstance(declared_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", declared_sha256):
+        return False
+    try:
+        root = os.path.realpath(STAGING_ROOT)
+        if not os.path.isdir(root):
+            return False
+        path = os.path.realpath(os.path.join(root, staging_id, "content.bin"))
+        if os.path.commonpath([root, path]) != root or not os.path.isfile(path):
+            return False
+        if os.path.getsize(path) > 64 * 1024 * 1024:
+            return False
+        with open(path, "rb") as source:
+            body = source.read(64 * 1024 * 1024 + 1)
+        return hashlib.sha256(body).hexdigest() == declared_sha256
+    except (OSError, ValueError, UnicodeError):
+        return False
+
+
 def mac_dell_staging_outcome(invocation_dir, fingerprint, version):
     # The mac-dell-staging v0.1.0 adapter NEVER executes staged content; it always
     # exits 0 and carries the DOMAIN status (ship|fix|blocked) inside the report.
@@ -901,6 +933,11 @@ def mac_dell_staging_outcome(invocation_dir, fingerprint, version):
                     or type(detail.get("bytes")) is not int or not 0 < detail["bytes"] <= 8 * 1024 * 1024
                     or "sha256" not in summary):
                 return None
+            # A `stage` ship must be INDEPENDENTLY confirmed: the harness's own
+            # report is a self-report, so resolve the staged bytes on disk and
+            # require them to hash to the declared digest. Reported as a bounded
+            # fact so a seat can tell a confirmed stage from a self-report.
+            summary["artifact_confirmed"] = staged_artifact_matches(output["staging_id"], summary["sha256"])
         elif action == "publish":
             if (detail.get("verified") is not True
                     or not isinstance(detail.get("published"), str) or "published" not in summary
@@ -1254,6 +1291,13 @@ elif op == "archon_run_status":
                     domain_issues.append(capability_id + ": verified domain outcome is unavailable")
                 elif decision != "ship":
                     domain_issues.append(capability_id + ": domain verdict is " + decision)
+                elif capability_id == "mac-dell-staging" and summary.get("action") == "stage" and summary.get("artifact_confirmed") is not True:
+                    # A stage `ship` whose staged bytes could NOT be independently
+                    # resolved+hashed is a self-report over unverified effect: the
+                    # exact class the artifact check exists to catch. It is a
+                    # BLOCKER (not a `fix` domain issue): acceptance cannot rest on
+                    # an unconfirmed ship. A genuine `fix` domain still reads `fix`.
+                    blockers.append(capability_id + ": stage ship is NOT independently confirmed (staged artifact absent or hash-mismatched)")
             if data.get("status") in ("running", "queued", "pending"):
                 # A detached run has not reached its acceptance boundary yet.
                 # Missing child receipts and EVALs are checks to revisit, not failed gates.
@@ -1481,7 +1525,7 @@ elif op == "rcos_compile_ir":
                 declared = list(outputs.values()) if isinstance(outputs, dict) else []
                 has_qa_child = any(isinstance(node, dict) and node.get("execution_class") == "workflow" and isinstance(node.get("ref"), dict) and node["ref"].get("workflow") == QA_VERIFY_WORKFLOW for node in ir.get("nodes", []) if isinstance(node, dict))
                 if declared and has_qa_child and all(isinstance(p, str) and SELF_REPORT_RE.search(p) for p in declared):
-                    compile_warnings.append("every declared IR output is the harness's own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader marks such a run blocked. If the capability has a durable artifact, declare its path under outputs; otherwise add an acceptance criterion naming the capability's real effect.")
+                    compile_warnings.append("every declared IR output is the harness's own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader independently resolves the capability's declared artifact; if that artifact is absent or hash-mismatched the run is marked blocked. Declare the capability's real artifact under outputs so the acceptance can be confirmed.")
                 result(process.returncode == 0, op, process.returncode, "safe RCOS IR compile result", {"workflow_name": "rcos-ir-" + name, "workflow_file": os.path.join(HOME, ".archon", "workflows", "rcos-ir-" + name + ".yaml"), "capability_refs": refs, "archon_workflows": workflows, "warnings": compile_warnings, "stdout": clipped(process.stdout, 6000), "stderr": clipped(process.stderr, 6000)})
         finally:
             try:

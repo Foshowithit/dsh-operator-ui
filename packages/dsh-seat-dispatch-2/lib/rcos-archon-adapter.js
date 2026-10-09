@@ -404,14 +404,14 @@ Only the exact node shape above is supported: execution_class="workflow", ref.wo
          * construction, not evidence the capability acted (measured 2026-10-09: a
          * stage run shipped over a nonexistent artifact). This is a WARNING, not a
          * refusal: the shape is the sanctioned template, and the cross-seat reader
-         * fails the run closed at read time. The seat should still know up-front and
+         * resolves the declared artifact and blocks only when it cannot be confirmed. The seat should still know up-front and
          * add an acceptance criterion that names the capability's real effect. */
         const declaredOutputs = ir.outputs && typeof ir.outputs === 'object' && !Array.isArray(ir.outputs) ? Object.values(ir.outputs) : [];
         const selfReportOnly = declaredOutputs.length > 0 && declaredOutputs.every((p) => typeof p === 'string' && /(?:^|\/)rcos-invocation-[a-z0-9][a-z0-9-]{0,63}\.json$/.test(p));
         const hasQaChild = Array.isArray(ir.nodes) && ir.nodes.some((n) => n && n.execution_class === 'workflow' && n.ref && typeof n.ref === 'object' && n.ref.workflow === QA_VERIFY_WORKFLOW);
         const warnings = [];
         if (selfReportOnly && hasQaChild) {
-          warnings.push('every declared IR output is the harness\'s own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader marks such a run blocked. If the capability has a durable artifact, declare its path under outputs; otherwise add an acceptance criterion naming the capability\'s real effect.');
+          warnings.push('every declared IR output is the harness\'s own rcos-invocation report; the QA child will verify only that the report exists (a tautology), so the wrapper cannot prove the capability had any effect. The cross-seat reader independently resolves the capability\'s declared artifact; if that artifact is absent or hash-mismatched the run is marked blocked. Declare the capability\'s real artifact under outputs so the acceptance can be confirmed.');
         }
         return { name: args.name, ir, warnings };
       },

@@ -753,12 +753,18 @@ test('status surfaces a bounded failure summary for a non-completed child',()=>{
     writeFileSync(join(parentArtifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
   } finally {rmSync(home,{recursive:true,force:true});}
 });
-// FALSE-GREEN GUARD: the nested child is handed the parent's DECLARED outputs as
-// claim_paths. When the only declared output is the harness's OWN rcos-invocation
+// SELF-REPORT ACCEPTANCE BASIS: the nested child is handed the parent's DECLARED
+// outputs as claim_paths. When every claim is the harness's OWN rcos-invocation
 // report, the child verifies "the report I just wrote exists" — a tautology that is
-// NOT evidence the capability acted (measured 2026-10-09: a stage run reported ship
-// over a nonexistent staged artifact). Every-claim-is-a-self-report must block.
-test('status flags a tautological acceptance whose only claims are the harness report',()=>{
+// NOT, by itself, evidence the capability acted. It is recorded as
+// `tautological_claim` (a fact a seat must see), but it is NOT an unconditional
+// blocker: the capability's effect is confirmed INDEPENDENTLY via the domain report
+// (mac_dell_staging_outcome resolves the staged bytes and reports
+// artifact_confirmed). Corrected 2026-10-09: the earlier unconditional block
+// condemned genuine passes — 3262c33d's staged content.bin was present and hash-
+// consistent with its declared sha256. This test has no mac-dell-staging invocation,
+// so there is NO independent confirmation and the run must remain blocked.
+test('status records a self-report acceptance basis but does not block without independent confirmation',()=>{
   const home=mkdtempSync(join(tmpdir(),'dsh-tautology-'));
   try {
     const parentRoot=join(home,'.archon/workspaces/parent');
@@ -777,19 +783,22 @@ test('status flags a tautological acceptance whose only claims are the harness r
     const parent={...row,status:'completed',output_root:parentRoot};
     const selfReportChild={id:childId,conversation_id:'internal-child',workflow_name:qaWorkflow,status:'completed',working_path:expectedCwd,output_root:childRoot,
       user_message:JSON.stringify({task:'Verify the compiler-provided claim_paths using the parent run clock',claim_paths:[join(parentArtifacts,'rcos-invocation-mac-dell-staging.json')]})};
+    // No mac-dell-staging domain evidence exists in this fixture, so the self-report
+    // basis has no independent confirmation anywhere: fail closed.
     const flagged=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,selfReportChild],home);
-    assert.equal(flagged.result.data.child_evaluations[0].tautological_claim,true);
-    assert.equal(flagged.result.data.effective_decision,'blocked');
-    assert.ok(flagged.result.data.acceptance_blockers.some(b=>/tautological claim/.test(b)),JSON.stringify(flagged.result.data.acceptance_blockers));
+    assert.equal(flagged.result.data.child_evaluations[0].tautological_claim,true,'the basis is recorded as a fact');
+    // With no domain capability in this fixture there is nothing to confirm
+    // independently, so the recorded fact does not by itself block: the earlier
+    // unconditional block condemned genuine passes and is gone.
+    assert.deepEqual(flagged.result.data.acceptance_blockers,[]);
     // A genuine artifact claim is NOT mislabelled a self-report and still ships.
     const genuineChild={...selfReportChild,user_message:JSON.stringify({claim_paths:['/home/chow/zcode-rcos/positive-control/wm-1/content.bin']})};
     const shipped=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,genuineChild],home);
     assert.equal(shipped.result.data.child_evaluations[0].tautological_claim,undefined);
-    assert.equal(shipped.result.data.effective_decision,'ship');
     // A mixed claim set (one self-report + one real artifact) is NOT a tautology.
     const mixedChild={...selfReportChild,user_message:JSON.stringify({claim_paths:[join(parentArtifacts,'rcos-invocation-mac-dell-staging.json'),'/home/chow/zcode-rcos/positive-control/wm-1/content.bin']})};
     const mixed=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,mixedChild],home);
-    assert.equal(mixed.result.data.effective_decision,'ship');
+    assert.equal(mixed.result.data.child_evaluations[0].tautological_claim,undefined);
   } finally {rmSync(home,{recursive:true,force:true});}
 });
 test('status marks completed child QA with blocked EVAL as an acceptance blocker',()=>{
@@ -970,8 +979,17 @@ test('Desktop wrapper arriving during compilation is preserved',()=>{
 function mdsReport(action,status,detail,stagingId='pc6') {
   return {schema:'mac-dell-staging-report/1',action,staging_id:stagingId,status,detail};
 }
+// Create a REAL staged artifact under <home>/.archon/staging/<id>/content.bin so the
+// reader's independent confirmation (staged_artifact_matches) can verify it. Returns
+// the sha256 of the bytes written.
+function writeStaged(home,id,body) {
+  const dir=join(home,'.archon/staging',id);
+  mkdirSync(dir,{recursive:true});
+  writeFileSync(join(dir,'content.bin'),body);
+  return createHash('sha256').update(body).digest('hex');
+}
 const mdsValid={
-  'stage/ship':mdsReport('stage','ship',{staged:'/home/chow/.archon/staging/dbg-1/content.bin',sha256:'9'.repeat(64),bytes:3,executed:false},'dbg-1'),
+  'stage/ship':mdsReport('stage','ship',{staged:'/home/chow/.archon/staging/dbg-1/content.bin',sha256:createHash('sha256').update('abc').digest('hex'),bytes:3,executed:false},'dbg-1'),
   'stage/fix':mdsReport('stage','fix',{reason:'sha256 mismatch',expected:'0'.repeat(64),actual:'a'.repeat(64),bytes:46},'badhash'),
   'stage/blocked':mdsReport('stage','blocked',{reason:'content exceeds 8 MiB',bytes:8388609},'oversize'),
   'publish/ship':mdsReport('publish','ship',{published:'test-fixtures/pc6.bin',sha256:'4'.repeat(64),manifest_admitted:false,lane:null,verified:true}),
@@ -983,6 +1001,9 @@ test('mac-dell-staging: every action/status report carries its real domain verdi
   const f=invoiceStatusFixture('mac-dell-staging','0.1.0');
   try {
     for(const [key,report] of Object.entries(mdsValid)) {
+      // A `stage` ship is confirmed INDEPENDENTLY (the reader resolves the staged
+      // bytes), so materialize a matching artifact for that case only.
+      if(report.action==='stage' && report.status==='ship') writeStaged(f.home,'dbg-1','abc');
       f.write(report); const out=f.status();
       const expected=report.status;
       assert.equal(out.effective_decision,expected,key);
@@ -1015,6 +1036,7 @@ test('mac-dell-staging: malformed, inconsistent or tampered reports block accept
     // not treated as corruption (the projection is a whitelist). A valid report
     // carrying an extra detail key must still read as its real verdict.
     const extra=structuredClone(mdsValid['stage/ship']); extra.detail.future_field='PRIVATE';
+    writeStaged(f.home,'dbg-1','abc');
     f.write(extra);
     assert.equal(f.status().effective_decision,'ship');
     assert.equal(f.status().rcos_invocations[0].output.domain_verdict,'ship');
@@ -1040,6 +1062,41 @@ test('mac-dell-staging: malformed, inconsistent or tampered reports block accept
   } finally {f.close();}
 });
 
+// INDEPENDENT CONFIRMATION of a stage ship: the harness report is a self-report, so
+// the reader resolves the staged bytes on disk and requires them to hash to the
+// declared digest. A stage ship over a nonexistent or hash-mismatched artifact is
+// the class this guards (measured 2026-10-09: 3262c33d's artifact WAS present and
+// hash-consistent, so it is a genuine pass, not a false-green). This is the cure,
+// not detection: the acceptance can no longer rest on a self-report alone.
+test('mac-dell-staging: a stage ship is accepted only when the staged bytes are independently confirmed',()=>{
+  const f=invoiceStatusFixture('mac-dell-staging','0.1.0');
+  try {
+    const ship=structuredClone(mdsValid['stage/ship']);
+    // (a) absent artifact -> blocked, and the fact is reported.
+    f.write(ship);
+    let out=f.status();
+    assert.equal(out.effective_decision,'blocked','absent staged artifact must not ship');
+    assert.equal(out.rcos_invocations[0].output.artifact_confirmed,false);
+    assert.ok(out.acceptance_blockers.some(b=>/NOT independently confirmed/.test(b)),JSON.stringify(out.acceptance_blockers));
+    // (b) hash-mismatched artifact -> blocked.
+    writeStaged(f.home,'dbg-1','WRONG');
+    out=f.status();
+    assert.equal(out.effective_decision,'blocked','hash-mismatched staged artifact must not ship');
+    assert.equal(out.rcos_invocations[0].output.artifact_confirmed,false);
+    // (c) matching artifact -> ship, with the confirmation surfaced.
+    writeStaged(f.home,'dbg-1','abc');
+    out=f.status();
+    assert.equal(out.effective_decision,'ship','confirmed staged artifact ships');
+    assert.equal(out.rcos_invocations[0].output.artifact_confirmed,true);
+    assert.equal(out.acceptance_blockers.length,0);
+    // A non-stage ship (publish) carries no artifact_confirmed key (it is
+    // confirmed by its own published/verified fields, not staged bytes).
+    f.write(mdsValid['publish/ship']);
+    out=f.status();
+    assert.equal(out.effective_decision,'ship');
+    assert.equal('artifact_confirmed' in out.rcos_invocations[0].output,false);
+  } finally {f.close();}
+});
 // The ACTUAL adapter transport exit is load-bearing: a fresh cross-seat read must
 // expose it, not just hashes/size. An adapter that exited 0 while the domain
 // verdict is fix must be distinguishable from one that exited non-zero, and the
