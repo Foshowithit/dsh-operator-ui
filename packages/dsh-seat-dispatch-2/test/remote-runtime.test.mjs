@@ -185,6 +185,39 @@ test('remote retry finds exact external seat mapping without submitting twice',(
   assert.equal(out.result.data.already_submitted,true);
   assert.deepEqual(out.submissions,[]);
 });
+// The seat's dispatch frame cancels in-flight detached runs when its turn closes,
+// so a launch-and-report seat would always read a cancelled run with no domain
+// report (measured 2026-10-09). When the host passes wait_seconds, the run op must
+// wait for a terminal status before returning, so the domain report materializes
+// inside the same dispatch frame.
+test('run waits for a terminal status when wait_seconds is requested',()=>{
+  const directRunId='22222222333344445555666677778888';
+  const directDetail={id:directRunId,conversation_id:'b1921f164fa17854b2c1cf860e49936e',workflow_name:workflow,status:'running'};
+  // get_ready_after: the first N get reads return 'running', then it settles.
+  const out=remote({operation:'archon_workflow_run',workflow_name:workflow,task:'{}',conversation_id:seat,wait_seconds:4},[],undefined,{
+    detachedReply:{ok:true,action:'run',detached:true,runId:directRunId,workflow},
+    directDetail,
+    getReadyAfter:1,
+  });
+  assert.equal(out.result.ok,true,JSON.stringify(out.result));
+  assert.equal(out.result.data.run_id,directRunId);
+  assert.equal(out.result.data.status,'running');
+  assert.ok('waited_ms' in out.result.data,'wait loop reports how long it waited');
+  assert.equal(out.result.data.already_submitted,false);
+});
+test('run does NOT wait when wait_seconds is absent (historical contract preserved)',()=>{
+  const directRunId='33333333444455556666777788889999';
+  const directDetail={id:directRunId,conversation_id:'b1921f164fa17854b2c1cf860e49936e',workflow_name:workflow,status:'running'};
+  const out=remote({operation:'archon_workflow_run',workflow_name:workflow,task:'{}',conversation_id:seat},[],undefined,{
+    detachedReply:{ok:true,action:'run',detached:true,runId:directRunId,workflow},
+    directDetail,
+    getReadyAfter:1,
+  });
+  assert.equal(out.result.ok,true,JSON.stringify(out.result));
+  assert.equal(out.result.data.status,'running');
+  assert.equal('waited_ms' in out.result.data,false,'no wait was requested, so none is reported');
+});
+
 test('run binds exact detached JSON run id even when capped history omits it',()=>{
   const directRunId='11111111222233334444555566666666';
   const directDetail={id:directRunId,conversation_id:'b1921f164fa17854b2c1cf860e49936e',workflow_name:workflow,status:'running'};

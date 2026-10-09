@@ -60,7 +60,7 @@ export const Config = z.object({
   /** Compilation can take longer than a read-only catalog call. */
   compileTimeoutMs: z.number().default(120000),
   /** Upper bound for one detached Archon run submission. */
-  runTimeoutMs: z.number().default(60000),
+  runTimeoutMs: z.number().default(900000),
   /** Existing dispatcher audit; must match the General seat auditDir. */
   auditDir: z.string().default(join(resolveDshHome(), 'runs', 'seat-dispatch')),
 });
@@ -314,7 +314,7 @@ function makeTool({ name: toolName, description, parameters, operation, payload,
 }
 
 /** Build definitions for a WM-scoped preset; dependency injection keeps tests offline. */
-export function createAdapterTools({ sshTarget, workflowAllowlist, desktopRunProfile = false, sshPath = 'ssh', timeoutMs = 30000, compileTimeoutMs = 120000, runTimeoutMs = 60000, auditDir = join(resolveDshHome(), 'runs', 'seat-dispatch'), callRemote } = {}) {
+export function createAdapterTools({ sshTarget, workflowAllowlist, desktopRunProfile = false, sshPath = 'ssh', timeoutMs = 30000, compileTimeoutMs = 120000, runTimeoutMs = 900000, auditDir = join(resolveDshHome(), 'runs', 'seat-dispatch'), callRemote } = {}) {
   if (typeof desktopRunProfile !== 'boolean') throw new Error('desktopRunProfile must be a host-configured boolean');
   const config = { sshTarget, workflowAllowlist, desktopRunProfile, sshPath, timeoutMs, compileTimeoutMs, runTimeoutMs };
   validateConfig(config);
@@ -427,7 +427,13 @@ Only the exact node shape above is supported: execution_class="workflow", ref.wo
         if (typeof conversationId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(conversationId)) throw new Error('live Workflow Manager seat session identity is unavailable');
         const lookupOnly = attemptedWorkflows.has(args.workflow_name);
         attemptedWorkflows.add(args.workflow_name);
-        return { workflow_name: args.workflow_name, task: JSON.stringify(input), conversation_id: conversationId, lookup_only: lookupOnly, child_nodes: compiledWorkflowChildren.get(args.workflow_name) || [] };
+        // The seat's dispatch frame cancels in-flight detached runs when its turn
+        // closes, so a launch-and-report seat would always read a cancelled run with
+        // no domain report (measured 2026-10-09). Ask the remote to wait for the run
+        // to reach a terminal state before returning, capped 30s under the tool's own
+        // budget so the SSH call itself never races the run.
+        const waitSeconds = Math.max(0, Math.min(900, Math.floor(runTimeoutMs / 1000) - 30));
+        return { workflow_name: args.workflow_name, task: JSON.stringify(input), conversation_id: conversationId, lookup_only: lookupOnly, child_nodes: compiledWorkflowChildren.get(args.workflow_name) || [], wait_seconds: waitSeconds };
       },
       timeoutMs: runTimeoutMs,
       onSuccess: (request, result) => {

@@ -1099,7 +1099,42 @@ elif op == "archon_workflow_run":
                         else:
                             summary = run_summary(selected)
                             summary["already_submitted"] = False
-                            result(True, op, 0, "Archon accepted the RCOS-compiled workflow and its exact detached run was verified", summary)
+                            # The seat's dispatch frame cancels in-flight detached runs when the
+                            # seat's turn closes (measured 2026-10-09: run accepted, then
+                            # cancelled 1-2s later with no output root). A one-turn seat that
+                            # launches detached and reports immediately therefore ALWAYS sees a
+                            # cancelled run and no domain report. Close that gap here: after the
+                            # exact run is verified, wait a bounded time for it to reach a
+                            # terminal state, so the domain report materializes BEFORE this tool
+                            # returns and the verdict is readable within the same dispatch frame.
+                            wait_budget = REQ.get("wait_seconds")
+                            # Default 0 preserves the historical "return the run id
+                            # immediately" contract for callers that do not ask to wait;
+                            # the seat's adapter passes a bounded wait so the domain report
+                            # materializes before the dispatch frame closes.
+                            wait_seconds = wait_budget if (type(wait_budget) is int and 0 <= wait_budget <= 900) else 0
+                            terminal = ("completed", "failed", "cancelled")
+                            waited = 0
+                            reached = False
+                            if wait_seconds > 0:
+                                while waited < wait_seconds:
+                                    probe = run([ARCHON, "workflow", "get", run_id, "--json"], 15)
+                                    current = parse_json(getattr(probe, "stdout", "")) if isinstance(probe, subprocess.CompletedProcess) and probe.returncode == 0 else None
+                                    if isinstance(current, dict) and current.get("id") == run_id and str(current.get("status") or "") in terminal:
+                                        summary = run_summary(current)
+                                        reached = True
+                                        break
+                                    time.sleep(2)
+                                    waited += 2
+                                summary["waited_ms"] = waited * 1000
+                                summary["terminal_reached"] = reached
+                            summary["already_submitted"] = False
+                            if wait_seconds > 0 and not reached:
+                                result(True, op, 0, "Archon accepted the RCOS-compiled workflow; its exact detached run had not reached a terminal state within the bounded wait (poll again with archon_run_status)", summary)
+                            elif wait_seconds > 0:
+                                result(True, op, 0, "Archon accepted the RCOS-compiled workflow; its exact detached run reached a terminal state within the bounded wait", summary)
+                            else:
+                                result(True, op, 0, "Archon accepted the RCOS-compiled workflow and its exact detached run was verified", summary)
 
 elif op == "archon_run_status":
     run_id = REQ.get("run_id")

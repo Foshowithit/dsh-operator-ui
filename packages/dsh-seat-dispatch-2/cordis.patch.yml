@@ -250,7 +250,7 @@
                 - chow-research-search-v1
               timeoutMs: 30000
               compileTimeoutMs: 120000
-              runTimeoutMs: 60000
+              runTimeoutMs: 900000
 
           - id: tool-todo
             name: '@deepseek-ai/dsh-tool-todo'
