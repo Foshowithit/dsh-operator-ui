@@ -940,7 +940,11 @@ test('dispatch read exposes sibling runs from the same conversation with their d
       {id:sibRun,conversation_id:conv,workflow_name:wfNeg,status:'completed',started_at:'2026-10-09 00:32:44',completed_at:'2026-10-09 00:32:54',working_path:'/home/chow',output_root:outputRoot},
       {id:mainRun,conversation_id:conv,workflow_name:wfAccept,status:'completed',started_at:'2026-10-09 00:32:02',completed_at:'2026-10-09 00:32:12',working_path:'/home/chow',output_root:outputRoot},
     ];
-    const out=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:conv,workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home,{sqliteRows}).result.data;
+    // A fresh seat's allowlist is the reviewed names plus ONLY the requested run's
+    // wrapper; it has not compiled the sibling (wfNeg). The sibling must still be
+    // exposed -- siblings are scoped by the trusted conversation, not the allowlist.
+    const freshAllow=[qaWorkflow,wfAccept];
+    const out=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:conv,workflow_name:wfAccept,workflow_allowlist:freshAllow,child_nodes:[]},rows,home,{sqliteRows}).result.data;
     assert.equal(out.effective_decision,'fix');
     assert.equal(out.rcos_invocations[0].output.domain_verdict,'fix');
     assert.equal(Array.isArray(out.sibling_runs),true);

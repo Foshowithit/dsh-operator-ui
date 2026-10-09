@@ -1170,12 +1170,19 @@ elif op == "archon_run_status":
             # domain evidence for every sibling rcos-ir-* run sharing it.
             internal_conv = REQ.get("archon_conversation_id")
             if isinstance(internal_conv, str) and RUN_ID_RE.fullmatch(internal_conv):
+                # A sibling is defined by SHARING THE TRUSTED CONVERSATION, never by
+                # membership in this read's workflow allowlist. The allowlist holds
+                # the reviewed names plus only the requested run's compiled wrapper;
+                # a fresh seat reading a prior dispatch has NOT compiled the sibling
+                # (e.g. the neg-hash control), so requiring membership silently hid
+                # exactly the second run this channel exists to expose. The requested
+                # run is still validated against ALLOW above, unchanged.
                 siblings = [row for row in conversation_runs(internal_conv, 9) if isinstance(row, dict)
                             and row.get("id") != run_id
                             and isinstance(row.get("id"), str) and RUN_ID_RE.fullmatch(row["id"])
                             and isinstance(row.get("workflow_name"), str)
                             and row["workflow_name"].startswith("rcos-ir-")
-                            and row["workflow_name"] in ALLOW]
+                            and WF_RE.fullmatch(row["workflow_name"])]
                 # Deterministic, bounded: newest first by the run's own clock.
                 siblings.sort(key=lambda row: str(row.get("started_at") or ""), reverse=True)
                 exposed = []
