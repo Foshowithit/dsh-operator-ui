@@ -293,6 +293,35 @@ def bounded_json(path, root, limit=16384):
         return None
 
 
+SELF_REPORT_RE = re.compile(r"(?:^|/)rcos-invocation-[a-z0-9][a-z0-9-]{0,63}\.json$")
+
+
+def claims_are_self_reports(user_message):
+    """True when every claim_paths entry is the harness's own rcos-invocation report.
+
+    The nested child is handed the parent's declared outputs as claim_paths. When the
+    only declared output is the harness's own report file, the child's freshness check
+    is a tautology: it confirms the report exists, not that the capability acted.
+    Returns False on any unreadable / mixed / empty claim set (fail-closed toward
+    NOT flagging: a genuine artifact claim must never be mislabelled a self-report).
+    """
+    if not isinstance(user_message, str) or len(user_message) > 16384:
+        return False
+    try:
+        payload = json.loads(user_message)
+    except (ValueError, TypeError):
+        return False
+    if not isinstance(payload, dict):
+        return False
+    claims = payload.get("claim_paths")
+    if not isinstance(claims, list) or not claims:
+        return False
+    for entry in claims:
+        if not isinstance(entry, str) or not SELF_REPORT_RE.search(entry):
+            return False
+    return True
+
+
 def child_evaluations(parent_artifact_dir, child_nodes):
     evaluations = []
     blockers = []
@@ -394,6 +423,18 @@ def child_evaluations(parent_artifact_dir, child_nodes):
             blockers.append("node " + node_id + ": child receipt EVAL projection differs from the canonical EVAL")
         if eval_value["decision"].lower() != "ship":
             blockers.append("node " + node_id + ": child EVAL decision is " + eval_value["decision"])
+        # A TAUTOLOGICAL acceptance: the nested child is handed the parent's DECLARED
+        # outputs as claim_paths, and for a capability whose declared output is the
+        # harness's OWN rcos-invocation-<cap>.json report, the child verifies "the
+        # report the harness just wrote exists" — which is true by construction and is
+        # NOT evidence the capability had any effect. Measured 2026-10-09: a
+        # mac-dell-staging stage run reported ship over a nonexistent staged artifact
+        # because its only claim was the harness's own report. When every claim is
+        # such a self-report, the acceptance must not read as an independent ship.
+        self_claim = claims_are_self_reports(child_value.get("user_message"))
+        if self_claim:
+            item["tautological_claim"] = True
+            blockers.append("node " + node_id + ": acceptance rests only on the harness's own report artifact (tautological claim); it does not evidence the capability's effect")
     return evaluations, blockers
 
 

@@ -733,6 +733,45 @@ test('status surfaces a bounded failure summary for a non-completed child',()=>{
     writeFileSync(join(parentArtifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
   } finally {rmSync(home,{recursive:true,force:true});}
 });
+// FALSE-GREEN GUARD: the nested child is handed the parent's DECLARED outputs as
+// claim_paths. When the only declared output is the harness's OWN rcos-invocation
+// report, the child verifies "the report I just wrote exists" — a tautology that is
+// NOT evidence the capability acted (measured 2026-10-09: a stage run reported ship
+// over a nonexistent staged artifact). Every-claim-is-a-self-report must block.
+test('status flags a tautological acceptance whose only claims are the harness report',()=>{
+  const home=mkdtempSync(join(tmpdir(),'dsh-tautology-'));
+  try {
+    const parentRoot=join(home,'.archon/workspaces/parent');
+    const parentArtifacts=join(parentRoot,'artifacts/runs',runId);
+    const childId='8fe38448054f4cf48f937b28769ac211';
+    const childRoot=join(home,'.archon/workspaces/child');
+    const childArtifacts=join(childRoot,'artifacts/runs',childId);
+    mkdirSync(parentArtifacts,{recursive:true});mkdirSync(childArtifacts,{recursive:true});
+    writeFileSync(join(parentArtifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
+    const evalValue={decision:'ship',reason:'1 of 1 claimed paths are fresh outputs of this run; none missing',check_type:'rcos_ir_check'};
+    const rawEvalPath=join(childArtifacts,'EVAL.json');
+    writeFileSync(rawEvalPath,JSON.stringify(evalValue));
+    const evalPath=realpathSync(rawEvalPath);
+    const expectedCwd='/var/tmp/chow-nested-runs/fixture-parent-qa-99999999';
+    writeFileSync(join(parentArtifacts,'archon-child-qa.json'),JSON.stringify({schema:'rcos-archon-child/1',run_id:childId,workflow_name:qaWorkflow,expected_cwd:expectedCwd,status:'completed',output_root:childRoot,eval_path:evalPath,eval:evalValue}));
+    const parent={...row,status:'completed',output_root:parentRoot};
+    const selfReportChild={id:childId,conversation_id:'internal-child',workflow_name:qaWorkflow,status:'completed',working_path:expectedCwd,output_root:childRoot,
+      user_message:JSON.stringify({task:'Verify the compiler-provided claim_paths using the parent run clock',claim_paths:[join(parentArtifacts,'rcos-invocation-mac-dell-staging.json')]})};
+    const flagged=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,selfReportChild],home);
+    assert.equal(flagged.result.data.child_evaluations[0].tautological_claim,true);
+    assert.equal(flagged.result.data.effective_decision,'blocked');
+    assert.ok(flagged.result.data.acceptance_blockers.some(b=>/tautological claim/.test(b)),JSON.stringify(flagged.result.data.acceptance_blockers));
+    // A genuine artifact claim is NOT mislabelled a self-report and still ships.
+    const genuineChild={...selfReportChild,user_message:JSON.stringify({claim_paths:['/home/chow/zcode-rcos/positive-control/wm-1/content.bin']})};
+    const shipped=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,genuineChild],home);
+    assert.equal(shipped.result.data.child_evaluations[0].tautological_claim,undefined);
+    assert.equal(shipped.result.data.effective_decision,'ship');
+    // A mixed claim set (one self-report + one real artifact) is NOT a tautology.
+    const mixedChild={...selfReportChild,user_message:JSON.stringify({claim_paths:[join(parentArtifacts,'rcos-invocation-mac-dell-staging.json'),'/home/chow/zcode-rcos/positive-control/wm-1/content.bin']})};
+    const mixed=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,mixedChild],home);
+    assert.equal(mixed.result.data.effective_decision,'ship');
+  } finally {rmSync(home,{recursive:true,force:true});}
+});
 test('status marks completed child QA with blocked EVAL as an acceptance blocker',()=>{
   const home=mkdtempSync(join(tmpdir(),'dsh-child-eval-'));
   try {
