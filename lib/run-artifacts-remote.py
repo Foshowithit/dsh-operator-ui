@@ -144,7 +144,12 @@ def inspect(request, home=None, detail=None):
     home = Path(home or Path.home())
     b = request['binding']
     run_id = b['run_id']
-    if not re.fullmatch(r'[a-f0-9]{32}', run_id):
+    # Archon mints BOTH forms: a bare 32-hex id on some dispatch paths and a
+    # canonical UUID on others (measured: 1891 vs 2685 rows in archon.db, both
+    # including rcos-ir-* runs). Accepting only one form made the cross-seat
+    # read blind to the majority of runs. Accept both; nothing else.
+    if not (re.fullmatch(r'[a-f0-9]{32}', run_id)
+            or re.fullmatch(r'[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', run_id)):
         raise ValueError('Invalid run identity')
     if detail is None:
         detail = read_detail([str(home / '.local/bin/archon'), 'workflow', 'get', run_id, '--json'])

@@ -161,3 +161,37 @@ with tempfile.TemporaryDirectory() as temp:
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /PASS: domain report exposed, hash-pinned, tamper refused/);
 });
+
+test('a UUID-format run id is accepted (Archon mints both forms) but the conversation boundary stays 32-hex', () => {
+  // Measured in archon.db: runs carry BOTH a bare 32-hex id (1891 rows) and a
+  // canonical UUID (2685 rows), while conversation_id is ALWAYS 32-hex
+  // (4576/4576). Accepting only one run form made the cross-seat read blind to
+  // the majority of runs; widening the run form must NOT loosen the conversation
+  // boundary, which is a different namespace.
+  const source = fileURLToPath(new URL('../lib/run-artifacts-remote.py', import.meta.url));
+  const script = String.raw`
+import importlib.util, tempfile, pathlib, json, hashlib
+spec=importlib.util.spec_from_file_location('preview', ${JSON.stringify(source)})
+m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+with tempfile.TemporaryDirectory() as temp:
+ home=pathlib.Path(temp).resolve()
+ uuid_run='15c7d72e-6058-45f3-841a-f6a0daa16d0a'
+ root=home/'.archon/workspaces/test/artifacts/runs'/uuid_run; root.mkdir(parents=True)
+ (root/'EVAL.json').write_bytes(b'{}')
+ b={'run_id':uuid_run,'archon_conversation_id':'f'*32,'workflow_name':'rcos-ir-test'}
+ detail={'id':uuid_run,'conversation_id':b['archon_conversation_id'],'workflow_name':b['workflow_name'],'output_root':str(root.parents[2])}
+ out=m.inspect({'binding':b},home,detail)
+ assert out['ok'] and out['run_id']==uuid_run, out
+ assert len(out['files'])>=1
+ # a malformed run id is still refused
+ for bad in ('not-a-run','../../etc/passwd','15c7d72e-6058-45f3-841a-f6a0daa16d0','g'*32):
+  try:
+   m.inspect({'binding':{**b,'run_id':bad}},home,{**detail,'id':bad})
+   raise AssertionError('malformed run id accepted: '+bad)
+  except ValueError: pass
+ print('PASS: uuid run accepted, malformed refused')
+`
+  const r = spawnSync('python3', ['-c', script], { encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /PASS: uuid run accepted, malformed refused/);
+});
