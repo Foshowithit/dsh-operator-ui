@@ -83,14 +83,15 @@ test('remote approved catalog separates Desktop execution eligibility from EVAL 
   const out=remote({operation:'archon_workflow_catalog',workflow_allowlist:reviewedWorkflows});
   const items=out.result.data.workflows;
   const byId=new Map(items.map(item=>[item.id||item.name,item.execution_contract]));
-  assert.deepEqual(byId.get('chow-build-standard'),{
-    desktop_profile_eligible:true,
-    reason:'Eligible only through the reviewed, noninteractive Desktop-scoped workflow source; the stock approval-interactive workflow is not supported.',
-  });
-  assert.deepEqual(byId.get('chow-qa-verify-v1'),{
-    desktop_profile_eligible:true,
-    reason:'Deterministic Bash evidence checks with local post-run context distillation; no approval node or direct provider call.',
-  });
+  const build=byId.get('chow-build-standard');
+  assert.equal(build.desktop_profile_eligible,true);
+  assert.equal(build.requires_model_lane,true,'chow-build-standard calls the pinned model lane');
+  assert.match(build.reason,/Eligible only through the reviewed, noninteractive Desktop-scoped workflow source/);
+  assert.match(build.reason,/429/,'the reason names the lane-429 failure mode');
+  const qa=byId.get('chow-qa-verify-v1');
+  assert.equal(qa.desktop_profile_eligible,true);
+  assert.equal(qa.requires_model_lane,false,'deterministic QA needs no model lane');
+  assert.match(qa.reason,/Deterministic Bash evidence checks/);
   for(const [id,reason] of [
     ['chow-fix-loop',/approval node.*interactive/i],
     ['chow-ui-build',/approval node.*interactive/i],

@@ -39,12 +39,12 @@ WORKFLOW_EVALUATION_CONTRACTS = {
     "chow-verify-output-v1": {"gate_eligible": False, "artifact": "EVAL.json", "field": "verdict", "reason": "The workflow writes verdict rather than decision; the RCOS ship gate consumes only EVAL.json.decision."},
 }
 WORKFLOW_EXECUTION_CONTRACTS = {
-    "chow-research-search-v1": {"desktop_profile_eligible": True, "reason": "Eligible only through the reviewed Desktop-scoped Muse synthesis with real search evidence and citations validated before SHIP."},
-    "chow-build-standard": {"desktop_profile_eligible": True, "reason": "Eligible only through the reviewed, noninteractive Desktop-scoped workflow source; the stock approval-interactive workflow is not supported."},
+    "chow-research-search-v1": {"desktop_profile_eligible": True, "requires_model_lane": True, "reason": "Eligible only through the reviewed Desktop-scoped Muse synthesis with real search evidence and citations validated before SHIP. This workflow calls the Desktop profile's pinned model lane; if that lane is quota-exhausted the node fails with a provider 429 (read child_evaluations[].failure), not as a capability defect."},
+    "chow-build-standard": {"desktop_profile_eligible": True, "requires_model_lane": True, "reason": "Eligible only through the reviewed, noninteractive Desktop-scoped workflow source; the stock approval-interactive workflow is not supported. This workflow calls the Desktop profile's pinned model lane; if that lane is quota-exhausted its nodes fail with a provider 429 (surface the reason from child_evaluations[].failure) — that is a lane condition, not a capability defect."},
     "chow-fix-loop": {"desktop_profile_eligible": False, "reason": "The workflow contains an approval node, which Archon classifies as interactive even when SKIP_HITL skips it; detached Desktop execution is refused."},
     "chow-ui-build": {"desktop_profile_eligible": False, "reason": "The workflow contains an approval node, which Archon classifies as interactive even when SKIP_HITL skips it; detached Desktop execution is refused."},
     "chow-eval-gate-v2": {"desktop_profile_eligible": False, "reason": "The workflow calls a host-owned shared LLM helper outside the Desktop-owned provider profile."},
-    QA_VERIFY_WORKFLOW: {"desktop_profile_eligible": True, "reason": "Deterministic Bash evidence checks with local post-run context distillation; no approval node or direct provider call."},
+    QA_VERIFY_WORKFLOW: {"desktop_profile_eligible": True, "requires_model_lane": False, "reason": "Deterministic Bash evidence checks with local post-run context distillation; no approval node or direct provider call. Requires no model lane."},
 }
 MAX_OUTPUT = 48000
 MAX_CHILD_LOG_BYTES = 512 * 1024
