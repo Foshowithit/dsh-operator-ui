@@ -886,6 +886,23 @@ def invocation_evidence(artifact_dir):
         if not item["verification"]["ok"]:
             continue
         item["invocation"] = {key: receipt[key] for key in ("schema", "invocation_id", "capability_id", "capability_version", "mode", "status", "duration_ms", "eligibility_decision_id") if key in receipt}
+        # The ACTUAL adapter transport exit is a load-bearing fact: a capability
+        # whose adapter exits non-zero must never read as a clean acceptance, and
+        # a wrapper whose adapter exits 0 while the domain verdict is fix must be
+        # distinguishable from one that exited non-zero. Project a bounded, closed
+        # view of the adapter block and the recorded status_basis; the entrypoint
+        # path stays private (identity, not disclosure).
+        if isinstance(receipt.get("status_basis"), str) and len(receipt["status_basis"]) <= 200:
+            item["invocation"]["status_basis"] = receipt["status_basis"]
+        adapter = receipt.get("adapter")
+        if isinstance(adapter, dict):
+            projected = {}
+            if type(adapter.get("exit_code")) is int:
+                projected["exit_code"] = adapter["exit_code"]
+            if adapter.get("signal") is None or (isinstance(adapter.get("signal"), str) and len(adapter["signal"]) <= 32):
+                projected["signal"] = adapter.get("signal")
+            projected["error"] = adapter.get("error") if (adapter.get("error") is None or (isinstance(adapter.get("error"), str) and len(adapter["error"]) <= 200)) else "<error text withheld>"
+            item["invocation"]["adapter_exit"] = projected
         for field in ("input", "output"):
             fingerprint = receipt.get(field)
             if isinstance(fingerprint, dict):

@@ -254,7 +254,7 @@ function invoiceStatusFixture(capabilityId='invoice-reconciliation-verify',capab
   const invocationDir=join(home,'zcode-rcos/invocations/inv_domain-control');
   mkdirSync(artifacts,{recursive:true});mkdirSync(invocationDir,{recursive:true});
   writeFileSync(join(artifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
-  const manifest={schema:'rcos-invocation/1',invocation_id:'inv_domain-control',capability_id:capabilityId,capability_version:capabilityVersion,status:'completed',eligibility_decision_id:'elig_domain-control'};
+  const manifest={schema:'rcos-invocation/1',invocation_id:'inv_domain-control',capability_id:capabilityId,capability_version:capabilityVersion,status:'completed',eligibility_decision_id:'elig_domain-control',status_basis:'adapter exited 0 and its output satisfied the declared contract',adapter:{type:'command',entrypoint:'capabilities/mac-dell-staging/adapter/run.js',timeout_seconds:60,exit_code:0,signal:null,error:null}};
   const write=(output)=>{
     const bytes=Buffer.from(JSON.stringify(output));
     manifest.output={path:'output.json',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};
@@ -912,6 +912,35 @@ test('mac-dell-staging: malformed, inconsistent or tampered reports block accept
     const unsupported=invoiceStatusFixture('mac-dell-staging','0.2.0');
     try { unsupported.write(mdsValid['stage/ship']); assert.equal(unsupported.status().effective_decision,'blocked'); }
     finally {unsupported.close();}
+  } finally {f.close();}
+});
+
+// The ACTUAL adapter transport exit is load-bearing: a fresh cross-seat read must
+// expose it, not just hashes/size. An adapter that exited 0 while the domain
+// verdict is fix must be distinguishable from one that exited non-zero, and the
+// recorded status_basis must be visible so a caller can see WHY status is what
+// it is. The entrypoint path stays private (identity, not disclosure).
+test('dispatch read exposes the ACTUAL adapter exit and status_basis for cross-seat acceptance',()=>{
+  const f=invoiceStatusFixture('mac-dell-staging','0.1.0');
+  try {
+    f.write(mdsValid['stage/ship']);
+    const inv=f.status().rcos_invocations[0].invocation;
+    assert.equal(inv.adapter_exit.exit_code,0);
+    assert.equal(inv.adapter_exit.signal,null);
+    assert.equal(inv.adapter_exit.error,null);
+    assert.equal(inv.status_basis,'adapter exited 0 and its output satisfied the declared contract');
+    // The entrypoint path is identity, never disclosure.
+    assert.equal(JSON.stringify(inv).includes('run.js'),false);
+    assert.equal(JSON.stringify(inv).includes('capabilities/'),false);
+    // A non-zero adapter exit is surfaced, not masked.
+    f.manifest.adapter.exit_code=3; f.manifest.adapter.signal='SIGKILL'; f.manifest.adapter.error='adapter timed out'; f.save();
+    const inv2=f.status().rcos_invocations[0].invocation;
+    assert.equal(inv2.adapter_exit.exit_code,3);
+    assert.equal(inv2.adapter_exit.signal,'SIGKILL');
+    assert.equal(inv2.adapter_exit.error,'adapter timed out');
+    // An over-long error string is bounded rather than trusted verbatim.
+    f.manifest.adapter.error='x'.repeat(500); f.save();
+    assert.equal(f.status().rcos_invocations[0].invocation.adapter_exit.error,'<error text withheld>');
   } finally {f.close();}
 });
 
