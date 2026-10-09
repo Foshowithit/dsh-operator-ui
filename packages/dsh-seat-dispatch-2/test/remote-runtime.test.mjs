@@ -700,6 +700,38 @@ test('out-of-workspace artifact root never exposes artifacts',()=>{
   } finally {rmSync(home,{recursive:true,force:true});}
 });
 
+// A failed child must not read as a bare "child status is failed": a lane 429 and a
+// genuine defect look identical otherwise, so a cross-seat reader had to open the Dell
+// to tell them apart. Project a bounded, closed failure summary from the child's own
+// terminal_record (first failed node id + one clipped reason line), never the raw record.
+test('status surfaces a bounded failure summary for a non-completed child',()=>{
+  const home=mkdtempSync(join(tmpdir(),'dsh-child-failure-'));
+  try {
+    const parentRoot=join(home,'.archon/workspaces/parent');
+    const parentArtifacts=join(parentRoot,'artifacts/runs',runId);
+    const childId='7fe38448054f4cf48f937b28769ac211';
+    const childRoot=join(home,'.archon/workspaces/child');
+    mkdirSync(parentArtifacts,{recursive:true});mkdirSync(join(childRoot,'artifacts/runs',childId),{recursive:true});
+    writeFileSync(join(parentArtifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
+    const expectedCwd='/var/tmp/chow-nested-runs/fixture-parent-build-12345678';
+    const long='x'.repeat(4000);
+    const child={
+      id:childId,conversation_id:'internal-child',workflow_name:qaWorkflow,status:'failed',working_path:expectedCwd,output_root:childRoot,
+      terminal_record:{first_failed_node:'spec-intake',error:'DAG workflow failed: SDK returned error — opencode-go-responses API error (429): Go usage limit exceeded '+long},
+    };
+    writeFileSync(join(parentArtifacts,'archon-child-qa.json'),JSON.stringify({schema:'rcos-archon-child/1',run_id:childId,workflow_name:qaWorkflow,expected_cwd:expectedCwd,status:'completed',output_root:childRoot,eval_path:join(childRoot,'artifacts/runs',childId,'EVAL.json'),eval:{decision:'blocked'}}));
+    const parent={...row,status:'completed',output_root:parentRoot};
+    const out=remote({operation:'archon_run_status',run_id:runId,conversation_id:seat,child_nodes:[{id:'qa',workflow:qaWorkflow}],workflow_allowlist:[workflow,qaWorkflow]},[parent,child],home);
+    const ce=out.result.data.child_evaluations[0];
+    assert.equal(ce.status,'failed');
+    assert.equal(ce.failure.first_failed_node,'spec-intake');
+    assert.ok(ce.failure.reason.includes('429'),'reason carries the lane signal');
+    assert.ok(ce.failure.reason.length<=240,'reason is bounded, never the whole record');
+    assert.equal(out.result.data.effective_decision,'blocked');
+    // A completed child carries no failure summary key at all.
+    writeFileSync(join(parentArtifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
+  } finally {rmSync(home,{recursive:true,force:true});}
+});
 test('status marks completed child QA with blocked EVAL as an acceptance blocker',()=>{
   const home=mkdtempSync(join(tmpdir(),'dsh-child-eval-'));
   try {

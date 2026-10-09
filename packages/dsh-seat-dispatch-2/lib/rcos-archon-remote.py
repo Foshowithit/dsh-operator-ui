@@ -341,6 +341,25 @@ def child_evaluations(parent_artifact_dir, child_nodes):
         if receipt.get("status") != item["status"]:
             blockers.append("node " + node_id + ": child receipt status differs from Archon status")
         if item["status"] != "completed":
+            # A bare "child status is failed" cannot tell an exhausted model lane
+            # (429) from a real defect, so a cross-seat reader had to open the Dell
+            # to find out. Project a bounded, closed failure summary from the child's
+            # own terminal_record: the first failed node id and a single clipped
+            # reason line. Never the raw record; never a path or credential.
+            failure = {}
+            terminal = child_value.get("terminal_record")
+            if isinstance(terminal, dict):
+                failed_node = terminal.get("first_failed_node")
+                if isinstance(failed_node, str) and NODE_RE.fullmatch(failed_node):
+                    failure["first_failed_node"] = failed_node
+                error = terminal.get("error")
+                if isinstance(error, str) and error:
+                    # Lead with the root cause: an error chain names the cause first,
+                    # so clip the HEAD, not the tail (clipped() keeps the tail for
+                    # stdout/stderr, where the latest line matters most).
+                    failure["reason"] = error if len(error) <= 240 else error[:239] + "…"
+            if failure:
+                item["failure"] = failure
             blockers.append("node " + node_id + ": child status is " + item["status"])
         output_root = child_value.get("output_root")
         receipt_output_root = receipt.get("output_root")
