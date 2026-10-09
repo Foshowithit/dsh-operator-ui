@@ -874,16 +874,31 @@ test('mac-dell-staging: malformed, inconsistent or tampered reports block accept
     for(const verificationFailure of ['invocation-verify','eligibility-verify']) {
       f.write(mdsValid['stage/ship']); assert.equal(f.status({verificationFailure}).effective_decision,'blocked');
     }
+    // Structural/load-bearing corruptions must still block acceptance.
     const mutations=[
       o=>{o.schema='other/1';}, o=>{o.action='nuke';}, o=>{o.status='maybe';}, o=>{o.extra=1;},
-      o=>{o.staging_id='BAD ID';}, o=>{o.detail=[];}, o=>{o.detail.secret='PRIVATE';},
+      o=>{o.staging_id='BAD ID';}, o=>{o.detail=[];},
       o=>{o.detail.executed=true;}, o=>{o.detail.bytes=0;}, o=>{o.detail.sha256='xyz';},
+      o=>{o.detail.reason='PRIVATE_NOVEL_REASON';},
     ];
     for(const mutate of mutations) {
       const o=structuredClone(mdsValid['stage/ship']); mutate(o); f.write(o);
       assert.equal(f.status().effective_decision,'blocked',JSON.stringify(o).slice(0,80));
       assert.equal(f.status().rcos_invocations[0].output,undefined);
     }
+    // The adapter may add detail fields we do not enumerate; those are IGNORED,
+    // not treated as corruption (the projection is a whitelist). A valid report
+    // carrying an extra detail key must still read as its real verdict.
+    const extra=structuredClone(mdsValid['stage/ship']); extra.detail.future_field='PRIVATE';
+    f.write(extra);
+    assert.equal(f.status().effective_decision,'ship');
+    assert.equal(f.status().rcos_invocations[0].output.domain_verdict,'ship');
+    assert.equal(JSON.stringify(f.status()).includes('PRIVATE'),false);
+    // A legitimate blocked shape that the earlier narrow validator dropped.
+    f.write(mdsReport('publish','blocked',{reason:'staged content not found',staging_id:'pc6'},'pc6'));
+    assert.equal(f.status().effective_decision,'blocked');
+    assert.equal(f.status().rcos_invocations[0].output.reason,'staged content not found');
+    assert.equal(f.status().rcos_invocations[0].output.domain_verdict,'blocked');
     const badFix=structuredClone(mdsValid['stage/fix']); badFix.detail.reason='nope'; f.write(badFix);
     assert.equal(f.status().effective_decision,'blocked');
     const admitted=structuredClone(mdsValid['publish/ship']); admitted.detail.manifest_admitted=true; f.write(admitted);

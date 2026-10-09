@@ -757,14 +757,19 @@ def wishing_film_outcome(invocation_dir, fingerprint, version):
 
 
 def mac_dell_staging_outcome(invocation_dir, fingerprint, version):
-    # The mac-dell-staging v0.1.0 adapter NEVER executes staged content; it
-    # always exits 0 and carries the DOMAIN status (ship|fix|blocked) inside the
-    # report keyed by the action it performed. Reading only the adapter exit
-    # code or the output digest is therefore BLIND to acceptance -- the very
-    # gap a fresh seat reported. This resolves the frozen report body, verifies
-    # it against the run-pinned digest, and exposes the bounded verdict plus the
-    # real facts that decide it. Do not interpret a new version's
-    # unschematized output using these rules.
+    # The mac-dell-staging v0.1.0 adapter NEVER executes staged content; it always
+    # exits 0 and carries the DOMAIN status (ship|fix|blocked) inside the report.
+    # Reading only the adapter exit code or the output digest is therefore BLIND to
+    # acceptance -- the gap a fresh seat reported. This resolves the frozen report
+    # body, verifies it against the run-pinned digest, and exposes the bounded
+    # verdict plus the real facts that decide it.
+    #
+    # Accept ANY schema-valid report of the supported version and project a
+    # WHITELIST of safe fields. Earlier revisions required an exact detail-key set
+    # per (action,status) and therefore silently dropped legitimate reports whose
+    # shape it did not enumerate (measured: publish/{reason:"staged content not
+    # found"} read as "verified domain outcome is unavailable"). An evidence
+    # channel must never hide a valid report because the validator was too narrow.
     output = verified_invocation_output(invocation_dir, fingerprint)
     if version != "0.1.0" or not isinstance(output, dict):
         return None
@@ -775,80 +780,78 @@ def mac_dell_staging_outcome(invocation_dir, fingerprint, version):
             or not isinstance(output.get("staging_id"), str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", output["staging_id"])
             or not isinstance(output.get("detail"), dict)):
         return None
+    detail = output["detail"]
+    sha256_re = r"[a-f0-9]{64}"
+    # The closed reason vocabulary the adapter can emit, per action. A report
+    # carrying any other reason is invalid and is refused (fail-closed), so an
+    # unexpected value is surfaced as unavailability rather than passed through.
+    REASONS = {
+        "stage": ("sha256 mismatch", "content exceeds 8 MiB", "invalid staging_id",
+                  "staging path escape", "invalid target_relative_path", "target path escape",
+                  "content_b64 is not valid base64", "content is empty",
+                  "lane is not an rcos-ir-* workflow slug"),
+        "publish": ("publication failed and was rolled back", "staged content not found"),
+        "rollback": ("no publish record to roll back", "staged content not found"),
+    }
     action = output["action"]
     status = output["status"]
-    detail = output["detail"]
-    # The adapter's status is its domain verdict; expose it under the same key
-    # the other capability extractors use so the run's acceptance arithmetic
-    # (DOMAIN_CAPABILITIES / domain_verdict) sees it.
     summary = {"schema": output["schema"], "action": action, "status": status,
                "domain_verdict": status, "staging_id": output["staging_id"]}
-    sha256_re = r"[a-f0-9]{64}"
-    if action == "stage":
-        if status == "ship":
-            # Validated staged copy: identity proven, never executed.
-            if (set(detail) != {"staged", "sha256", "bytes", "executed"}
+    reason = detail.get("reason")
+    if reason is not None:
+        if not isinstance(reason, str) or reason not in REASONS[action]:
+            return None
+        summary["reason"] = reason
+    # Bounded, whitelisted scalar facts. Absolute paths, argv, stdout/stderr and
+    # arbitrary error text never leave this function.
+    if isinstance(detail.get("expected"), str) and re.fullmatch(sha256_re, detail["expected"]):
+        summary["expected"] = detail["expected"]
+    if isinstance(detail.get("actual"), str) and re.fullmatch(sha256_re, detail["actual"]):
+        summary["actual"] = detail["actual"]
+    if isinstance(detail.get("sha256"), str) and re.fullmatch(sha256_re, detail["sha256"]):
+        summary["sha256"] = detail["sha256"]
+    if type(detail.get("bytes")) is int and 0 <= detail["bytes"] <= 64 * 1024 * 1024:
+        summary["bytes"] = detail["bytes"]
+    if detail.get("executed") is not None:
+        summary["executed"] = bool(detail["executed"])
+    if isinstance(detail.get("published"), str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,200}", detail["published"]) and ".." not in detail["published"].split("/"):
+        summary["published"] = detail["published"]
+    if isinstance(detail.get("rolled_back"), str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,200}", detail["rolled_back"]) and ".." not in detail["rolled_back"].split("/"):
+        summary["rolled_back"] = detail["rolled_back"]
+    if type(detail.get("rolled_back")) is bool:
+        summary["rolled_back"] = detail["rolled_back"]
+    if detail.get("staged_copy_retained") is not None:
+        summary["staged_copy_retained"] = bool(detail["staged_copy_retained"])
+    if detail.get("verified") is not None:
+        summary["verified"] = bool(detail["verified"])
+    if detail.get("manifest_admitted") is not None:
+        summary["manifest_admitted"] = bool(detail["manifest_admitted"])
+    if detail.get("lane") is None:
+        summary["lane"] = None
+    elif isinstance(detail.get("lane"), str) and re.fullmatch(r"rcos-ir-[a-z0-9][a-z0-9-]{0,63}", detail["lane"]):
+        summary["lane"] = detail["lane"]
+    # Status-specific load-bearing facts. A `ship` must carry the facts that make
+    # it a ship: staging is inert and non-empty; a publication is verified and
+    # its manifest claim is consistent with the lane. Without these the report is
+    # refused, so a malformed "ship" can never be read as acceptance.
+    if status == "ship":
+        if action == "stage":
+            if (detail.get("executed") is not False
                     or not isinstance(detail.get("staged"), str) or not detail["staged"]
-                    or not isinstance(detail.get("sha256"), str) or re.fullmatch(sha256_re, detail["sha256"]) is None
                     or type(detail.get("bytes")) is not int or not 0 < detail["bytes"] <= 8 * 1024 * 1024
-                    or detail.get("executed") is not False):
+                    or "sha256" not in summary):
                 return None
-            summary.update({"bytes": detail["bytes"], "executed": False, "sha256": detail["sha256"]})
-        elif status == "fix":
-            # Identity refusal: the staged bytes did not match the declared hash.
-            if (set(detail) != {"reason", "expected", "actual", "bytes"}
-                    or detail.get("reason") != "sha256 mismatch"
-                    or not isinstance(detail.get("expected"), str) or re.fullmatch(sha256_re, detail["expected"]) is None
-                    or not isinstance(detail.get("actual"), str) or re.fullmatch(sha256_re, detail["actual"]) is None
-                    or type(detail.get("bytes")) is not int or not 0 <= detail["bytes"] <= 8 * 1024 * 1024):
+        elif action == "publish":
+            if (detail.get("verified") is not True
+                    or not isinstance(detail.get("published"), str) or "published" not in summary
+                    or "sha256" not in summary
+                    or type(detail.get("manifest_admitted")) is not bool
+                    or detail["manifest_admitted"] != (detail.get("lane") is not None)):
                 return None
-            summary.update({"reason": "sha256 mismatch", "expected": detail["expected"], "actual": detail["actual"], "bytes": detail["bytes"]})
-        else:
-            # Oversize / malformed / escape refusals before any write.
-            if (set(detail) != {"reason", "bytes"}
-                    or detail.get("reason") not in ("content exceeds 8 MiB",)
-                    or type(detail.get("bytes")) is not int or not detail["bytes"] > 8 * 1024 * 1024):
+        else:  # rollback
+            if ("rolled_back" not in summary or not isinstance(summary.get("rolled_back"), str)
+                    or detail.get("staged_copy_retained") is None):
                 return None
-            summary.update({"reason": detail["reason"], "bytes": detail["bytes"]})
-    elif action == "publish":
-        if status == "ship":
-            # Reviewed publication: staged bytes copied in and verified. A null
-            # lane means no compiled admission was claimed (and says so).
-            if (set(detail) != {"published", "sha256", "manifest_admitted", "lane", "verified"}
-                    or not isinstance(detail.get("published"), str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,200}", detail["published"])
-                    or ".." in detail["published"].split("/")
-                    or not isinstance(detail.get("sha256"), str) or re.fullmatch(sha256_re, detail["sha256"]) is None
-                    or type(detail.get("manifest_admitted")) is not bool or detail.get("verified") is not True
-                    or (detail.get("lane") is not None and (not isinstance(detail.get("lane"), str) or re.fullmatch(r"rcos-ir-[a-z0-9][a-z0-9-]{0,63}", detail["lane"]) is None))
-                    or detail.get("manifest_admitted") != (detail.get("lane") is not None)):
-                return None
-            summary.update({"published": detail["published"], "sha256": detail["sha256"],
-                            "manifest_admitted": detail["manifest_admitted"], "lane": detail.get("lane"), "verified": True})
-        else:
-            # A failed publication that was rolled back: nothing left behind.
-            if (set(detail) != {"reason", "error", "rolled_back"}
-                    or detail.get("reason") != "publication failed and was rolled back"
-                    or not isinstance(detail.get("error"), str) or not 1 <= len(detail["error"]) <= 400
-                    or detail.get("rolled_back") is not True):
-                return None
-            summary.update({"reason": detail["reason"], "rolled_back": True})
-    else:  # rollback
-        if status == "ship":
-            # The published target was removed; the staged copy is retained.
-            if (set(detail) != {"rolled_back", "staged_copy_retained"}
-                    or not isinstance(detail.get("rolled_back"), str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,200}", detail["rolled_back"])
-                    or ".." in detail["rolled_back"].split("/")
-                    or not isinstance(detail.get("staged_copy_retained"), str) or not detail["staged_copy_retained"]):
-                return None
-            summary.update({"rolled_back": detail["rolled_back"], "staged_copy_retained": True})
-        else:
-            # Refused: there was no publish record to undo.
-            if (set(detail) != {"reason", "staging_id"}
-                    or detail.get("reason") != "no publish record to roll back"
-                    or detail.get("staging_id") != output["staging_id"]):
-                return None
-            summary.update({"reason": detail["reason"]})
-    # Absolute paths, argv, stdout/stderr and arbitrary error text stay private.
     return summary
 
 
