@@ -239,6 +239,38 @@ def run_rows():
     return records(value, "runs"), process
 
 
+def conversation_runs(conversation_id, limit=8):
+    """Runs in one Archon conversation, straight from archon.db.
+
+    The bounded CLI history (workflow runs --all --limit N) is a recency window:
+    a busy host pushes a dispatch's sibling runs out of it, so the enumeration
+    silently returned nothing. conversation_id is indexed, so query it directly
+    and never depend on how many unrelated runs happened since.
+    """
+    db_path = os.path.join(HOME, ".archon", "archon.db")
+    if not os.path.isfile(db_path):
+        return []
+    if not RUN_ID_RE.fullmatch(str(conversation_id)) or not isinstance(limit, int) or not 1 <= limit <= 64:
+        return []
+    # conversation_id is a validated 32-hex / UUID and limit is a bounded int, so
+    # both are safe to inline: the sqlite3 CLI does not bind positional params
+    # the way the C API does.
+    query = ("SELECT id, conversation_id, workflow_name, status, started_at, completed_at, working_path, output_root "
+             "FROM remote_agent_workflow_runs WHERE conversation_id = '%s' ORDER BY started_at DESC LIMIT %d"
+             % (conversation_id, limit))
+    try:
+        process = subprocess.run(
+            ["sqlite3", "-readonly", "-json", db_path, query],
+            cwd=HOME, capture_output=True, text=True, timeout=15, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if process.returncode != 0 or not process.stdout.strip():
+        return []
+    value = parse_json(process.stdout)
+    return value if isinstance(value, list) else []
+
+
 def run_summary(row):
     fields = (
         "id", "conversation_id", "worker_platform_id", "workflow_name", "status", "current_step_name",
@@ -1138,9 +1170,7 @@ elif op == "archon_run_status":
             # domain evidence for every sibling rcos-ir-* run sharing it.
             internal_conv = REQ.get("archon_conversation_id")
             if isinstance(internal_conv, str) and RUN_ID_RE.fullmatch(internal_conv):
-                history, _ = run_rows()
-                siblings = [row for row in history or [] if isinstance(row, dict)
-                            and row.get("conversation_id") == internal_conv
+                siblings = [row for row in conversation_runs(internal_conv, 9) if isinstance(row, dict)
                             and row.get("id") != run_id
                             and isinstance(row.get("id"), str) and RUN_ID_RE.fullmatch(row["id"])
                             and isinstance(row.get("workflow_name"), str)
