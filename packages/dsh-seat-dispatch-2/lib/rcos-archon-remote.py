@@ -1208,6 +1208,24 @@ elif op == "archon_run_status":
                             sib_decisions.append(item["output"].get("domain_verdict"))
                         if sib_decisions:
                             sibling["domain_decisions"] = [d for d in sib_decisions]
+                        # Give the sibling the SAME child evaluation the requested
+                        # run gets: derive its child nodes from its own artifacts
+                        # (archon-child-<node-id>.json), so "both run results" are
+                        # symmetric rather than the requested run alone.
+                        sib_nodes = []
+                        try:
+                            for entry in sorted(os.listdir(sib_dir)):
+                                match = re.fullmatch(r"archon-child-([A-Za-z0-9][A-Za-z0-9_-]{0,79})\.json", entry)
+                                if not match:
+                                    continue
+                                receipt = bounded_json(os.path.join(sib_dir, entry), sib_dir, 8192)
+                                if isinstance(receipt, dict) and isinstance(receipt.get("workflow_name"), str) and WF_RE.fullmatch(receipt["workflow_name"]):
+                                    sib_nodes.append({"id": match[1], "workflow": receipt["workflow_name"]})
+                        except OSError:
+                            sib_nodes = []
+                        if sib_nodes:
+                            sib_children, _ = child_evaluations(sib_dir, sib_nodes)
+                            sibling["child_evaluations"] = sib_children
                     exposed.append(sibling)
                 # ALWAYS present the key when the trusted conversation id was
                 # supplied -- an empty list means "the lookup ran and found no

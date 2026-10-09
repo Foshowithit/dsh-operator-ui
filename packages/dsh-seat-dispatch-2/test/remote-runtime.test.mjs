@@ -930,6 +930,14 @@ test('dispatch read exposes sibling runs from the same conversation with their d
     };
     writeRun(mainRun,'inv_main',mdsReport('stage','fix',{reason:'sha256 mismatch',expected:'2'.repeat(64),actual:'c'.repeat(64),bytes:169},'mac-origin-proof-wm311d61'));
     writeRun(sibRun,'inv_sib',mdsReport('stage','fix',{reason:'sha256 mismatch',expected:'0'.repeat(64),actual:'3'.repeat(64),bytes:68},'mac-origin-proof-wm311d61-neg'));
+    // The sibling's own compiler child receipt (name = archon-child-<node-id>.json)
+    // plus the nested child run dir the evaluator reads.
+    const sibChildRun='833bf14b00e669d7e55e93086439334d';
+    writeFileSync(join(outputRoot,'artifacts/runs',sibRun,'archon-child-run-approved-workflow.json'),
+      JSON.stringify({schema:'rcos-archon-child/1',run_id:sibChildRun,workflow_name:'chow-qa-verify-v1',expected_cwd:'/var/tmp/chow-nested-runs/'+sibRun+'-run-approved-workflow-aaaa',status:'completed'}));
+    const sibNest=join(home,'.archon/workspaces',sibRun+'-run-approved-workflow-aaaa','artifacts/runs',sibChildRun);
+    mkdirSync(sibNest,{recursive:true});
+    writeFileSync(join(sibNest,'EVAL.json'),JSON.stringify({decision:'ship',reason:'fresh outputs of this run'}));
     // The rows the run identity / binding check reads (CLI history), and the
     // rows the sibling lookup reads (archon.db, window-independent).
     const rows=[
@@ -956,6 +964,10 @@ test('dispatch read exposes sibling runs from the same conversation with their d
     assert.deepEqual(sib.domain_decisions,['fix']);
     assert.equal(sib.rcos_invocations[0].output.domain_verdict,'fix');
     assert.equal(sib.rcos_invocations[0].output.expected,'0'.repeat(64));
+    // The sibling carries the SAME child evaluation shape as the requested run.
+    assert.equal(Array.isArray(sib.child_evaluations),true);
+    assert.equal(sib.child_evaluations[0].node_id,'run-approved-workflow');
+    assert.equal(sib.child_evaluations[0].workflow_name,'chow-qa-verify-v1');
     assert.equal(JSON.stringify(out.sibling_runs).includes(home),false);
     // Without the host-trusted conversation id (a bare model-arg read) the
     // sibling enumeration must NOT fire.
