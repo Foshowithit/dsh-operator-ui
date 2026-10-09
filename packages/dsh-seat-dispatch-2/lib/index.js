@@ -30,13 +30,14 @@
 
 import { randomUUID } from 'node:crypto';
 import { appendFile, mkdir } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import z from '@deepseek-ai/schemastery';
+import { resolveDshHome } from '@deepseek-ai/dsh-home-paths';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
 import { SessionId } from '@deepseek-ai/dsh-session';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import * as receipt from './receipt.js';
+import { createDispatchRunObserver } from './dispatch-status.js';
 
 /** Cordis plugin name. */
 export const name = 'seat-dispatch';
@@ -49,6 +50,54 @@ const DEFAULT_SEAT = 'workflow-manager';
 
 /** Poll cadence while waiting for the seat. */
 const POLL_MS = 350;
+
+/** Intent classes recorded by the General seat before it responds or hands off. */
+export const ROUTE_INTENTS = Object.freeze([
+  'conversational',
+  'read_only_inquiry',
+  'clarification',
+  'procedural_handoff',
+]);
+
+const ROUTING_DECISION_OUTPUT_PROPERTIES = {
+  decision_id: { type: 'string' },
+  intent: { type: 'string', enum: ROUTE_INTENTS },
+  reason: { type: 'string' },
+  caller_session_id: { type: 'string' },
+  caller_turn_index: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+  caller_turn_start_event_index: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+  dispatch_run_id: { type: 'string' },
+  recorded: { type: 'boolean' },
+};
+
+/** Model-interpreted routing declaration; this tool never creates an agent. */
+export const ROUTING_DECISION_PARAMETERS = {
+  intent: {
+    type: 'string',
+    enum: ROUTE_INTENTS,
+    required: true,
+    description: 'the model-interpreted handling class for this user request',
+  },
+  reason: {
+    type: 'string',
+    required: true,
+    description: 'a concise explanation of why this intent fits, at most 2000 characters',
+  },
+};
+
+/** Canonical persisted route-decision response. */
+export const ROUTING_DECISION_TOOL_OUTPUT = {
+  type: 'object',
+  properties: {
+    accepted: { type: 'boolean' },
+    decision: { type: 'object', properties: ROUTING_DECISION_OUTPUT_PROPERTIES, additionalProperties: false },
+    audit_log: { type: 'string' },
+    audit_error: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+const MAX_PENDING_ROUTE_DECISIONS = 1024;
 
 /**
  * Plugin configuration, authored by the composition row that inserts it.
@@ -70,7 +119,7 @@ export const Config = z.object({
   /** How long to let the seat's transcript drain after a receipt arrives. */
   drainMs: z.number().default(5000),
   /** Where the append-only dispatch audit log lives. */
-  auditDir: z.string().default(join(homedir(), '.dsh', 'runs', 'seat-dispatch')),
+  auditDir: z.string().default(join(resolveDshHome(), 'runs', 'seat-dispatch')),
 });
 
 /**
@@ -92,6 +141,11 @@ export function dispatchParameters(config) {
   };
   if (seats.length > 1) seat.enum = seats;
   return {
+    routing_decision_id: {
+      type: 'string',
+      required: true,
+      description: 'the decision_id returned by record_routing_decision for this same active turn; only a recorded procedural_handoff decision can start a seat',
+    },
     seat,
     objective: {
       type: 'string',
@@ -102,11 +156,6 @@ export function dispatchParameters(config) {
       type: 'string',
       required: true,
       description: 'the observable condition that makes this dispatch finished -- the seat is held to it in its receipt evidence',
-    },
-    reason: {
-      type: 'string',
-      required: true,
-      description: 'why this work is being dispatched instead of done here (missing capability, mutation authority, governed workflow lifecycle)',
     },
     constraints: {
       type: 'array',
@@ -138,11 +187,16 @@ export function dispatchParameters(config) {
 export const DISPATCH_OUTPUT = {
   type: 'object',
   properties: {
-    ok: { type: 'boolean', description: 'true only when the seat answered with a non-blocked verdict backed by an accepted receipt' },
-    stage: { type: 'string', description: "where the dispatch ended: complete | authority | authority-root | authority-seat | resolve | create | receipt-missing | timeout | aborted | error" },
+    ok: { type: 'boolean', description: 'true only when the seat answered ship or fix with an accepted receipt; pending is not completion of the objective' },
+    stage: { type: 'string', description: "where the dispatch ended: complete | authority | authority-route | authority-root | authority-seat | resolve | create | receipt-missing | timeout | aborted | error" },
     verdict: { type: 'string', description: 'the seat verdict, or the synthesized blocked verdict of a failed dispatch' },
     detail: { type: 'string', description: 'one paragraph a caller can act on' },
     warnings: { type: 'array', items: { type: 'string' }, description: 'unsupported claims and lane confounds, surfaced beside the verdict rather than dropped' },
+    routing: {
+      type: 'object',
+      properties: ROUTING_DECISION_OUTPUT_PROPERTIES,
+      additionalProperties: false,
+    },
     lane: {
       type: 'object',
       properties: {
@@ -208,7 +262,7 @@ export const RECEIPT_TOOL_OUTPUT = {
 };
 
 /** One-line description of what a seat's receipt tool does. */
-const RECEIPT_TOOL_DESCRIPTION = 'Submit the single authoritative receipt for this seat dispatch: verdict, summary, artifacts, evidence, blockers, the real Archon run id and its machine-readable status, the lane you actually ran on, and the next action. Call it exactly once, from inside a run_code program. A schema-invalid submission is refused with its violations and does NOT consume your one receipt; a valid submission ends the dispatch.';
+const RECEIPT_TOOL_DESCRIPTION = 'Submit the single authoritative receipt for this seat dispatch: verdict, summary, artifacts, evidence, blockers, the real Archon run id and its machine-readable status, the lane you actually ran on, and the next action. Call this tool directly and exactly once. A ship verdict requires a real Archon run reporting ship. An active run may be reported as pending with the real run id and next poll action. A schema-invalid submission is refused with its violations and does NOT consume your one receipt; a valid submission ends the dispatch.';
 
 /**
  * Build the seat-local receipt tool.
@@ -445,6 +499,56 @@ function observeLane(agent, from) {
 }
 
 /**
+ * Build a typed model-interpreted intent record tied to the caller's durable
+ * session and currently open turn. This record is descriptive; it does not
+ * grant authority or select a capability.
+ * @param agent - the calling General agent.
+ * @param intent - one of the closed route intent classes.
+ * @param reason - concise explanation for the selected intent.
+ * @param decisionId - unique route-decision identity.
+ * @param dispatchRunId - linked seat-dispatch identity, if one exists.
+ * @param recorded - whether the decision has been appended to the route log.
+ * @returns the immutable route-decision record.
+ */
+export function buildRoutingDecision(agent, intent, reason, decisionId = 'rd-' + randomUUID(), dispatchRunId = 'none', recorded = false) {
+  if (!ROUTE_INTENTS.includes(intent)) throw new TypeError('routing intent is not in the closed route intent set');
+  const session = agent?.session;
+  let turnOrdinal = 0;
+  let activeTurn;
+  let events = [];
+  try {
+    const snapshot = session?.snapshotEvents?.();
+    if (Array.isArray(snapshot)) events = snapshot;
+  } catch (error) {
+    events = [];
+  }
+  for (let index = 0; index < events.length; index += 1) {
+    const event = events[index];
+    if (event?.type === 'turn/start') {
+      turnOrdinal += 1;
+      const storedTurn = event?.data?.turn;
+      const storedSeq = event?.seq;
+      activeTurn = {
+        turnIndex: Number.isSafeInteger(storedTurn) && storedTurn > 0 ? storedTurn : turnOrdinal,
+        eventIndex: Number.isSafeInteger(storedSeq) && storedSeq >= 0 ? storedSeq : index,
+      };
+    } else if (event?.type === 'turn/end') {
+      activeTurn = undefined;
+    }
+  }
+  return Object.freeze({
+    decision_id: decisionId,
+    intent,
+    reason: typeof reason === 'string' ? reason.trim() : '',
+    caller_session_id: typeof session?.id === 'string' && session.id.length > 0 ? session.id : receipt.NONE,
+    caller_turn_index: activeTurn?.turnIndex ?? null,
+    caller_turn_start_event_index: activeTurn?.eventIndex ?? null,
+    dispatch_run_id: dispatchRunId,
+    recorded: recorded === true,
+  });
+}
+
+/**
  * Cancel a seat that will not report, then let the caller dispose it.
  * @param agent - the seat agent.
  * @param reason - the cancellation cause.
@@ -474,8 +578,8 @@ async function cancelSeat(agent, reason) {
  * @param record - the JSON-serializable record.
  * @returns the audit path, or an error string.
  */
-async function writeAudit(dir, record) {
-  const path = join(dir, 'seat-dispatch.jsonl');
+async function writeJsonl(dir, filename, record) {
+  const path = join(dir, filename);
   try {
     await mkdir(dir, { recursive: true });
     await appendFile(path, JSON.stringify(record) + '\n', 'utf8');
@@ -483,6 +587,20 @@ async function writeAudit(dir, record) {
   } catch (error) {
     return { path, error: describe(error) };
   }
+}
+
+/** Append one route-decision record independently from seat execution records. */
+function writeRoutingAudit(dir, decision) {
+  return writeJsonl(dir, 'routing-decisions.jsonl', {
+    record_type: 'routing-decision',
+    ts: new Date().toISOString(),
+    ...decision,
+  });
+}
+
+/** Append one seat-dispatch audit line. */
+function writeAudit(dir, record) {
+  return writeJsonl(dir, 'seat-dispatch.jsonl', record);
 }
 
 /** The record of one resolved seat in the dispatch value. */
@@ -502,31 +620,90 @@ function seatReceiptProjection(value) {
   };
 }
 
+/** Record a model-interpreted route and arm only this turn's procedural handoff. */
+async function persistRoutingDecision(config, pending, args, exec) {
+  const intent = args?.intent;
+  if (!ROUTE_INTENTS.includes(intent)) throw new TypeError('routing intent is not in the closed route intent set');
+  const rawReason = typeof args?.reason === 'string' ? args.reason : '';
+  const decision = buildRoutingDecision(exec?.agent, intent, rawReason);
+  if (decision.reason.length === 0 || decision.reason.length > 2000) {
+    return { accepted: false, decision, audit_log: receipt.NONE, audit_error: 'reason must be non-empty and no longer than 2000 characters' };
+  }
+  if (decision.caller_session_id === receipt.NONE || decision.caller_turn_index === null) {
+    return { accepted: false, decision, audit_log: receipt.NONE, audit_error: 'route decision could not bind to an active caller session turn' };
+  }
+
+  const persisted = Object.freeze({ ...decision, recorded: true });
+  const audited = await writeRoutingAudit(config.auditDir, persisted);
+  if (audited.error !== receipt.NONE) {
+    return {
+      accepted: false,
+      decision,
+      audit_log: audited.path,
+      audit_error: audited.error,
+    };
+  }
+
+  /* Only the most recent classification for a caller session can authorize a
+   * handoff. Old ids remain in the append-only log but cannot be replayed. */
+  for (const [id, previous] of pending) {
+    if (previous.caller_session_id === persisted.caller_session_id) pending.delete(id);
+  }
+  pending.set(persisted.decision_id, persisted);
+  while (pending.size > MAX_PENDING_ROUTE_DECISIONS) pending.delete(pending.keys().next().value);
+  return { accepted: true, decision: persisted, audit_log: audited.path, audit_error: receipt.NONE };
+}
+
+/** Render the route tool's durable outcome in a compact, readable form. */
+function renderRoutingDecision(_args, value) {
+  const decision = value.decision;
+  return [{
+    type: 'text',
+    text: value.accepted
+      ? 'routing decision recorded: ' + decision.intent + ' id=' + decision.decision_id + ' session=' + decision.caller_session_id + ' turn=' + decision.caller_turn_index
+      : 'routing decision refused: ' + value.audit_error,
+  }];
+}
+
 /**
- * Register 'dispatch_seat' on this composition's tool layer.
+ * Register the route recorder and the one governed execution tool in General.
  * @param ctx - the plugin context (the caller preset's layer).
  * @param config - the resolved plugin config.
  */
 export function apply(ctx, config) {
+  const pending = new Map();
+  ctx.tools.register(defineTool({
+    name: 'record_routing_decision',
+    description: 'Persist the model-interpreted handling choice for this user request: conversational, read_only_inquiry, clarification, or procedural_handoff. This tool only records intent; it does not grant permissions, select capabilities, create a seat, or run work. Record one decision before answering or handing work off. A procedural_handoff id is required by dispatch_seat in the same active turn.',
+    parameters: ROUTING_DECISION_PARAMETERS,
+    output: { schema: ROUTING_DECISION_TOOL_OUTPUT, render: renderRoutingDecision },
+    execute: (args, exec) => persistRoutingDecision(config, pending, args, exec),
+  }));
   ctx.tools.register(defineTool({
     name: 'dispatch_seat',
-    description: 'Run exactly one governed turn in a fresh-root agent seat composed from ANOTHER preset, and return that seat receipt: verdict ship|fix|blocked, artifacts, evidence, the real Archon run id with its machine-readable status, the lane it actually ran on, and the next action. Use it when the work needs capabilities this seat does not have and must not gain -- mutation authority, the Archon workflow library, Pi-agent fan-out. You supply the objective, what done means, the reason, and the constraints; the target preset alone owns the seat tools, prompt, and model, and nothing it gains comes back to this seat. The seat must submit one receipt from inside a run_code program; a missing, refused, or invalid receipt is reported as a blocked dispatch and never as success.',
+    description: 'Run exactly one governed turn in a fresh-root agent seat composed from ANOTHER preset, and return that seat receipt: verdict ship|fix|blocked|pending, artifacts, evidence, the real Archon run id with its machine-readable status, the lane it actually ran on, and the next action. Use it only after record_routing_decision returned a procedural_handoff decision id for this active turn. You supply that id, the objective, what done means, and the constraints; the target preset alone owns the seat tools, prompt, and model, and nothing it gains comes back to this seat. The seat must submit one receipt with its direct tool; a missing, refused, or invalid receipt is reported as a blocked dispatch and never as success.',
     parameters: dispatchParameters(config),
     output: { schema: DISPATCH_OUTPUT, render: renderDispatch },
     timeoutMs: clampBudget(undefined, config.timeoutMs) + 120000,
-    execute: (args, exec) => dispatchSeat(ctx, config, args, exec),
+    execute: (args, exec) => dispatchSeat(ctx, config, args, exec, pending),
   }));
 }
 
 /** One model-facing summary of a completed or failed dispatch. */
 export function renderDispatch(args, value) {
   const lines = [
-    'dispatch_seat ' + (value.ok ? 'OK' : 'NOT-OK')
+    'dispatch_seat ' + (value.verdict === 'pending' ? 'PENDING' : value.ok ? 'OK' : 'NOT-OK')
       + ' stage=' + value.stage
       + ' verdict=' + value.verdict
       + ' seat=' + value.dispatch.seat
       + ' run=' + value.dispatch.run_id,
   ];
+  lines.push('routing: decision=' + value.routing.decision_id
+    + ' intent=' + value.routing.intent
+    + ' session=' + value.routing.caller_session_id
+    + ' turn=' + (value.routing.caller_turn_index ?? 'unknown')
+    + ' recorded=' + value.routing.recorded
+    + ' reason=' + value.routing.reason);
   lines.push(value.detail);
   const reported = value.receipt;
   if (reported !== undefined && reported.summary !== undefined) {
@@ -549,10 +726,51 @@ export function renderDispatch(args, value) {
  * @param exec - the tool execution context (caller agent, signal).
  * @returns the canonical dispatch value.
  */
-async function dispatchSeat(ctx, config, args, exec) {
+function resolveDispatchRoute(pending, callerAgent, requestedId, runId) {
+  const id = typeof requestedId === 'string' && requestedId.length > 0 ? requestedId : receipt.NONE;
+  const decision = pending.get(id);
+  if (decision === undefined) {
+    return {
+      decision: buildRoutingDecision(callerAgent, 'procedural_handoff', '', id, runId, false),
+      issue: 'dispatch_seat requires a persisted routing decision id from record_routing_decision in this active turn; no seat was created.',
+    };
+  }
+  pending.delete(id);
+  const linked = Object.freeze({ ...decision, dispatch_run_id: runId });
+  if (decision.intent !== 'procedural_handoff') {
+    return {
+      decision: linked,
+      issue: 'dispatch_seat requires a procedural_handoff routing decision; the recorded intent was ' + decision.intent + '.',
+    };
+  }
+  const active = buildRoutingDecision(callerAgent, 'procedural_handoff', decision.reason, decision.decision_id, runId, false);
+  if (active.caller_session_id !== decision.caller_session_id
+    || active.caller_turn_index !== decision.caller_turn_index
+    || active.caller_turn_start_event_index !== decision.caller_turn_start_event_index) {
+    return {
+      decision: linked,
+      issue: 'the recorded procedural_handoff belongs to a different or closed caller session turn; no seat was created.',
+    };
+  }
+  if (decision.recorded !== true) {
+    return {
+      decision: linked,
+      issue: 'the procedural_handoff decision was not durably recorded; no seat was created.',
+    };
+  }
+  return { decision: linked, issue: undefined };
+}
+
+async function dispatchSeat(ctx, config, args, exec, pendingRouteDecisions) {
   const startedAt = Date.now();
+  const runId = receipt.mintRunId();
+  const callerAgent = exec?.agent;
+  const route = resolveDispatchRoute(pendingRouteDecisions, callerAgent, args?.routing_decision_id, runId);
+  const routeDecision = route.decision;
   const state = {
-    runId: receipt.mintRunId(),
+    runId,
+    routeDecision,
+    routingIssue: route.issue,
     seat: String(args.seat),
     stage: 'authority',
     detail: '',
@@ -567,7 +785,7 @@ async function dispatchSeat(ctx, config, args, exec) {
     seatLane: 'unknown',
     laneMismatch: false,
     laneObserved: undefined,
-    callerSessionId: receipt.NONE,
+    callerSessionId: routeDecision.caller_session_id,
     callerPreset: 'unknown',
     presetSource: 'none',
     callerDepth: 0,
@@ -581,7 +799,6 @@ async function dispatchSeat(ctx, config, args, exec) {
   };
 
   const presets = ctx.agentPresets;
-  const callerAgent = exec?.agent;
   const callerSession = callerAgent?.session;
   let handle;
 
@@ -606,6 +823,12 @@ async function dispatchSeat(ctx, config, args, exec) {
         state.warnings.push('seat disposal failed: ' + describe(error));
       }
     }
+    state.archonBinding = state.runObserver?.get(state.receipt?.archon_run_id);
+    if (state.receipt?.verdict === 'pending' && state.archonBinding) {
+      state.receipt = Object.freeze({ ...state.receipt,
+        next: 'Use archon_dispatch_status with dispatch_id ' + state.archonBinding.dispatch_id + ' from this same chat to check Archon run ' + state.archonBinding.run_id + '. Do not start another workflow.',
+      });
+    }
     const value = buildValue(state);
     const audited = await writeAudit(config.auditDir, auditRecord(state, value));
     state.auditLog = audited.path;
@@ -621,6 +844,15 @@ async function dispatchSeat(ctx, config, args, exec) {
     /* 1. Authority: the caller's own composition, read live, not asserted. */
     if (callerAgent === undefined || callerAgent === null) {
       return await settle('authority', 'dispatch_seat requires a calling agent; the runtime supplied none.');
+    }
+    if (state.routingIssue !== undefined) {
+      return await settle('authority-route', state.routingIssue);
+    }
+    if (routeDecision.reason.length === 0 || routeDecision.reason.length > 2000) {
+      return await settle('authority', 'dispatch_seat requires a concise, non-empty reason for the procedural handoff (maximum 2000 characters).');
+    }
+    if (routeDecision.caller_session_id === receipt.NONE || routeDecision.caller_turn_index === null) {
+      return await settle('authority', 'dispatch_seat could not bind this procedural handoff to an active caller session turn; no seat was created.');
     }
     const caller = readCallerPreset(presets, callerAgent);
     state.callerPreset = caller.id;
@@ -710,7 +942,7 @@ async function dispatchSeat(ctx, config, args, exec) {
         state.refusals += 1;
         return { accepted: false, violations: ['a receipt was already accepted for this dispatch'], run_id: state.runId };
       }
-      const violations = receipt.validateReceipt(attempt);
+      const violations = [...receipt.validateReceipt(attempt), ...state.runObserver.receiptViolations(attempt)];
       if (violations.length > 0) {
         /* An invalid receipt is refused WITH its violations and does not
          * consume the one-shot slot: the contract is correctable, it is just
@@ -732,6 +964,7 @@ async function dispatchSeat(ctx, config, args, exec) {
      *    agent a genuine fresh root of the target preset. */
     const seatSessionId = SessionId(randomUUID());
     state.seatSessionId = seatSessionId;
+    state.runObserver = createDispatchRunObserver({ dispatchId: state.runId, callerSessionId: state.callerSessionId, seatSessionId });
     const meta = {
       origin: 'subagent',
       delegationDepth: state.callerDepth + 1,
@@ -749,6 +982,7 @@ async function dispatchSeat(ctx, config, args, exec) {
         agentOptions: inheritAgentOptions(callerAgent, ctx),
         setup: async (agentCtx) => {
           await presets.mount(agentCtx, state.seat);
+          agentCtx.on('tools/result', state.runObserver.observe);
           agentCtx.tools.register(receiptTool);
         },
       });
@@ -766,17 +1000,26 @@ async function dispatchSeat(ctx, config, args, exec) {
     const from = handle.agent.session.snapshotEvents?.().length ?? 0;
     state.fromIndex = from;
 
+    /* This is the seat's request seed, not proof of the executed route: the
+     * runtime request waterfall can change it. Give the seat the exact IDs for
+     * reporting, while observeLane remains the independent source of truth. */
+    const seatOptions = handle.agent.options;
+    const seatConfiguredLane = typeof seatOptions?.provider === 'string' && seatOptions.provider.length > 0
+      && typeof seatOptions?.model === 'string' && seatOptions.model.length > 0
+      ? seatOptions.provider + '/' + seatOptions.model : undefined;
     const envelope = receipt.renderEnvelope({
       runId: state.runId,
+      routeDecisionId: routeDecision.decision_id,
       seat: state.seat,
       callerSessionId: state.callerSessionId,
       callerPreset: state.callerPreset,
       seatSessionId,
       delegationDepth: meta.delegationDepth,
+      seatConfiguredLane,
       laneExpectation: state.callerLaneExpectation === receipt.NONE ? undefined : state.callerLaneExpectation,
       objective: args.objective,
       doneWhen: args.done_when,
-      reason: args.reason,
+      reason: routeDecision.reason,
       constraints: Array.isArray(args.constraints) ? args.constraints.map((item) => String(item)) : [],
       context: typeof args.context === 'string' && args.context.length > 0 ? args.context : undefined,
     });
@@ -867,7 +1110,7 @@ async function dispatchSeat(ctx, config, args, exec) {
     /* caller_expectation is recorded-only telemetry: it never participates in any
      * authority decision or in the verdict. A disagreement with the observed lane
      * is surfaced as a warning so the confound is visible, and nothing more. */
-    if (observed !== undefined && state.callerLaneExpectation !== receipt.NONE && receipt.lanesConflict(state.callerLaneExpectation, observed)) {
+    if (observed !== undefined && state.callerLaneExpectation !== receipt.NONE && receipt.laneExpectationConflicts(state.callerLaneExpectation, observed)) {
       warnings.push('caller lane expectation not met: the caller expected "' + state.callerLaneExpectation + '" but the seat ran on "' + observed + '" (recorded telemetry, never an authority decision)');
     }
     if (state.turns.started > 1) warnings.push('the seat ran ' + state.turns.started + ' turns; a dispatch is one turn, so later turns were not read');
@@ -877,7 +1120,7 @@ async function dispatchSeat(ctx, config, args, exec) {
     const verdict = state.receipt.verdict;
     return await settle(
       'complete',
-      'the seat answered with verdict "' + verdict + '" on ' + state.turns.started + ' turn(s)' + (state.turns.lastReason === undefined ? '' : ' (last turn ended: ' + reasonSummary(state.turns.lastReason) + ')') + '. The Archon run status below is the seat report of the run own artifact, not an independent check by this dispatcher.',
+      'the seat answered with verdict "' + verdict + '" on ' + state.turns.started + ' turn(s)' + (state.turns.lastReason === undefined ? '' : ' (last turn ended: ' + reasonSummary(state.turns.lastReason) + ')') + '. Receipt run identity and status were checked against this seat canonical tool results; summary and evidence text remain seat reports.',
       { warnings },
     );
   } catch (error) {
@@ -896,12 +1139,16 @@ async function dispatchSeat(ctx, config, args, exec) {
  */
 export function buildValue(state) {
   const reported = state.receipt;
+  const missingReceiptReason = state.stage === 'receipt-missing' && state.turns.lastReason?.kind === 'error'
+    ? ' Last turn ended: ' + reasonSummary(state.turns.lastReason)
+    : '';
   return {
-    ok: state.stage === 'complete' && reported !== undefined && reported.verdict !== 'blocked',
+    ok: state.stage === 'complete' && reported !== undefined && (reported.verdict === 'ship' || reported.verdict === 'fix'),
     stage: state.stage,
     verdict: reported === undefined ? 'blocked' : reported.verdict,
-    detail: state.detail,
+    detail: state.detail + missingReceiptReason,
     warnings: [...state.warnings],
+    routing: state.routeDecision ?? buildRoutingDecision(undefined, 'procedural_handoff', '', 'none', 'none', false),
     lane: {
       declared: reported === undefined ? receipt.NONE : reported.lane,
       observed: state.laneObserved === undefined ? state.seatLane : state.laneObserved,
@@ -975,8 +1222,10 @@ function auditRecord(state, value) {
       status: state.receipt === undefined ? null : state.receipt.archon_status,
       artifact_dir: state.receipt === undefined ? null : state.receipt.archon_artifact_dir,
     },
+    archon_binding: state.archonBinding ?? null,
     artifacts: state.receipt === undefined ? [] : [...state.receipt.artifacts],
     warnings: [...state.warnings],
     detail: state.detail,
+    routing: state.routeDecision,
   };
 }

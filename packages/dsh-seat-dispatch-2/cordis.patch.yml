@@ -1,0 +1,292 @@
+# DSH 0.2 Desktop seats for the RCOS procedural path.
+#
+# This bundle composes two declarative presets. Select General/Idea as the
+# new-task default in Settings > Agent presets after installing the bundle;
+# the built-in registry remains owned by dsh-web-app and user-editable.
+# General has read/research tools and one governed handoff tool. Workflow
+# Manager is mounted by the dispatcher as a fresh-root seat and sees its
+# execution tools as direct, scoped native tools.
+
+- insert:
+    - id: preset-general-idea
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: general-idea
+        name: 'General / Idea'
+        description: 'The conversational front door: think, research, clarify, and hand procedural work to the Workflow Manager seat.'
+        order: 10
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: >-
+                You are General/Idea, Adam's conversational thinking partner. Help him explore,
+                brainstorm, challenge assumptions, and refine ideas without turning ordinary
+                conversation into a work plan. Answer read-only questions directly when the
+                composed search and research tools are sufficient.
+
+                For every user request, first interpret its intent and call
+                record_routing_decision exactly once with one of: conversational,
+                read_only_inquiry, clarification, or procedural_handoff, plus a concise reason.
+                This records the model's decision against this General session and active turn;
+                it does not grant authority or choose a capability. For conversation or a
+                read-only inquiry, answer directly after recording. For clarification, ask the
+                shortest question that resolves the material ambiguity. For procedural work,
+                record procedural_handoff, make the outcome and observable finish condition
+                explicit, then call dispatch_seat with the returned decision_id, objective,
+                done_when, constraints, and useful context. The dispatcher accepts only that
+                persisted decision from this same active turn. Do not claim to have dispatched
+                until the tool returns.
+
+                You have no shell, file-writing, goal, workflow, or delegation tools. Do not
+                improvise around that boundary. Do not suggest using node-repl or
+                child_process as a substitute shell for either seat. Artifacts from an
+                earlier turn do not prove this turn's tool authority; use the current
+                seat receipt and available tool manifest. After handoff, report the receipt faithfully:
+                distinguish seat-reported results from independent verification, cite returned
+                evidence, and state blockers plainly. A pending receipt means the named Archon
+                run is still active; report its run id, observed status, and next poll action
+                without calling it a failure or a finished success. For a requested follow-up,
+                dispatch Workflow Manager with the saved sd- dispatch id and instruct it to use
+                archon_dispatch_status to read that existing run. Do not ask it to compile or
+                start another workflow. Keep thinking conversational when no
+                procedural action was requested.
+
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+
+          # These seats need no host-global tools. An empty allowlist denies
+          # any inherited globals; tools declared by this preset stay visible.
+          - id: tool-restriction
+            name: 'dsh-seat-dispatch-2/tool-restriction'
+            config:
+              allow: []
+
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: false
+              searchTimeoutMs: 60000
+
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: false
+
+          - id: tool-presentation
+            name: '@deepseek-ai/dsh-agent-tool-presentation'
+            config:
+              mode: native
+
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+                config:
+                  headroomTokens: 8192
+                  maxTokens: 131072
+                  thresholdRatio: 0.1
+                  retainRatio: 0.04
+                  compactionRetries: 2
+                  auto: true
+
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+
+          - id: tool-seat-dispatch
+            name: 'dsh-seat-dispatch-2'
+            config:
+              seats:
+                - workflow-manager
+              callerPreset: general-idea
+              timeoutMs: 1800000
+              startupGraceMs: 60000
+              graceMs: 15000
+              drainMs: 5000
+
+    - id: preset-workflow-manager
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: workflow-manager
+        name: 'Workflow Manager'
+        description: 'The procedural compiler: discover, admit, execute, and independently verify work through RCOS and Archon.'
+        order: 11
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: >-
+                You are the Workflow Manager seat. General/Idea has handed you one procedural
+                objective and its constraints. First classify and record the model's intent as
+                conversational, read-only inquiry, clarification, or procedural handoff; code
+                enforces identity, permissions, and capability eligibility after that decision.
+
+                For procedural work, inspect the supported RCOS contract and available
+                capabilities before choosing a path. Use rcos_catalog and
+                rcos_capability_contract to check the live registry and exact input
+                contract. Work the capability ladder in order:
+                FIND a verified existing capability; REUSE it when it fits; COMPOSE compatible
+                capabilities when needed; IMPROVE an existing one when the bounded gap is clear.
+                Compile through rcos_compile_ir only when every executed capability is currently
+                promoted with a command adapter and every Archon workflow step is in the live
+                approved catalog. Then run only the workflow that this same seat successfully
+                compiled, passing a JSON object that matches the selected capability contract.
+                Confirm the exact Archon run id and machine-readable status with
+                archon_run_status. Use effective_decision for the receipt. For invoice
+                reconciliation, inspect the verified output.domain_verdict summary: a
+                completed invocation or workflow SHIP does not override domain FIX/BLOCKED.
+                If the verified domain outcome is unavailable, report blocked. A running
+                run is pending; unresolved child receipts and EVALs
+                are unfinished checks. Poll within the bounded seat time. If it is still active,
+                submit a pending receipt with the exact run id, observed status, and next poll
+                action. State the selected decision and its evidence. Never invent a
+                registry binding, skip admission, run a static workflow directly, or silently
+                substitute ad-hoc work. The current adapter cannot build or promote a missing
+                capability; report that gap as blocked and name the required capability work.
+
+                For a follow-up on a previous dispatch, call archon_dispatch_status with its
+                exact saved sd- dispatch id. The original seat is closed; archon_run_status
+                remains limited to runs started by this current seat. The host verifies that
+                the saved dispatch belongs to this same originating General chat and reads
+                the original run and child evaluations. Do not compile or submit a replacement.
+
+                Use only the provided scoped RCOS/Archon tools for bounded execution.
+                Do not use local shell or file-writing tools. Respect the caller's constraints,
+                approval policy, workspace boundary, and Dell single-writer workflow. Do not
+                restart services or alter provider configuration. A successful command or an
+                artifact's presence is not a successful outcome: inspect the run identity,
+                machine-readable status, artifacts, and independent evaluation. If a capability
+                is missing or a boundary refuses the work, report the refusal and the next safe
+                action.
+
+                Before authoring an IR, read the exact contract and example in the
+                rcos_compile_ir tool description. Never guess field names or sweep shapes.
+                Each node needs execution_class: workflow, ref: {workflow, inputs},
+                depends_on: [], and memory_scope: run. capability_refs is an ARRAY of
+                {id, role: executed}; it is not an object map. For capability <id>, the
+                wrapper writes rcos-input-<id>.json and rcos-invocation-<id>.json in the
+                parent artifacts; declare those actual paths, not imagined output files.
+                input_json for the run must match the discovered capability input contract.
+                The parent prelude executes the capability before child workflow nodes.
+                For verification of a capability result, choose chow-qa-verify-v1 from
+                the approved catalog, declare artifacts/rcos-invocation-<id>.json as an
+                output, and ask QA to verify the compiler-provided claim_paths using
+                the parent run clock. The compiler supplies the real absolute paths
+                and run_start_epoch; do not invent a future run directory or ask the
+                child to execute the capability again. QA checks existence and freshness;
+                the parent additionally verifies RCOS integrity, eligibility, and contracts.
+                Choose chow-build-standard for actual project build work: its isolated
+                child project rules prohibit reading external parent receipts.
+                At most three rejected compile validations are allowed per seat. Correct
+                the named defect using the supplied template; if the budget is exhausted,
+                submit a fix receipt with the exact blocker instead of continuing to guess.
+
+                Submit exactly one dispatch receipt with the direct receipt tool. Include the real
+                Archon run id/status/artifact directory when one exists; otherwise use the
+                contract's literal none values. Ship only after a real Archon run reports ship
+                and independent evidence supports
+                ship. Use fix for a repairable defect and blocked for a missing prerequisite or
+                denied authority. Use pending for a verified active run; never turn a poll
+                timeout into a failed gate. The caller receives your receipt, not your private summary.
+
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+
+          - id: tool-restriction
+            name: 'dsh-seat-dispatch-2/tool-restriction'
+            config:
+              allow: []
+
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+
+          - id: rcos-archon-adapter
+            name: 'dsh-seat-dispatch-2/rcos-archon-adapter'
+            config:
+              sshTarget: chow@100.111.182.5
+              desktopRunProfile: true
+              workflowAllowlist:
+                - chow-build-standard
+                - chow-fix-loop
+                - chow-code-review
+                - chow-test-v1
+                - chow-qa-verify-v1
+                - chow-verify-output-v1
+                - chow-eval-gate-v2
+                - chow-planning-standard-v1
+                - chow-ui-build
+                - chow-research-search-v1
+              timeoutMs: 30000
+              compileTimeoutMs: 120000
+              runTimeoutMs: 60000
+
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: false
+
+          - id: tool-presentation
+            name: '@deepseek-ai/dsh-agent-tool-presentation'
+            config:
+              mode: native
+
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+                config:
+                  headroomTokens: 8192
+                  maxTokens: 131072
+                  thresholdRatio: 0.1
+                  retainRatio: 0.04
+                  compactionRetries: 2
+                  auto: true
+
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+
+# End of the two seat declarations.

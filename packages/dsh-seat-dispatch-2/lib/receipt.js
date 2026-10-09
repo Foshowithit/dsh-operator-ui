@@ -19,10 +19,11 @@
  */
 
 /** Verdicts a seat may return, in the order of decreasing good news. */
-export const RECEIPT_VERDICTS = ['ship', 'fix', 'blocked'];
+export const RECEIPT_VERDICTS = ['ship', 'fix', 'blocked', 'pending'];
 
 /** Archon's machine-readable run statuses; 'none' means no Archon run happened. */
-export const RECEIPT_ARCHON_STATUSES = ['ship', 'fix', 'blocked', 'none'];
+export const RECEIPT_ARCHON_STATUSES = ['ship', 'fix', 'blocked', 'running', 'queued', 'pending', 'none'];
+const ACTIVE_ARCHON_STATUSES = ['running', 'queued', 'pending'];
 
 /** The literal a seat uses where a value genuinely does not exist. */
 export const NONE = 'none';
@@ -49,7 +50,7 @@ export const RECEIPT_PARAMETERS = {
     type: 'string',
     enum: RECEIPT_VERDICTS,
     required: true,
-    description: "your own verdict on the dispatched objective: 'ship' when the objective is met and proven, 'fix' when work exists but something is wrong or incomplete, 'blocked' when you could not proceed",
+    description: "your own verdict: 'ship' when proven, 'fix' for a defect, 'blocked' when unable to proceed, 'pending' when a real Archon run is still active",
   },
   summary: {
     type: 'string',
@@ -66,13 +67,13 @@ export const RECEIPT_PARAMETERS = {
     type: 'array',
     items: { type: 'string' },
     required: true,
-    description: 'the exact commands, run ids, or file reads that prove the summary -- one real observation each; required non-empty for verdict "ship"',
+    description: 'the exact commands, run ids, or file reads that prove the summary -- one real observation each; required non-empty for verdict "ship" or "pending"',
   },
   blockers: {
     type: 'array',
     items: { type: 'string' },
     required: true,
-    description: 'what stopped you, one concrete condition each; required non-empty for verdict "blocked"',
+    description: 'the defects or conditions requiring action, one concrete condition each; name failed checks for verdict "fix"; required non-empty for verdict "blocked"; [] for "ship" or "pending"',
   },
   archon_run_id: {
     type: 'string',
@@ -83,7 +84,7 @@ export const RECEIPT_PARAMETERS = {
     type: 'string',
     enum: RECEIPT_ARCHON_STATUSES,
     required: true,
-    description: "the machine-readable status read from that run's own status/EVAL artifact; 'none' when archon_run_id is 'none'",
+    description: "the latest successful canonical run tool's effective_decision for a terminal run, or status for an active run; never substitute the raw wrapper EVAL; 'none' when archon_run_id is 'none'",
   },
   archon_artifact_dir: {
     type: 'string',
@@ -93,7 +94,7 @@ export const RECEIPT_PARAMETERS = {
   lane: {
     type: 'string',
     required: true,
-    description: "the provider/model you actually ran on, exactly as your own model identity reports it (for example 'deepseek-direct/deepseek-flash'); do not guess and do not copy the caller's lane",
+    description: "the provider/model you actually ran on, exactly as your own model identity reports it; do not guess and do not copy the caller's lane",
   },
   next: {
     type: 'string',
@@ -215,6 +216,22 @@ export function validateReceipt(args) {
     violations.push('evidence: verdict "ship" requires at least one real observation');
   }
   const hasRun = isNonEmptyString(args.archon_run_id) && args.archon_run_id !== NONE;
+  if (verdict === 'pending') {
+    if (!hasRun) violations.push('verdict "pending" requires a real Archon run id');
+    if (!ACTIVE_ARCHON_STATUSES.includes(args.archon_status)) violations.push('verdict "pending" requires active Archon status');
+    if (blockers.length > 0) violations.push('blockers: verdict "pending" cannot carry blockers');
+    if (evidence.length === 0) violations.push('evidence: verdict "pending" requires at least one real observation');
+    if (!isNonEmptyString(args.next) || args.next === NONE) violations.push('next: verdict "pending" requires a next action');
+  }
+  if (verdict !== 'pending' && ACTIVE_ARCHON_STATUSES.includes(args.archon_status)) {
+    violations.push('verdict "' + verdict + '" contradicts Archon status "' + args.archon_status + '"');
+  }
+  if (verdict === 'ship' && !hasRun) {
+    violations.push('verdict "ship" requires a real Archon run id');
+  }
+  if (verdict === 'ship' && hasRun && args.archon_status !== 'ship') {
+    violations.push('verdict "ship" contradicts Archon status "' + args.archon_status + '"');
+  }
   if (hasRun && args.archon_status === NONE) {
     violations.push('archon_status: a run id was supplied, so its status cannot be "none"');
   }
@@ -302,6 +319,18 @@ export function lanesConflict(declared, observed) {
   return declaredModel !== observedModel;
 }
 
+/**
+ * Compare a caller's requested lane with the observed lane. Callers may append
+ * a human note (for example, a reasoning level), so only a lane-shaped prefix
+ * is compared. Unstructured prose is not evidence of a lane mismatch.
+ */
+export function laneExpectationConflicts(expected, observed) {
+  if (!isNonEmptyString(expected) || !isNonEmptyString(observed)) return false;
+  const lane = normalizeLane(expected).match(/^((?:provider:)?[a-z0-9][a-z0-9._:+@-]*(?:\s*\/\s*[a-z0-9][a-z0-9._:+@-]*)*)(?=\s*(?:$|\(|\[|—|–|;|,))/);
+  if (lane === null) return false;
+  return lanesConflict(lane[1].replace(/\s*\/\s*/g, '/'), observed);
+}
+
 /** One model-facing line describing an accepted receipt. */
 export function renderReceiptText(receipt) {
   const parts = [
@@ -329,8 +358,7 @@ function bullets(items, prefix = '- ') {
  * Render the task envelope handed to the dispatched seat as its single turn.
  *
  * The envelope is the whole contract between the two seats: it carries the
- * objective, the binding reporting rules, and -- because the seat presents its
- * tools in 'code' mode -- the exact way the receipt must be submitted.
+ * objective, the binding reporting rules, and the direct receipt tool contract.
  * @param input - run identity, the seat, the caller, and the task fields.
  * @returns the envelope text.
  */
@@ -341,8 +369,12 @@ export function renderEnvelope(input) {
   lines.push('You are running as the "' + input.seat + '" seat, composed fresh from its own preset by the harness seat-dispatch plugin. Your preset owns your tools, your system prompt, and your capabilities; the caller below owns none of them and receives none of them back.');
   lines.push('');
   lines.push('- caller session: ' + input.callerSessionId + ' (preset "' + input.callerPreset + '")');
+  lines.push('- route decision: ' + input.routeDecisionId + ' (intent procedural_handoff)');
   lines.push('- seat session: ' + input.seatSessionId + ' (preset "' + input.seat + '")');
   lines.push('- delegation depth: ' + String(input.delegationDepth));
+  if (input.seatConfiguredLane !== undefined) {
+    lines.push('- seat configured lane: ' + input.seatConfiguredLane + ' (seat AgentOptions before the request; transcript observation remains authoritative)');
+  }
   if (input.laneExpectation !== undefined) {
     lines.push('- caller lane expectation: ' + input.laneExpectation + ' (a report field only; nothing is re-pointed by it)');
   }
@@ -370,27 +402,29 @@ export function renderEnvelope(input) {
   lines.push('');
   lines.push('The Archon workflow library owns the workflow lifecycle; the dispatcher owns only this seat lifecycle. It records no success of its own: your receipt is the authoritative completion boundary, and your session is closed once it arrives.');
   lines.push('');
-  lines.push('Submit exactly one receipt when the objective is met, or the moment you conclude it cannot proceed. This seat presents its tools in code mode, so a model-direct call to ' + RECEIPT_TOOL_NAME + ' resolves to UNKNOWN_TOOL before it ever runs: submit from inside a run_code program, then return.');
+  lines.push('Submit exactly one receipt when the objective is met, or the moment you conclude it cannot proceed. Call the native ' + RECEIPT_TOOL_NAME + ' tool directly with the fields below, then return.');
   lines.push('');
-  lines.push('~~~js');
-  lines.push('return await tools.' + RECEIPT_TOOL_NAME + '({');
-  lines.push("  verdict: 'ship' | 'fix' | 'blocked',");
+  lines.push('~~~text');
+  lines.push('{');
+  lines.push("  verdict: 'ship' | 'fix' | 'blocked' | 'pending',");
   lines.push("  summary: 'what you actually did',");
   lines.push("  artifacts: ['/abs/path'],                  // [] when you produced none");
   lines.push("  evidence: ['exact command or read that proves it'],");
-  lines.push("  blockers: ['what stopped you'],            // non-empty iff verdict is 'blocked'");
+  lines.push("  blockers: ['the defect or condition requiring action'], // name defects for 'fix'; required for 'blocked'; [] for 'ship' or 'pending'");
   lines.push("  archon_run_id: '<real Archon run id>' | 'none',");
-  lines.push("  archon_status: 'ship' | 'fix' | 'blocked' | 'none',   // read from that run's own status/EVAL artifact");
+  lines.push("  archon_status: 'ship' | 'fix' | 'blocked' | 'running' | 'queued' | 'pending' | 'none', // canonical effective_decision for terminal runs, status for active runs");
   lines.push("  archon_artifact_dir: '/abs/artifact/dir' | 'none',");
   lines.push("  lane: '<provider>/<model you actually ran on>',");
   lines.push("  next: '<one next action>' | 'none',");
-  lines.push('});');
+  lines.push('}');
   lines.push('~~~');
   lines.push('');
   lines.push('Rules the dispatcher enforces:');
-  lines.push('- The receipt is closed. An unknown field, a missing field, or a verdict whose support is missing (a "ship" with no evidence, a "blocked" with no blocker) is refused, and a refusal is reported to the caller as a blocked dispatch, never as a success.');
-  lines.push('- archon_run_id must be the real id of the run you executed. Never invent one: routing per your own seat doctrine, capturing the run id from the run artifacts, and reading the run own machine-readable status is the proof. If you ran no Archon workflow, report none and say why in evidence.');
-  lines.push('- lane is the model you actually ran on, as your own model identity reports it, not the caller expectation. The dispatcher independently reads the lane observed in your transcript and surfaces any mismatch: that field is how a lane confound stays visible instead of silent.');
+  lines.push('- The receipt is closed. An unknown field, a missing field, or a verdict whose support is missing (a "ship" with no real Archon run or evidence, a "blocked" with no blocker) is refused, and a refusal is reported to the caller as a blocked dispatch, never as a success.');
+  lines.push('- archon_run_id must be the real id of the run you executed or successfully read on a follow-up. Preserve that run id and its artifact directory for every verdict, including blocked. Never invent or omit it: the host refuses a receipt that discards a run identity captured from your canonical tools. Report none only when no run was launched or successfully read, and say why in evidence.');
+  lines.push('- archon_status must match the latest successful canonical run tool result. For a terminal run use effective_decision, never the raw wrapper EVAL: a capability FIX or BLOCKED cannot become SHIP. Read archon_run_status before claiming terminal completion; launch acceptance alone proves no terminal verdict. Unavailable terminal acceptance is blocked. The host refuses contradictory receipts without consuming your receipt slot.');
+  lines.push('- A run still reported as running after bounded polling is pending. Report its exact run id, the observed running status, evidence, and a concrete next poll action. Do not call an unfinished run blocked or ship.');
+  lines.push('- lane must use the exact provider and model IDs you actually ran on. The seat configured lane above supplies the full request-seed IDs; use them when they match your actual route, without shortening them to a display name. If the runtime changed that route, report the actual IDs. The caller expectation is separate. The dispatcher independently reads your transcript and surfaces any mismatch; configured guidance cannot override the observed lane.');
   lines.push('- One receipt per dispatch. A second submission is refused.');
   lines.push('');
   lines.push('Nothing you write after the receipt is read. Work the objective now.');

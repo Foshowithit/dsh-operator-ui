@@ -17,15 +17,21 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
 import test from 'node:test';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
+import { resolveDshHome } from '@deepseek-ai/dsh-home-paths';
 import { defineTool, validateArgs } from '@deepseek-ai/dsh-tools';
 import * as receipt from '../lib/receipt.js';
 import {
   Config,
+  apply,
   DISPATCH_OUTPUT,
   RECEIPT_TOOL_OUTPUT,
+  buildRoutingDecision,
   buildReceiptTool,
   buildValue,
   dispatchParameters,
@@ -50,6 +56,132 @@ const CANONICAL = {
   next: 'none',
 };
 
+test('the seat receives its configured route while transcript lane drift stays visible', async () => {
+  const auditDir = await mkdtemp(join(tmpdir(), 'dsh-seat-lane-guidance-'));
+  try {
+    const registered = new Map();
+    const seatTools = new Map();
+    const events = [];
+    const caller = {
+      options: { provider: 'caller-provider', model: 'caller-model', reasoningEffort: 'xhigh' },
+      session: {
+        id: 'session-general-lane-guidance', header: { agentPreset: 'general-idea' },
+        snapshotEvents: () => [{ type: 'turn/start', seq: 0, data: { turn: 1 } }],
+      },
+    };
+    let envelope;
+    let submitted;
+    const ctx = {
+      tools: { register: tool => registered.set(tool.name, tool) },
+      agentPresets: { mount: async () => {}, composedPreset: () => 'general-idea' },
+      agents: { create: async ({ sessionId, agentOptions, setup }) => {
+        assert.deepEqual(agentOptions, caller.options, 'guidance must not change route inheritance');
+        const agent = {
+          options: { provider: 'configured-provider', model: 'configured-model' },
+          session: { id: sessionId, snapshotEvents: () => events },
+          whenIdle: async () => {},
+          followup: message => {
+            envelope = message.content[0].text;
+            events.push({ type: 'turn/start', data: { turn: 1 } });
+            events.push({ type: 'assistant/message', data: { message: { source: { kind: 'model', provider: 'actual-provider', model: 'actual-model' } } } });
+            submitted = seatTools.get(receipt.RECEIPT_TOOL_NAME).execute({
+              ...CANONICAL, verdict: 'blocked', blockers: ['The required executable capability is unavailable.'],
+              archon_run_id: 'none', archon_status: 'none', archon_artifact_dir: 'none',
+              lane: 'configured-provider/configured-model',
+            }, { agent });
+            events.push({ type: 'turn/end', data: { turn: 1, reason: 'completed' } });
+          },
+        };
+        await setup({ on: () => {}, tools: { register: tool => seatTools.set(tool.name, tool) } });
+        return { agent, dispose: async () => {} };
+      } },
+    };
+    apply(ctx, new Config({ auditDir, seats: ['workflow-manager'], callerPreset: 'general-idea', timeoutMs: 1000 }));
+    const execution = { agent: caller };
+    const route = await registered.get('record_routing_decision').execute({ intent: 'procedural_handoff', reason: 'Inspect capability eligibility.' }, execution);
+    const value = await registered.get('dispatch_seat').execute({
+      routing_decision_id: route.decision.decision_id, seat: 'workflow-manager',
+      objective: 'Inspect capability eligibility.', done_when: 'Report the result.',
+      lane_expectation: 'expected-provider/expected-model',
+    }, execution);
+    assert.equal((await submitted).accepted, true);
+    assert.match(envelope, /seat configured lane: configured-provider\/configured-model/);
+    assert.match(envelope, /exact provider and model IDs/);
+    assert.match(envelope, /transcript.*authoritative/i);
+    assert.doesNotMatch(envelope, /seat configured lane: expected-provider/);
+    assert.equal(value.lane.declared, 'configured-provider/configured-model');
+    assert.equal(value.lane.observed, 'actual-provider/actual-model');
+    assert.equal(value.lane.mismatch, true, 'configured guidance cannot overwrite an observed lane change');
+    assert.ok(value.warnings.some(warning => warning.includes('lane mismatch')));
+  } finally { await rm(auditDir, { recursive: true, force: true }); }
+});
+
+test('native dispatcher refuses false SHIP, accepts its corrected BLOCKED receipt, and records both attempts', async () => {
+  const auditDir = await mkdtemp(join(tmpdir(), 'dsh-receipt-verdict-'));
+  try {
+    const registered = new Map();
+    const seatTools = new Map();
+    const events = [];
+    let observeResult;
+    let correction;
+    let disposed = 0;
+    const runId = '5600cb15bbcbbd9d94697e7760874ac7';
+    const caller = { options: { provider: 'fixture', model: 'fixture-model' }, session: {
+      id: 'session-general-verdict-test', header: { agentPreset: 'general-idea' },
+      snapshotEvents: () => [{ type: 'turn/start', seq: 0, data: { turn: 1 } }],
+    } };
+    let seatAgent;
+    const ctx = {
+      tools: { register: tool => registered.set(tool.name, tool) },
+      agentPresets: { mount: async () => {}, composedPreset: () => 'general-idea' },
+      agents: { create: async ({ sessionId, setup }) => {
+        seatAgent = {
+          session: { id: sessionId, snapshotEvents: () => events },
+          whenIdle: async () => {},
+          followup: () => {
+            events.push({ type: 'turn/start', data: { turn: 1 } });
+            const observe = (name, arguments_, operation, data) => observeResult(
+              { name, arguments: arguments_, agent: seatAgent },
+              { isError: false, value: { ok: true, operation, exit_code: 0, data_json: JSON.stringify(data) } },
+            );
+            observe('rcos_compile_ir', { name: 'verdict-test', ir_json: JSON.stringify({ nodes: [{ id: 'qa', execution_class: 'workflow', ref: { workflow: 'chow-qa-verify-v1' } }] }) }, 'rcos_compile_ir', { workflow_name: 'rcos-ir-verdict-test' });
+            observe('archon_workflow_run', { workflow_name: 'rcos-ir-verdict-test' }, 'archon_workflow_run', { run_id: runId, conversation_id: '11111111111141118111111111111111', workflow_name: 'rcos-ir-verdict-test', status: 'running' });
+            observe('archon_run_status', { run_id: runId }, 'archon_run_status', { run_id: runId, status: 'completed', effective_decision: 'blocked', eval: { decision: 'ship' } });
+            correction = (async () => {
+              const receiptTool = seatTools.get(receipt.RECEIPT_TOOL_NAME);
+              const forged = { ...CANONICAL, archon_run_id: runId };
+              const refused = await receiptTool.execute(forged, { agent: seatAgent });
+              assert.equal(refused.accepted, false, 'raw wrapper SHIP cannot override canonical BLOCKED');
+              assert.match(refused.violations.join(' '), /canonical.*blocked/i);
+              const accepted = await receiptTool.execute({ ...forged, verdict: 'blocked', archon_status: 'blocked', blockers: ['Verified capability rejected the missing input.'] }, { agent: seatAgent });
+              assert.equal(accepted.accepted, true, 'a refused receipt must leave its one-shot slot open');
+              events.push({ type: 'turn/end', data: { turn: 1, reason: 'completed' } });
+            })();
+          },
+        };
+        await setup({ on: (event, handler) => { if (event === 'tools/result') observeResult = handler; }, tools: { register: tool => seatTools.set(tool.name, tool) } });
+        return { agent: seatAgent, dispose: async () => { disposed += 1; } };
+      } },
+    };
+    apply(ctx, new Config({ auditDir, seats: ['workflow-manager'], callerPreset: 'general-idea', timeoutMs: 1000 }));
+    const execution = { agent: caller };
+    const route = await registered.get('record_routing_decision').execute({ intent: 'procedural_handoff', reason: 'Verify the capability result.' }, execution);
+    const value = await registered.get('dispatch_seat').execute({ routing_decision_id: route.decision.decision_id, seat: 'workflow-manager', objective: 'Verify the capability result.', done_when: 'The verified verdict is reported.' }, execution);
+    await correction;
+    assert.equal(value.verdict, 'blocked');
+    assert.equal(value.stage, 'complete');
+    assert.equal(value.dispatch.receipt_accepted, true);
+    assert.equal(value.dispatch.receipt_attempts, 2);
+    assert.equal(value.dispatch.receipt_refusals, 1);
+    assert.equal(value.dispatch.receipts_seen, 1);
+    assert.equal(disposed, 1);
+    const saved = JSON.parse((await readFile(join(auditDir, 'seat-dispatch.jsonl'), 'utf8')).trim());
+    assert.equal(saved.verdict, 'blocked');
+    assert.equal(saved.receipt_refusals, 1);
+    assert.equal(saved.archon_binding.run_id, runId);
+  } finally { await rm(auditDir, { recursive: true, force: true }); }
+});
+
 /** One dispatch state fixture; every field buildValue reads must be present. */
 function stateFixture(overrides) {
   return {
@@ -58,6 +190,16 @@ function stateFixture(overrides) {
     stage: 'complete',
     detail: 'the seat answered with verdict "ship" on 1 turn(s).',
     warnings: [],
+    routeDecision: {
+      decision_id: 'route-20260929-fixed',
+      intent: 'procedural_handoff',
+      reason: 'the caller has no mutation tools',
+      caller_session_id: 'session-2a549177',
+      caller_turn_index: 2,
+      caller_turn_start_event_index: 7,
+      dispatch_run_id: 'sd-20260929T000000Z-abcdef',
+      recorded: true,
+    },
     receipt: receipt.normalizeReceipt(CANONICAL),
     receiptAccepted: true,
     attempts: 1,
@@ -90,6 +232,38 @@ test('every harness peer resolves from the plugin directory', () => {
   assert.deepEqual(inject, ['agents', 'agentPresets', 'tools']);
   assert.equal(typeof Config, 'function');
 });
+test('the default audit follows DSH_HOME instead of writing to a fixed user profile', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(manifest.dependencies['@deepseek-ai/dsh-home-paths'], '0.2.0-rc.2');
+  assert.equal(new Config({}).auditDir, join(resolveDshHome(), 'runs', 'seat-dispatch'));
+});
+test('a procedural route decision is bound to the caller session and active turn', () => {
+  const events = [
+    { type: 'turn/start' },
+    { type: 'assistant/message' },
+    { type: 'turn/end' },
+    { type: 'turn/start' },
+    { type: 'assistant/tool_use' },
+  ];
+  const decision = buildRoutingDecision({
+    session: { id: 'session-general-123', snapshotEvents: () => events },
+  }, 'procedural_handoff', 'needs governed mutation', 'route-20260929-fixed', 'sd-20260929T000000Z-abcdef', true);
+  assert.deepEqual(decision, {
+    decision_id: 'route-20260929-fixed',
+    intent: 'procedural_handoff',
+    reason: 'needs governed mutation',
+    caller_session_id: 'session-general-123',
+    caller_turn_index: 2,
+    caller_turn_start_event_index: 3,
+    dispatch_run_id: 'sd-20260929T000000Z-abcdef',
+    recorded: true,
+  });
+  const closed = buildRoutingDecision({
+    session: { id: 'session-general-123', snapshotEvents: () => [...events, { type: 'turn/end' }] },
+  }, 'read_only_inquiry', 'read-only question', 'route-20260929-closed');
+  assert.equal(closed.caller_turn_index, null);
+  assert.equal(closed.caller_turn_start_event_index, null);
+});
 test('the composition row config is accepted by the published Config schema', () => {
   const resolved = new Config({
     seats: ['workflow-manager'],
@@ -108,8 +282,9 @@ test('the composition row config is accepted by the published Config schema', ()
 test('the published parameter schema names exactly the receipt fields', () => {
   const parameters = dispatchParameters(new Config({}));
   assert.deepEqual(Object.keys(parameters).sort(), [
-    'constraints', 'context', 'done_when', 'lane_expectation', 'objective', 'reason', 'seat', 'timeout_ms',
+    'constraints', 'context', 'done_when', 'lane_expectation', 'objective', 'routing_decision_id', 'seat', 'timeout_ms',
   ]);
+  assert.equal(parameters.routing_decision_id.required, true);
   assert.equal(parameters.seat.required, true);
   assert.equal(parameters.objective.required, true);
   assert.equal(parameters.timeout_ms.required, undefined);
@@ -131,8 +306,8 @@ test('the real defineTool accepts both tool schemas', () => {
   });
   assert.equal(dispatchTool.name, 'dispatch_seat');
   const declared = Object.keys(dispatchTool.parameters.properties).sort();
-  assert.deepEqual(declared, ['constraints', 'context', 'done_when', 'lane_expectation', 'objective', 'reason', 'seat', 'timeout_ms']);
-  assert.deepEqual([...dispatchTool.parameters.required].sort(), ['done_when', 'objective', 'reason', 'seat']);
+  assert.deepEqual(declared, ['constraints', 'context', 'done_when', 'lane_expectation', 'objective', 'routing_decision_id', 'seat', 'timeout_ms']);
+  assert.deepEqual([...dispatchTool.parameters.required].sort(), ['done_when', 'objective', 'routing_decision_id', 'seat']);
   assert.equal(Object.keys(receiptTool.parameters.properties).sort().join(','), [...receipt.RECEIPT_KEYS].sort().join(','));
   assert.deepEqual([...receiptTool.parameters.required].sort(), [...receipt.RECEIPT_KEYS].sort());
   assert.equal(receipt.RECEIPT_KEYS.length, 10);
@@ -175,6 +350,8 @@ test('receipts whose support is missing stay refused', () => {
     ['blocked without a blocker', { ...CANONICAL, verdict: 'blocked' }, 'blocked'],
     ['ship with a blocker', { ...CANONICAL, blockers: ['nope'] }, 'ship'],
     ['ship without evidence', { ...CANONICAL, evidence: [] }, 'evidence: verdict "ship"'],
+    ['ship with blocked Archon run', { ...CANONICAL, archon_status: 'blocked' }, 'verdict "ship" contradicts Archon status "blocked"'],
+    ['ship with fix Archon run', { ...CANONICAL, archon_status: 'fix' }, 'verdict "ship" contradicts Archon status "fix"'],
     ['run id with status none', { ...CANONICAL, archon_status: 'none' }, 'archon_status'],
     ['no run id with a status', { ...CANONICAL, archon_run_id: 'none' }, 'archon_status'],
     ['missing summary', (() => { const copy = { ...CANONICAL }; delete copy.summary; return copy; })(), 'summary: required'],
@@ -189,6 +366,26 @@ test('receipts whose support is missing stay refused', () => {
     assert.ok(violations.some((violation) => violation.includes(needle)), label + ' reported ' + JSON.stringify(violations));
   }
   assert.equal(receipt.validateReceipt({ ...CANONICAL, verdict: 'blocked', blockers: ['lane dead: no credits'], evidence: [] }).length, 0);
+});
+
+test('pending receipt preserves an active Archon run without claiming success or a blocker', () => {
+  const pending = { ...CANONICAL, verdict: 'pending', archon_status: 'running', blockers: [], next: 'Poll this exact run id for a terminal EVAL.' };
+  assert.deepEqual(receipt.validateReceipt(pending), []);
+  const value = buildValue(stateFixture({ receipt: receipt.normalizeReceipt(pending) }));
+  assert.equal(value.stage, 'complete');
+  assert.equal(value.verdict, 'pending');
+  assert.equal(value.ok, false);
+  assert.equal(value.receipt.archon_status, 'running');
+  assert.equal(value.receipt.next, pending.next);
+  assert.match(renderDispatch({}, value)[0].text, /^dispatch_seat PENDING stage=complete verdict=pending/);
+  for (const activeStatus of ['queued', 'pending']) {
+    assert.deepEqual(receipt.validateReceipt({ ...pending, archon_status: activeStatus }), []);
+    assert.ok(receipt.validateReceipt({ ...CANONICAL, archon_status: activeStatus }).some((v) => v.includes('contradicts Archon status')));
+  }
+  assert.ok(receipt.validateReceipt({ ...pending, archon_run_id: 'none' }).some((v) => v.includes('real Archon run id')));
+  assert.ok(receipt.validateReceipt({ ...pending, blockers: ['failed gate'] }).some((v) => v.includes('cannot carry blockers')));
+  assert.ok(receipt.validateReceipt({ ...pending, next: 'none' }).some((v) => v.includes('next action')));
+  assert.ok(receipt.validateReceipt({ ...CANONICAL, archon_status: 'running' }).some((v) => v.includes('contradicts Archon status')));
 });
 
 test('unsupported claims and lane confounds surface as warnings', () => {
@@ -210,9 +407,19 @@ test('declared and observed lanes are compared by model id', () => {
   assert.equal(receipt.lanesConflict('none', 'deepseek-flash'), true);
 });
 
-test('the envelope carries the task, the bindings, and the run_code submission path', () => {
+test('caller lane expectations compare the model id without their human annotation', () => {
+  const observed = 'opencode-go-responses/muse-spark-1.3-contributor';
+  assert.equal(receipt.laneExpectationConflicts('opencode-go-responses / muse-spark-1.3-contributor (xhigh) — the desktop default for creative work', observed), false);
+  assert.equal(receipt.laneExpectationConflicts('opencode-go-responses / other-model (xhigh) — the desktop default', observed), true);
+  assert.equal(receipt.laneExpectationConflicts('opencode-go-responses/other-model', observed), true);
+  assert.equal(receipt.laneExpectationConflicts('creative work on the desktop', observed), false);
+  assert.equal(receipt.laneExpectationConflicts('opencode-go-responses / muse-spark-1.3-contributor (xhigh)', undefined), false);
+});
+
+test('the envelope carries the task, bindings, and direct receipt submission path', () => {
   const text = receipt.renderEnvelope({
     runId: 'sd-20260912T000000Z-abcdef',
+    routeDecisionId: 'rd-20260929-fixed',
     seat: 'workflow-manager',
     callerSessionId: 'session-2a549177',
     callerPreset: 'general-idea',
@@ -227,13 +434,13 @@ test('the envelope carries the task, the bindings, and the run_code submission p
   });
   for (const needle of [
     'sd-20260912T000000Z-abcdef',
+    'rd-20260929-fixed',
     'Build seat-dispatch v0.',
     'The receipt round-trip test passes.',
     'The caller has no mutation tools.',
     'Do not restart dsh-web.service.',
     'Files live under /home/chow/.dsh/plugins/.',
     receipt.RECEIPT_TOOL_NAME,
-    'run_code',
     'archon_run_id',
     'archon_status',
     'archon_artifact_dir',
@@ -243,11 +450,13 @@ test('the envelope carries the task, the bindings, and the run_code submission p
     assert.ok(text.includes(needle), 'envelope is missing ' + JSON.stringify(needle));
   }
   assert.equal(text.includes('<run_id>'), false);
+  assert.equal(text.includes('seat configured lane:'), false, 'an unavailable seat route must not be invented from the caller expectation');
 });
 
 test('the model-facing projection matches the declared output schema field for field', () => {
   const value = buildValue(stateFixture({}));
   assert.deepEqual(Object.keys(value).sort(), Object.keys(DISPATCH_OUTPUT.properties).sort());
+  assert.deepEqual(Object.keys(value.routing).sort(), Object.keys(DISPATCH_OUTPUT.properties.routing.properties).sort());
   assert.deepEqual(Object.keys(value.lane).sort(), Object.keys(DISPATCH_OUTPUT.properties.lane.properties).sort());
   assert.deepEqual(Object.keys(value.dispatch).sort(), Object.keys(DISPATCH_OUTPUT.properties.dispatch.properties).sort());
   assert.deepEqual(Object.keys(value.receipt).sort(), Object.keys(DISPATCH_OUTPUT.properties.receipt.properties).sort());
@@ -279,6 +488,23 @@ test('the model-facing projection matches the declared output schema field for f
   const failedText = renderDispatch({}, failed)[0].text;
   assert.ok(failedText.includes('dispatch_seat NOT-OK stage=timeout'));
   assert.ok(failedText.includes('lane: declared=none observed=unknown'));
+});
+
+test('a missing receipt reports the seat turn error to the caller', () => {
+  const value = buildValue(stateFixture({
+    stage: 'receipt-missing',
+    detail: 'the seat finished 1 turn(s) without submitting a receipt.',
+    receipt: undefined,
+    receiptAccepted: false,
+    turns: {
+      started: 1,
+      ended: 1,
+      openTurn: false,
+      lastReason: { kind: 'error', error: { message: 'ENOSPC: no space left on device, write', code: 'UNKNOWN' } },
+    },
+  }));
+  assert.equal(value.verdict, 'blocked');
+  assert.match(renderDispatch({}, value)[0].text, /ENOSPC: no space left on device, write/);
 });
 
 test('the seat turn is delivered as a plugin-authored user message', () => {
@@ -343,6 +569,7 @@ test('a delegated caller is refused at the root gate before any seat exists', ()
   assert.ok(text.includes('dispatch_seat NOT-OK stage=authority-root'), 'refusal render lost its stage: ' + text.slice(0, 200));
   assert.ok(text.includes('delegated'), 'refusal render does not explain why it was refused');
   assert.ok(DISPATCH_OUTPUT.properties.stage.description.includes('authority-root'));
+  assert.ok(DISPATCH_OUTPUT.properties.stage.description.includes('authority-route'));
 });
 
 test('the caller lane expectation is telemetry only and never changes the verdict', () => {
@@ -350,7 +577,7 @@ test('the caller lane expectation is telemetry only and never changes the verdic
   const observed = 'deepseek-direct/deepseek-flash';
   /* The warning is emitted under exactly this predicate (lanesConflict), and it
    * is pushed into warnings -- never into authority, the stage, or the verdict. */
-  assert.equal(receipt.lanesConflict(expected, observed), true);
+  assert.equal(receipt.laneExpectationConflicts(expected, observed), true);
   const drifted = stateFixture({
     callerLaneExpectation: expected,
     laneObserved: observed,
@@ -371,7 +598,7 @@ test('the caller lane expectation is telemetry only and never changes the verdic
   assert.ok(text.includes('never an authority decision'));
   assert.ok(DISPATCH_OUTPUT.properties.lane.properties.caller_expectation.description.includes('never changes authority or the verdict'));
   /* A matching expectation is silent, by the same predicate. */
-  assert.equal(receipt.lanesConflict(observed, observed), false);
+  assert.equal(receipt.laneExpectationConflicts(observed, observed), false);
 });
 
 /* ---------------------------------------------------------------------------
@@ -506,6 +733,7 @@ test('every audit row carries authority_basis and keeps every pre-existing field
   const source = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8');
   assert.ok(source.includes('authority_basis: state.authorityBasis'), 'the audit record lost its authority_basis field');
   assert.ok(source.includes("authority_basis: { type: 'string'"), 'the output schema does not declare authority_basis');
+  assert.ok(source.includes('routing: state.routeDecision'), 'the audit record does not keep the typed procedural route decision');
 
   /* Additive-only: every field the pre-repair audit rows carried is still named
    * in the record builder. (The 78 existing rows in the live JSONL are the
