@@ -1128,6 +1128,52 @@ elif op == "archon_run_status":
                 elif "fix" in domain_decisions and decision.lower() in ("ship", "fix"):
                     decision = "fix"
                 data["effective_decision"] = decision
+            # A prior dispatch may have produced MORE THAN ONE run in the same
+            # Archon conversation (e.g. a positive acceptance run beside a
+            # deliberately-rejecting control run). The host records only the
+            # single binding run_id, so a fresh seat could never read the
+            # sibling -- the exact cross-seat evidence gap. When the request
+            # carries a HOST-TRUSTED archon_conversation_id (captured at
+            # submission, never a model argument), expose the same bounded
+            # domain evidence for every sibling rcos-ir-* run sharing it.
+            internal_conv = REQ.get("archon_conversation_id")
+            if isinstance(internal_conv, str) and RUN_ID_RE.fullmatch(internal_conv):
+                history, _ = run_rows()
+                siblings = [row for row in history or [] if isinstance(row, dict)
+                            and row.get("conversation_id") == internal_conv
+                            and row.get("id") != run_id
+                            and isinstance(row.get("id"), str) and RUN_ID_RE.fullmatch(row["id"])
+                            and isinstance(row.get("workflow_name"), str)
+                            and row["workflow_name"].startswith("rcos-ir-")
+                            and row["workflow_name"] in ALLOW]
+                # Deterministic, bounded: newest first by the run's own clock.
+                siblings.sort(key=lambda row: str(row.get("started_at") or ""), reverse=True)
+                exposed = []
+                for row in siblings[:8]:
+                    sibling = {key: row[key] for key in ("conversation_id", "workflow_name", "status", "started_at", "completed_at") if key in row}
+                    sibling["run_id"] = row["id"]
+                    sib_dir = os.path.realpath(os.path.join(output_root, "artifacts", "runs", row["id"]))
+                    try:
+                        sib_trusted = os.path.commonpath([workspace_root, sib_dir]) == workspace_root
+                    except ValueError:
+                        sib_trusted = False
+                    if sib_trusted and os.path.isdir(sib_dir):
+                        sib_eval = bounded_json(os.path.join(sib_dir, "EVAL.json"), sib_dir, 8000)
+                        if isinstance(sib_eval, dict):
+                            sibling["eval"] = {key: sib_eval[key] for key in ("decision", "status", "reason", "check_type") if key in sib_eval}
+                        sib_invocations = invocation_evidence(sib_dir)
+                        sibling["rcos_invocations"] = sib_invocations
+                        sib_decisions = []
+                        for item in sib_invocations:
+                            cap = next((c for c in DOMAIN_CAPABILITIES if item.get("artifact") == "rcos-invocation-" + c + ".json"), None)
+                            if cap is None or not isinstance(item.get("output"), dict):
+                                continue
+                            sib_decisions.append(item["output"].get("domain_verdict"))
+                        if sib_decisions:
+                            sibling["domain_decisions"] = [d for d in sib_decisions]
+                    exposed.append(sibling)
+                if exposed:
+                    data["sibling_runs"] = exposed
             result(True, op, process.returncode, "Archon status, run identity, and available run artifacts were read by exact run id", data)
 
 elif op == "rcos_compile_ir":

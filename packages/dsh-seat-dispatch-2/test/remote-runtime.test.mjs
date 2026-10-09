@@ -899,3 +899,61 @@ test('mac-dell-staging: malformed, inconsistent or tampered reports block accept
     finally {unsupported.close();}
   } finally {f.close();}
 });
+
+// A dispatch can produce MORE THAN ONE run in the same Archon conversation (a
+// positive acceptance run beside a deliberately-rejecting control). The host
+// binding records only one run_id, so a fresh seat could not reach the sibling.
+// When the host-trusted archon_conversation_id is present, the read must expose
+// the same bounded domain evidence for every sibling rcos-ir-* run.
+test('dispatch read exposes sibling runs from the same conversation with their domain evidence',()=>{
+  const home=realpathSync(mkdtempSync(join(tmpdir(),'dsh-siblings-')));
+  const conv='96f6edf4a8f7141f2530beacd4098d79';
+  const seatId='0a4cb4c3-08c2-4233-9fdc-384cb0b7038f';
+  const outputRoot=join(home,'.archon/workspaces/test');
+  const mainRun='8181d37bb0f79c04cf0ce5ac1c009236';
+  const sibRun='b80ddae2f4d044d2e7dec58715516014';
+  const wfAccept='rcos-ir-mac-dell-staging-acceptance';
+  const wfNeg='rcos-ir-mac-dell-staging-neg-hash';
+  try {
+    const writeRun=(runId,invId,report)=>{
+      const artifacts=join(outputRoot,'artifacts/runs',runId);
+      const invocationDir=join(home,'zcode-rcos/invocations',invId);
+      mkdirSync(artifacts,{recursive:true});mkdirSync(invocationDir,{recursive:true});
+      const bytes=Buffer.from(JSON.stringify(report));
+      const manifest={schema:'rcos-invocation/1',invocation_id:invId,capability_id:'mac-dell-staging',capability_version:'0.1.0',status:'completed',eligibility_decision_id:'elig_domain-control',
+        output:{path:'output.json',bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')}};
+      writeFileSync(join(invocationDir,'output.json'),bytes);
+      writeFileSync(join(artifacts,'rcos-invocation-mac-dell-staging.json'),JSON.stringify(manifest));
+      writeFileSync(join(invocationDir,'manifest.json'),JSON.stringify(manifest));
+      writeFileSync(join(artifacts,'EVAL.json'),JSON.stringify({decision:'ship'}));
+    };
+    writeRun(mainRun,'inv_main',mdsReport('stage','fix',{reason:'sha256 mismatch',expected:'2'.repeat(64),actual:'c'.repeat(64),bytes:169},'mac-origin-proof-wm311d61'));
+    writeRun(sibRun,'inv_sib',mdsReport('stage','fix',{reason:'sha256 mismatch',expected:'0'.repeat(64),actual:'3'.repeat(64),bytes:68},'mac-origin-proof-wm311d61-neg'));
+    const rows=[
+      {id:mainRun,conversation_id:conv,worker_platform_id:seatId,workflow_name:wfAccept,status:'completed',started_at:'2026-10-09T00:32:02.000Z',output_root:outputRoot},
+      {id:sibRun,conversation_id:conv,worker_platform_id:seatId,workflow_name:wfNeg,status:'completed',started_at:'2026-10-09T00:32:47.000Z',output_root:outputRoot},
+    ];
+    const out=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:conv,workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home).result.data;
+    assert.equal(out.effective_decision,'fix');
+    assert.equal(out.rcos_invocations[0].output.domain_verdict,'fix');
+    assert.equal(Array.isArray(out.sibling_runs),true);
+    assert.equal(out.sibling_runs.length,1);
+    const sib=out.sibling_runs[0];
+    assert.equal(sib.run_id,sibRun);
+    assert.equal(sib.workflow_name,wfNeg);
+    assert.equal(sib.eval.decision,'ship');
+    assert.deepEqual(sib.domain_decisions,['fix']);
+    assert.equal(sib.rcos_invocations[0].output.domain_verdict,'fix');
+    assert.equal(sib.rcos_invocations[0].output.expected,'0'.repeat(64));
+    assert.equal(JSON.stringify(out.sibling_runs).includes(home),false);
+    // Without the host-trusted conversation id (a bare model-arg read) the
+    // sibling enumeration must NOT fire.
+    const bare=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home).result.data;
+    assert.equal(bare.sibling_runs,undefined);
+    // A host-trusted conversation id that does not match the run is refused
+    // outright (fail-closed), never silently re-scoped.
+    const other=remote({operation:'archon_run_status',run_id:mainRun,conversation_id:seatId,archon_conversation_id:'d'.repeat(32),workflow_name:wfAccept,workflow_allowlist:[wfAccept,wfNeg],child_nodes:[]},rows,home).result;
+    assert.equal(other.ok,false);
+    assert.match(other.detail,/not an RCOS-compiled workflow bound to this seat session/);
+  } finally {rmSync(home,{recursive:true,force:true});}
+});
