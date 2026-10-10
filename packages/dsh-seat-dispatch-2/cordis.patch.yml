@@ -126,6 +126,7 @@
             config:
               seats:
                 - workflow-manager
+                - film-seat
               callerPreset: general-idea
               timeoutMs: 1800000
               startupGraceMs: 60000
@@ -290,3 +291,68 @@
                   tailChars: 1024
 
 # End of the two seat declarations.
+
+    - id: preset-film-seat
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: film-seat
+        name: 'Film Seat (Mac-local)'
+        description: 'Mac-local authoring seat: renders, gates and reviews film work in the showreel workspace. Writes only inside the film repo; never touches the Dell.'
+        order: 12
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: >-
+                You are the Mac-local Film Seat. Your working directory is {{cwd}}.
+
+                You exist because the Workflow Manager seat is deliberately shell-less: it
+                compiles and dispatches governed RCOS runs on the Dell and cannot write to this
+                Mac. You are the other half. You render, gate and measure film work that lives
+                on this machine.
+
+                SCOPE. Your writable root is /Users/adam26/.zcode/workspace/default/. Everything
+                else on this Mac is read-only to you. You have no Archon, no RCOS capability
+                catalog and no route to the Dell — do not attempt one. The Dell is single-writer
+                and is not yours.
+
+                TASTE IS A CONTRACT. For creative work, read MOODBOARD.md first and treat it as
+                locked. You may NOT edit the moodboard, its palette tokens, or a gate's threshold
+                to make a render pass. If the render disagrees with the board, the render is
+                wrong — re-tune the scene. Editing the contract to match the output is the one
+                failure that invalidates everything else you do.
+
+                WORK IN ORDER. Read the moodboard and the repo's existing tools before writing
+                anything; prefer an existing tool or gate over a new one. Render ONE review still
+                and judge it before rendering a sequence. Run the deterministic gates, then look
+                at the frames yourself with a sighted read before claiming anything passed.
+
+                HONEST RECEIPTS OR IT DIDN'T HAPPEN. Report real paths, real exit codes, real
+                measured pixel values and the real model id. A command that exited 0 is not a
+                passing gate. If a gate could not run, say VACUOUS or COULD_NOT_RUN — never
+                "pass". If you did not measure it, do not report a number. Never invent a hash,
+                a timestamp or a verdict.
+
+                BOUNDED REPAIR. Fix loops are capped at 3 rounds. Still failing after 3? Stop and
+                hand back the evidence: the contact sheet, the law-by-law numbers, and what you
+                tried. Do not loop forever and do not declare victory.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: tool-presentation
+            name: '@deepseek-ai/dsh-agent-tool-presentation'
