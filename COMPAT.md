@@ -9,10 +9,11 @@ plugin code imports against), but it is NOT the support claim — this file is.
 
 ## Desktop status
 
-DeepSeek Desktop is now the primary RCOS operator-seat direction and the current
-development integration is working. That statement is intentionally separate
-from the compatibility table below: the table remains the reproducible pin for
-the older public web-profile package.
+DeepSeek Desktop is the intended primary RCOS operator-seat direction. The
+Desktop integration is a development preview — in development, not a public
+release. That statement is intentionally separate from the compatibility table
+below: the table remains the reproducible pin for the older public web-profile
+package.
 
 The complete newer Desktop source/configuration and clean-machine installation
 recipe are not yet present on public `main`. Until they are published and
@@ -119,12 +120,13 @@ the host answers HTTP, and pins pnpm 10 so CI tests the floor the README states.
 The older public web-profile pin above remains reproducible and supported as a
 reference path. It is no longer the statement of product direction.
 
-DeepSeek Desktop is the primary RCOS seat and the current development
-integration is working. What remains open is **publication/reproducibility**:
-the complete newer Desktop source/configuration and clean-machine install path
-must be pushed to the public repository and re-verified from that public state.
-Until that happens, do not describe the public checkout as a one-command
-Desktop release and do not infer Desktop compatibility from the rc.6 web pin.
+DeepSeek Desktop is the intended primary RCOS seat, and the Desktop integration
+is a development preview — in development, not a public release. What remains
+open is **publication/reproducibility**: the complete newer Desktop
+source/configuration and clean-machine install path must be pushed to the public
+repository and re-verified from that public state. Until that happens, do not
+describe the public checkout as a one-command Desktop release and do not infer
+Desktop compatibility from the rc.6 web pin.
 
 ## What OPTIONAL means here
 

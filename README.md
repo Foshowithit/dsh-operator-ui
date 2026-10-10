@@ -2,44 +2,57 @@
 
 [![Locked host boot smoke](https://github.com/Foshowithit/dsh-operator-ui/actions/workflows/host-boot-smoke.yml/badge.svg)](https://github.com/Foshowithit/dsh-operator-ui/actions/workflows/host-boot-smoke.yml)
 
-The public operator/integration surface for RCOS (Recursive Capability Operating System) on DeepSeek Harness. The repository contains the established side-loaded DSH web package and tracks the newer native Desktop integration, which is now the primary RCOS operator-seat direction. It adds governed Work, Intelligence and System surfaces plus execution/evidence/receipt visibility without turning DSH into the RCOS kernel. Nothing is a fork; RCOS remains portable across seats.
+The public operator/integration surface for RCOS (Recursive Capability Operating System) on DeepSeek Harness. This repository is the current public entrypoint: it ships the established side-loaded DSH web package (the reproducible public install today) and tracks the newer native Desktop integration, which is the intended primary RCOS operator-seat direction but is a **development preview**, not a public release. It adds governed Work, Intelligence and System surfaces plus execution/evidence/receipt visibility without turning DSH into the RCOS kernel. Nothing is a fork; RCOS remains portable across seats.
 
-## Start here: Desktop is the primary RCOS seat
+## Repository roles
 
-**DeepSeek Desktop integration is working in current RCOS development and is
-the primary daily operator-seat direction.** RCOS remains a separate control
-plane: Desktop provides the shell/session experience; RCOS provides routing,
-capability selection, governed execution, evidence, evaluation and receipts.
+RCOS spans four repositories with distinct authorities. This repository is the public operator integration and the current public entrypoint.
 
-The public `main` branch still contains the older, fully documented DSH web
-profile package. Its tested public pin is DSH `0.1.0-rc.6` with an Archon
-`0.10.1`-shaped API, installed through the locked host in
-[`host/`](host/README.md). **Do not read that older web pin as the current
-product direction.**
+| Repository | Visibility | Role |
+|---|---|---|
+| [`Foshowithit/dsh-operator-ui`](https://github.com/Foshowithit/dsh-operator-ui) (this repo) | **Public** | Operator integration — current public entrypoint. Ships the locked DSH web profile package and tracks the Desktop integration direction. |
+| [`Foshowithit/flowrouter`](https://github.com/Foshowithit/flowrouter) | **Public** | Capability manifest specification. |
+| [`Foshowithit/jev-rcos-study`](https://github.com/Foshowithit/jev-rcos-study) | **Public** | Experimental routing research. **Not** production authority. |
+| `Foshowithit/rcos` | **Private** | Canonical RCOS source and research. Its core kernel is an imported snapshot, not automatically the latest live installation. Access requires authentication; private source availability is **not** the same as a reproducible public clone. |
 
-The newer Desktop path has working native integration in development, including
-the RCOS operator surfaces, General/Idea → Workflow Manager dispatch, bounded
-tool authority, session-bound execution activity, Canvas/artifact surfaces and
-receipt-gated handoff. The public repository does **not yet contain the complete
-newer Desktop source/configuration needed to reproduce that installation from a
-fresh clone**, so we are not labeling it a one-command public release until
-those exact files and install steps are published and re-verified.
+Publication of the private canonical source is gated on a full history / privacy / licensing review and a fresh-clone install verification. An allowlist credential scan of the tracked tree is not that full audit.
 
-See [docs/DESKTOP.md](docs/DESKTOP.md) for the current Desktop status and the
+## Start here: what you can install today
+
+**Installable today (public, reproducible):** the side-loaded DSH web profile
+package on this `main` branch. Its tested public pin is DSH `0.1.0-rc.6` with an
+Archon `0.10.1`-shaped API, installed through the locked host in
+[`host/`](host/README.md). This is the path a visitor can clone, install and
+verify today — see [Install](#install) and [DEPLOY.md](DEPLOY.md).
+
+**Intended direction — Desktop (development preview):** the native DeepSeek
+Desktop integration is the intended primary RCOS operator seat. It is a
+**development preview** — an in-development integration, not a public release.
+The public repository does **not yet contain the complete Desktop
+source/configuration needed to reproduce that installation from a fresh
+clone**, so we are not labeling it a one-command public release until those
+exact files and install steps are published and re-verified. RCOS remains a
+separate control plane: Desktop provides the shell/session experience; RCOS
+provides routing, capability selection, governed execution, evidence,
+evaluation and receipts.
+
+See [docs/DESKTOP.md](docs/DESKTOP.md) for the Desktop status and the
 publication boundary.
 
 - **Using the current public package:** read [Requirements](#requirements),
   [Install](#install), then [DEPLOY.md](DEPLOY.md) for the verified web-profile
   setup.
-- **Following Desktop:** treat Desktop as the primary RCOS seat and
-  [docs/DESKTOP.md](docs/DESKTOP.md) as the status page. Do not apply the old
-  web-profile commands to an existing Desktop profile.
+- **Following Desktop:** treat Desktop as the intended primary RCOS seat and
+  [docs/DESKTOP.md](docs/DESKTOP.md) as the status page. It is a development
+  preview, not a published install; do not apply the old web-profile commands
+  to an existing Desktop profile.
 - **Understand the evidence boundary:** an installed UI alone does not prove a
   working execution environment. RCOS claims are gated by executed evidence and
   receipts.
-- **Looking for the RCOS source repository?** It is currently private while the
-  canonical source is reconciled for publication. This repository remains the
-  public operator/integration surface.
+- **Looking for the RCOS source repository?** The canonical `Foshowithit/rcos`
+  repository is private while the source is reconciled for publication (see
+  [Repository roles](#repository-roles)). This repository remains the public
+  operator/integration surface.
 
 ![The Work surface: a task followed from request through route, execution, evidence and verdict](docs/work-spine.png)
 
